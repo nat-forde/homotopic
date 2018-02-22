@@ -1,0 +1,330 @@
+---
+title: "temporal_stability_calc_glasser"
+author: "nforde"
+date: "February 22, 2018"
+output: html_document
+---
+
+```{r}
+library(igraph)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(broom)
+library(knitr)
+library(car)
+library(zoo)
+library(forecast)
+
+window_size = 15
+
+## set all the paths
+pond_demographics <- read.csv("/mnt/tigrlab/projects/stephanie/DataFiles_CT.DTI.Beh.POND/GlimExtIN_CTROIUF.csv")
+qap_functional_temporal <- read.csv("/mnt/tigrlab/projects/edickie/analysis/POND_RST/qap/qap_functional_temporal.csv")
+tsdir <- "/scratch/nforde/homotopic/POND/hcp/glasser_meants"
+ts_pattern <- "RST_pond42fix"
+
+```
+
+```{r} 
+## functions
+
+## for normalising data
+transform_to_normal <- function(X) {
+  # calculate the best exponent using powerTransform:
+  pT <- powerTransform(X)
+  # apply the power transform and save the result to a new variable
+  X_pT <- X^pT$lambda ## note ^ is exponent in r
+  return(X_pT)
+}
+
+
+## to make dataframe that labels connection as I, HE and HO
+make_g_template <- function(subid, tsdir, ts_pattern) {
+  meants <- read.csv(file.path(tsdir,
+                               paste(subid, ts_pattern, "Atlas_s8_glasser_meants.csv", sep="_")),
+                     header=FALSE)  
+
+  roiids <- read.csv(file.path(tsdir,
+                               paste(subid, ts_pattern, "Atlas_s8_glasser_roiids.csv", sep="_")),
+                     header=TRUE)  
+  
+  rois <- as.character(roiids$labelname)
+  meants_t <- t(meants)
+  colnames(meants_t) <- rois
+  
+  cormat <- cor(meants_t)
+  g<-graph_from_adjacency_matrix(cormat,mode="upper", 
+                                 weighted=T, diag=F, 
+                                 add.rownames = "code")
+  g.df <- as.data.frame(get.edgelist(g), names=T)
+
+  #split ROI names into hemi and name  
+  for (i in 1:nrow(g.df)) {
+    g.df$V1.hemi[i] = strsplit(as.character(g.df$V1[i]),"_")[[1]][1]
+    g.df$V1.roi[i] = strsplit(as.character(g.df$V1[i]),"_")[[1]][2]
+    g.df$V2.hemi[i] = strsplit(as.character(g.df$V2[i]),"_")[[1]][1]
+    g.df$V2.roi[i] = strsplit(as.character(g.df$V2[i]),"_")[[1]][2]
+  }
+  
+  g.df$FCtype <- NA
+  g.df$FCtype[g.df$V1.roi==g.df$V2.roi & g.df$V1.hemi!=g.df$V2.hemi] <- "Homotopic"
+  g.df$FCtype[g.df$V1.roi!=g.df$V2.roi & g.df$V1.hemi!=g.df$V2.hemi] <- "Heterotopic"
+  g.df$FCtype[g.df$V1.roi!=g.df$V2.roi & g.df$V1.hemi==g.df$V2.hemi] <- "Intrahemispheric"
+  
+  
+  ## will need to select these for the glasser atlas
+  #g.df$CCsetion <- NA
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="bankssts"] <- 8
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="caudalanteriorcingulate"] <- 6
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="caudalmiddlefrontal"] <- 5
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="cuneus"] <- 10
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="entorhinal"] <- 4 
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="fusiform"] <- 8
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="inferiorparietal"] <- 9
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="inferiortemporal"] <- 7
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="isthmuscingulate"] <- 8
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="insula"] <- 5
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="lateraloccipital"] <- 10
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="lateralorbitofrontal"] <- 1
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="lingual"] <- 9
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="middletemporal"] <- 7
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="medialorbitofrontal"] <- 2
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="parahippocampal"] <- 6
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="paracentral"] <- 7
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="parsopercularis"] <- 1
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="parsorbitalis"] <- 3
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="parstriangularis "] <- 3
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="pericalcarine"] <- 10
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="postcentral"] <- 7
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="posteriorcingulate"] <- 6
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="precentral"] <- 5
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="precuneus"] <- 9
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="rostralanteriorcingulate"] <- 2
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="rostralmiddlefrontal"] <- 3
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="superiorfrontal"] <- 3
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="superiorparietal"] <- 9
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="superiortemporal "] <- 6
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="supramarginal"] <- 7
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="frontalpole"] <- 1
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="temporalpole"] <- 4
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="transversetemporal"] <- 6
+  #g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="insula"] <- 5
+  
+  return(g.df)
+  
+}
+
+
+## to calculate temporal stability between pairs of ROIs (gets called by calc_all_stability)
+calc_subject_stability <- function(subid, tsdir, ts_pattern, g.df, window_size) {
+  meants.file <- file.path(tsdir,
+                           paste(subid, ts_pattern, "Atlas_s8_glasser_meants.csv", sep="_"))
+  meants <- read.csv(meants.file, header = F)
+ 
+  roiids <- read.csv(file.path(tsdir,
+                               paste(representative_subid, ts_pattern, "Atlas_s8_glasser_roiids.csv", sep="_")),
+                     header=TRUE) 
+  
+  rois <- as.character(roiids$labelname)
+  meants_t <- as.data.frame(t(meants))
+  names(meants_t) <- rois  
+  sub.df <- g.df[ ,c("V1","V2")]
+  sub.df$Stability <- NA
+  for (i in 1:nrow(sub.df)) {
+    z <- rollapply(meants_t[,c(sub.df$V1[i],sub.df$V2[i])], 
+                   window_size,
+                   function(x) cor(x[,1],x[,2]), 
+                   by.column=FALSE)
+    sub.df$Stability[i] <- mean(Acf(z)$acf)
+  }
+  return(sub.df)
+}
+
+
+## to calculate average temporal stability for each connection type (HO, HE, I, CC)
+calc_all_stability <- function(subids, tsdir, ts_pattern, g.df, window_size) {
+  ## use these parameters to set up a black dataframe to hold all the correlations
+  tStab <- data.frame("subid" = subids, 
+                      "HO" = numeric(length(subids)),
+                      "HE" = numeric(length(subids)),
+                      "I" = numeric(length(subids)),
+                      "CC01" = numeric(length(subids)),
+                      "CC02" = numeric(length(subids)),
+                      "CC03" = numeric(length(subids)),
+                      "CC04" = numeric(length(subids)),
+                      "CC05" = numeric(length(subids)),
+                      "CC06" = numeric(length(subids)),
+                      "CC07" = numeric(length(subids)),
+                      "CC08" = numeric(length(subids)),
+                      "CC09" = numeric(length(subids)),
+                      "CC10" = numeric(length(subids)))
+  tStab[ ,2:ncol(tStab)] <- numeric(nrow(tStab)*(ncol(tStab)-1))
+  
+  ## create a column in g.df to merge by
+  g.df$EdgeName <- paste(g.df$V1, g.df$V2, sep=".")
+  
+  ## now correlate everyones ts and write the correlations to a massive data frame
+  for (i in 1:nrow(tStab)) {
+    ## get the subid from the dataframe and read in the meants
+    subid <- tStab$subid[i]
+    meants.file <- file.path(tsdir,
+                             paste(subid, ts_pattern, "Atlas_s8_glasser_meants.csv", sep="_"))
+    if (file.exists(meants.file)) {
+      ## look and see if a stability output exists
+      stab.file <- file.path(tsdir,
+                             paste(subid, ts_pattern, "Atlas_s8_glasser", window_size, "tempstab.csv", sep="_"))
+      if (file.exists(stab.file)) {
+        sub.df <- read.csv(stab.file) 
+      } else {
+        sub.df <- calc_subject_stability(subid, tsdir, ts_pattern, g.df, window_size)
+        write.csv(sub.df, stab.file, row.names = F)
+      }
+      ## merge the sub.df with the g.df
+      sub.df$EdgeName <- paste(sub.df$V1, sub.df$V2, sep=".")
+      sub.df <- merge(sub.df, g.df, by="EdgeName")
+      
+      ## calculate the means
+      tStab$HO[i] <- mean(filter(sub.df, FCtype == "Homotopic")$Stability)
+      tStab$HE[i] <- mean(filter(sub.df, FCtype == "Heterotopic")$Stability)
+      tStab$I[i] <- mean(filter(sub.df, FCtype == "Intrahemispheric")$Stability)
+      
+      tStab$CC01[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 1)$Stability)
+      tStab$CC02[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 2)$Stability)
+      tStab$CC03[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 3)$Stability)
+      tStab$CC04[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 4)$Stability)
+      tStab$CC05[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 5)$Stability)
+      tStab$CC06[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 6)$Stability)
+      tStab$CC07[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 7)$Stability)
+      tStab$CC08[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 8)$Stability)
+      tStab$CC09[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 9)$Stability)
+      tStab$CC10[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 10)$Stability)
+    } else {
+      print(paste(meants.file, "does not exist"))
+      tStab[i,2:ncol(tStab)] <- NA
+    }
+  }
+  return(tStab)
+}
+
+```
+
+```{r}
+### 
+
+
+#### Running POND
+pond_demographics$subid <- paste0("MR160-",pond_demographics$DTI.CT.codes)
+pond_demographics <- merge(pond_demographics, qap_functional_temporal, by.x = "subid", by.y = "subject")
+pond_demographics <- filter(pond_demographics, perc_fd < 5)
+
+## transform QC measures to normality
+pond_demographics <- pond_demographics %>%
+  mutate("dvars_pT"  = transform_to_normal(dvars),
+         "m_tsnr_pT"  = transform_to_normal(m_tsnr),
+         "mean_fd_pT"  = transform_to_normal(mean_fd),
+         "quality_pT" = transform_to_normal(quality))
+
+## Now lets do a PCA on the QAP numbers...
+# Pricipal Components Analysis
+# entering raw data and extracting PCs
+# from the correlation matrix
+fit <- princomp(select(pond_demographics, dvars_pT, m_tsnr_pT, mean_fd_pT, quality_pT) , cor=TRUE)
+summary(fit) # print variance accounted for
+loadings(fit) # pc loadings
+plot(fit,type="lines") # scree plot
+## write the top 5 principal components to the speadsheet
+pond_demographics <- cbind(pond_demographics,fit$scores[ ,1:2]) # the principal components
+subids <- pond_demographics$subid
+
+g.df <- make_g_template(subids[1], tsdir, ts_pattern)
+
+tStab_pond <- calc_all_stability(subids, tsdir, ts_pattern, g.df, window_size)
+
+#tStab_pond60 <- calc_all_stability(pond_subids, pond_tsdir, pond_ts_pattern, aparc_labels, g.df, 60)
+
+#write.csv(tStab_pond, "temporal_stability_aparc_pond_window30_20161130.csv", row.names = F)
+#write.csv(tStab_pond60, "temporal_stability_aparc_pond_window60_20161130.csv", row.names = F)
+
+```
+
+```{r, fig.width = 12}
+
+### plot Stability with QC
+
+PONDdemZs <- merge(tStab_pond, pond_demographics,by="subid") %>%
+  gather(FCtype, Z, HO, HE, I, starts_with("CC")) %>%
+  filter(NDD != "", !is.na(Z))
+
+#PONDdemZs <- merge(tStab_pond, pond_demographics,by="subid") %>%
+#  gather(FCtype, Z, HO, HE, I) %>%
+#  filter(NDD != "", !is.na(Z))
+
+ggplot(PONDdemZs, aes(x=Comp.1, y=Z , color = NDD)) + 
+  geom_point() + geom_smooth(method = "lm") +
+  facet_wrap(~FCtype)
+
+ggplot(PONDdemZs, aes(x=Comp.2, y=Z , color = NDD)) + 
+  geom_point() + geom_smooth(method = "lm") +
+  facet_wrap(~FCtype)
+
+
+resids <- PONDdemZs %>%
+  group_by(FCtype) %>%
+  do(augment(lm(Z ~ Comp.1 + Comp.2, data = .)))
+names(resids) <- paste0('QC',names(resids))
+
+PONDdemZs1 <- cbind(PONDdemZs, as.data.frame(resids))  #as.data.frame is required, otherwise it makes a matrix
+
+ggplot(PONDdemZs1, aes(x=Age, y=QC.resid , color = NDD)) + 
+  geom_point() + geom_smooth(method = "lm") +
+  facet_grid(NDD~FCtype)
+
+ggplot(PONDdemZs1, aes(x=Age, y=QC.resid , color = NDD)) + 
+  geom_point() + geom_smooth(method = "lm") +
+  facet_wrap(~FCtype)
+
+simplified_pond <- PONDdemZs1 %>%
+  filter(Age > 6, Age < 18, NDD != "HC")
+
+ggplot(simplified_pond, aes(x=Age, y=QC.resid , color = NDD)) + 
+  geom_point() + geom_smooth(method = "lm") +
+  facet_wrap(~FCtype)
+
+ggplot(simplified_pond, aes(x=NDD, y=QC.resid, color = NDD)) +
+  geom_boxplot() + geom_jitter() +
+  facet_wrap(~FCtype)
+
+ggplot(simplified_pond, aes(x=Age, y=QC.resid , color = NDD)) + 
+  geom_point() + geom_smooth(method = "lm") +
+  facet_grid(sex~FCtype)
+
+ggplot(simplified_pond, aes(x=sex, y=QC.resid , color = NDD)) + 
+  geom_boxplot() + 
+  facet_wrap(~FCtype)
+```
+
+```{r, fig.width=12}
+#### statistics
+
+for (fctype in c('HE','HO','I')) {
+  print(paste("Anova Table for",fctype))
+  a1 <- aov(Z ~ NDD + Age + Comp.1 + Comp.2, 
+            data = filter(simplified_pond, sex == "Male", FCtype == fctype))
+  print(summary(a1))
+  print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
+}
+
+for (fctype in c("CC01","CC02","CC03","CC04", "CC05","CC06","CC07","CC08","CC09", "CC10")) {
+  print(paste("Anova Table for",fctype))
+  a1 <- aov(Z ~ NDD + Age + Comp.1 + Comp.2, 
+            data = filter(simplified_pond, sex == "Male", FCtype == fctype))
+  print(summary(a1))
+  print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
+}
+
+ggplot(filter(simplified_pond, FCtype %in% c("CC01","CC02","CC03","CC04", "CC05","CC06","CC07","CC08","CC09", "CC10")), 
+       aes(x=as.numeric(factor(FCtype)), y=Z , color = NDD)) + 
+  geom_jitter(width = 0.5) + geom_smooth(span = 0.5) 
+
+```

@@ -1,0 +1,391 @@
+---
+title: "strenght_calc_aparc"
+author: "edickie, edited by nforde"
+output: html_document
+---
+
+
+
+```{r}
+library(igraph)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(broom)
+library(knitr)
+library(car)
+
+## set all the paths
+aparc_labels_clut <- "aparc_labels.txt"
+pond_demographics <- read.csv("/projects/stephanie/DataFiles_CT.DTI.Beh.POND/GlimExtIN_CTROIUF.csv")
+qap_functional_temporal <- read.csv("qap_functional_temporal.csv")
+pond_tsdir <- "/projects/edickie/analysis/POND_RST/hcp/aparc_meants"
+pond_ts_pattern <- "RST_pond42fix"
+```
+
+```{r}
+#### functions
+
+## for normalising data
+transform_to_normal <- function(X) {
+  # calculate the best exponent using powerTransform:
+  pT <- powerTransform(X)
+  # apply the power transform and save the result to a new variable
+  X_pT <- X^pT$lambda ## note ^ is exponent in r
+  return(X_pT)
+}
+
+## to make dataframe that labels connection as I, HE and HO
+make_g_template <- function(representative_subid, tsdir, ts_pattern, aparc_labels_clut) {
+  aparc_labels <- read.table(aparc_labels_clut, header=TRUE, quote="\"")
+  meants <- read.csv(file.path(tsdir,
+                               paste(representative_subid, ts_pattern, "Atlas_s8_aparc_meants.csv", sep="_")),
+                     header=FALSE)  
+  roiids <- read.csv(file.path(tsdir,
+                               paste(representative_subid, ts_pattern, "Atlas_s8_aparc_roiids.csv", sep="_")),
+                     header=FALSE)  
+  
+  labels <- merge(roiids, aparc_labels, by.x="V1", by.y="KEY")
+  
+  rois <- as.character(labels$NAME)
+  meants_t <- t(meants)
+  colnames(meants_t) <- rois
+  
+  cormat <- cor(meants_t)
+  g<-graph_from_adjacency_matrix(cormat,mode="upper", 
+                                 weighted=T, diag=F, 
+                                 add.rownames = "code")
+  g.df <- as.data.frame(get.edgelist(g), names=T)
+  
+  for (i in 1:nrow(g.df)) {
+    g.df$V1.hemi[i] = strsplit(as.character(g.df$V1[i]),"_")[[1]][1]
+    g.df$V1.roi[i] = strsplit(as.character(g.df$V1[i]),"_")[[1]][2]
+    g.df$V2.hemi[i] = strsplit(as.character(g.df$V2[i]),"_")[[1]][1]
+    g.df$V2.roi[i] = strsplit(as.character(g.df$V2[i]),"_")[[1]][2]
+  }
+  
+  
+  g.df$FCtype <- NA
+  g.df$FCtype[g.df$V1.roi==g.df$V2.roi & g.df$V1.hemi!=g.df$V2.hemi] <- "Homotopic"
+  g.df$FCtype[g.df$V1.roi!=g.df$V2.roi & g.df$V1.hemi!=g.df$V2.hemi] <- "Heterotopic"
+  g.df$FCtype[g.df$V1.roi!=g.df$V2.roi & g.df$V1.hemi==g.df$V2.hemi] <- "Intrahemispheric"
+  
+  g.df$CCsetion <- NA
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="bankssts"] <- 8
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="caudalanteriorcingulate"] <- 6
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="caudalmiddlefrontal"] <- 5
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="cuneus"] <- 10
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="entorhinal"] <- 4 
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="fusiform"] <- 8
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="inferiorparietal"] <- 9
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="inferiortemporal"] <- 7
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="isthmuscingulate"] <- 8
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="insula"] <- 5
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="lateraloccipital"] <- 10
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="lateralorbitofrontal"] <- 1
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="lingual"] <- 9
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="middletemporal"] <- 7
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="medialorbitofrontal"] <- 2
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="parahippocampal"] <- 6
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="paracentral"] <- 7
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="parsopercularis"] <- 1
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="parsorbitalis"] <- 3
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="parstriangularis "] <- 3
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="pericalcarine"] <- 10
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="postcentral"] <- 7
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="posteriorcingulate"] <- 6
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="precentral"] <- 5
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="precuneus"] <- 9
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="rostralanteriorcingulate"] <- 2
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="rostralmiddlefrontal"] <- 3
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="superiorfrontal"] <- 3
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="superiorparietal"] <- 9
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="superiortemporal "] <- 6
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="supramarginal"] <- 7
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="frontalpole"] <- 1
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="temporalpole"] <- 4
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="transversetemporal"] <- 6
+  g.df$CCsetion[g.df$FCtype=="Homotopic" & g.df$V1.roi=="insula"] <- 5
+    
+  return(g.df)
+  
+}
+
+## to calculate FC strength (Z-scores) for each connection type (HO, HE, I, CC)
+calc_all_strengths <- function(subids, tsdir, ts_pattern, g.df) {
+  ## use these parameters to set up a black dataframe to hold all the correlations
+  theZs <- data.frame("subid" = subids, 
+                         "HO" = numeric(length(subids)),
+                         "HE" = numeric(length(subids)),
+                         "I" = numeric(length(subids)),
+                         "CC01" = numeric(length(subids)),
+                         "CC02" = numeric(length(subids)),
+                         "CC03" = numeric(length(subids)),
+                         "CC04" = numeric(length(subids)),
+                         "CC05" = numeric(length(subids)),
+                         "CC06" = numeric(length(subids)),
+                         "CC07" = numeric(length(subids)),
+                         "CC08" = numeric(length(subids)),
+                         "CC09" = numeric(length(subids)),
+                         "CC10" = numeric(length(subids)))
+  theZs[ ,2:ncol(theZs)] <- numeric(nrow(theZs)*(ncol(theZs)-1))
+  
+  ## now correlate everyones ts and write the correlations to a massive data frame
+  for (i in 1:nrow(theZs)) {
+    ## get the subid from the dataframe and read in the meants
+    subid <- theZs$subid[i]
+    meants.file <- file.path(tsdir,
+                             paste(subids[i], ts_pattern, "Atlas_s8_aparc_meants.csv", sep="_"))
+    if (file.exists(meants.file)) {
+      meants <- read.csv(meants.file,header=FALSE)  
+      ## reorder the meants by the Yeo descriptive tags order
+      names(meants) <- paste0("TR_",1:ncol(meants))
+      ## correlate and graph
+      cormat <- cor(t(select(meants,starts_with("TR_"))))
+      g<-graph_from_adjacency_matrix(cormat,mode="upper", 
+                                     weighted=T, diag=F)
+      # take the egde list as a vector
+      thecorrs <- E(g)$weight
+      edges.df <- cbind(g.df, thecorrs)
+      
+      # apply the Z transform (so we can do stats)
+      theseZ <- atanh(thecorrs)
+      edges.df <- cbind(g.df, theseZ)
+      
+      theZs$HO[i] <- mean(filter(edges.df, FCtype == "Homotopic")$theseZ)
+      theZs$HE[i] <- mean(filter(edges.df, FCtype == "Heterotopic")$theseZ)
+      theZs$I[i] <- mean(filter(edges.df, FCtype == "Intrahemispheric")$theseZ)
+      
+      theZs$CC01[i] <- mean(filter(edges.df, FCtype == "Homotopic", CCsetion == 1)$theseZ)
+      theZs$CC02[i] <- mean(filter(edges.df, FCtype == "Homotopic", CCsetion == 2)$theseZ)
+      theZs$CC03[i] <- mean(filter(edges.df, FCtype == "Homotopic", CCsetion == 3)$theseZ)
+      theZs$CC04[i] <- mean(filter(edges.df, FCtype == "Homotopic", CCsetion == 4)$theseZ)
+      theZs$CC05[i] <- mean(filter(edges.df, FCtype == "Homotopic", CCsetion == 5)$theseZ)
+      theZs$CC06[i] <- mean(filter(edges.df, FCtype == "Homotopic", CCsetion == 6)$theseZ)
+      theZs$CC07[i] <- mean(filter(edges.df, FCtype == "Homotopic", CCsetion == 7)$theseZ)
+      theZs$CC08[i] <- mean(filter(edges.df, FCtype == "Homotopic", CCsetion == 8)$theseZ)
+      theZs$CC09[i] <- mean(filter(edges.df, FCtype == "Homotopic", CCsetion == 9)$theseZ)
+      theZs$CC10[i] <- mean(filter(edges.df, FCtype == "Homotopic", CCsetion == 10)$theseZ)
+      # save the output to the data.frame
+      # theZs[i,5:ncol(theZs)] <- filter(edges.df, FCtype == "Intrahemispheric")$theseZ
+    } else {
+      print(paste(meants.file, "does not exist"))
+      theZs[i,2:ncol(theZs)] <- NA
+    }
+  }
+  return(theZs)
+}
+
+```
+
+```{r}
+### run pond
+
+pond_demographics$subid <- paste0("MR160-",pond_demographics$DTI.CT.codes)
+pond_demographics <- merge(pond_demographics, qap_functional_temporal, by.x = "subid", by.y = "subject")
+pond_demographics <- filter(pond_demographics, perc_fd < 5)
+
+## transform QC measures to normality
+pond_demographics <- pond_demographics %>%
+  mutate("dvars_pT"  = transform_to_normal(dvars),
+         "m_tsnr_pT"  = transform_to_normal(m_tsnr),
+         "mean_fd_pT"  = transform_to_normal(mean_fd),
+         "quality_pT" = transform_to_normal(quality))
+
+## Now lets do a PCA on the QAP numbers...
+# Pricipal Components Analysis
+# entering raw data and extracting PCs
+# from the correlation matrix
+fit <- princomp(select(pond_demographics, dvars_pT, m_tsnr_pT, mean_fd_pT, quality_pT) , cor=TRUE)
+summary(fit) # print variance accounted for
+loadings(fit) # pc loadings
+plot(fit,type="lines") # scree plot
+## write the top 5 principal components to the speadsheet
+pond_demographics <- cbind(pond_demographics,fit$scores[ ,1:2]) # the principal components
+
+pond_subids <- pond_demographics$subid
+
+g.df <- make_g_template(pond_subids[1], pond_tsdir, pond_ts_pattern, aparc_labels_clut)
+## get two variables of interest.. edgenames and the number of edges
+myedgenames <- paste(g.df[ ,1],g.df[ ,2],sep=".") ## the V1.V2 name
+numedges <- length(myedgenames)                   ## the number of edges
+urois <- unique(as.character(g.df$V1.roi))
+
+pond_Zs <- calc_all_strengths(pond_subids, pond_tsdir, pond_ts_pattern, g.df)
+
+```
+
+```{r, fig.width=12}
+### plot strength (Z-scored) with QC measures
+
+PONDdemZs <- merge(pond_Zs,pond_demographics,by="subid") %>%
+  gather(FCtype, Z, HO, HE, I, starts_with("CC")) %>%
+  filter(NDD != "", !is.na(Z))
+
+ggplot(PONDdemZs, aes(x=Comp.1, y=Z , color = NDD)) + 
+  geom_point() + geom_smooth(method = "lm") +
+  facet_wrap(~FCtype)
+
+ggplot(PONDdemZs, aes(x=Comp.2, y=Z , color = NDD)) + 
+  geom_point() + geom_smooth(method = "lm") +
+  facet_wrap(~FCtype)
+
+resids <- PONDdemZs %>%
+  group_by(FCtype) %>%
+  do(augment(lm(Z ~ Comp.1 + Comp.2, data = .)))
+names(resids) <- paste0('QC',names(resids))
+
+PONDdemZs1 <- cbind(PONDdemZs, as.data.frame(resids))
+
+ggplot(PONDdemZs1, aes(x=Age, y=QC.resid , color = NDD)) + 
+  geom_point() + geom_smooth(method = "lm") +
+  facet_grid(NDD~FCtype)
+
+ggplot(PONDdemZs1, aes(x=Age, y=QC.resid , color = NDD)) + 
+  geom_point() + geom_smooth(method = "lm") +
+  facet_wrap(~FCtype)
+
+simplified_pond <- PONDdemZs1 %>%
+  filter(Age > 6, Age < 18, NDD != "HC")
+
+ggplot(simplified_pond, aes(x=Age, y=QC.resid , color = NDD)) + 
+  geom_point() + geom_smooth(method = "lm") +
+  facet_wrap(~FCtype)
+
+ggplot(simplified_pond, aes(x=NDD, y=QC.resid, color = NDD)) +
+  geom_boxplot() + geom_jitter() +
+  facet_wrap(~FCtype)
+
+ggplot(simplified_pond, aes(x=Age, y=QC.resid , color = NDD)) + 
+  geom_point() + geom_smooth(method = "lm") +
+  facet_grid(sex~FCtype)
+
+ggplot(simplified_pond, aes(x=sex, y=QC.resid , color = NDD)) + 
+  geom_boxplot() + 
+  facet_wrap(~FCtype)
+
+```
+
+```{r, fig.width=12}
+### statistics
+
+for (fctype in c('HE','HO','I')) {
+  print(paste("Anova Table for",fctype))
+  a1 <- aov(Z ~ NDD + Age + Comp.1 + Comp.2, 
+                 data = filter(simplified_pond, sex == "Male", FCtype == fctype))
+  print(summary(a1))
+  print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
+}
+
+for (fctype in c("CC01","CC02","CC03","CC04", "CC05","CC06","CC07","CC08","CC09", "CC10")) {
+  print(paste("Anova Table for",fctype))
+  a1 <- aov(Z ~ NDD + Age + Comp.1 + Comp.2, 
+                 data = filter(simplified_pond, sex == "Male", FCtype == fctype))
+  print(summary(a1))
+  print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
+}
+
+ggplot(filter(simplified_pond, FCtype %in% c("CC01","CC02","CC03","CC04", "CC05","CC06","CC07","CC08","CC09", "CC10")), 
+       aes(x=as.numeric(factor(FCtype)), y=Z , color = NDD)) + 
+ geom_jitter(width = 0.5) + geom_smooth(span = 0.5) 
+
+```
+
+## Combined Plot of ABIDE NYU and POND (for comparison)
+
+```{r, fig.width = 12}
+tmp <- simplified_pond
+tmp$DX <- as.character(tmp$NDD)
+tmp$SEX <- tmp$sex
+tmp$study <- "POND"
+tmp$AGE_AT_SCAN <- tmp$Age
+
+tmp2 <- mNYUdemZs1
+tmp2$DX <- as.character(tmp2$DX_GROUP)
+tmp2$study <- "ABIDEI_NYU"
+
+combined <- rbind(select(tmp, subid, study, AGE_AT_SCAN, DX, SEX, FCtype, Z, QC.resid, Comp.1, Comp.2),
+                  select(tmp2, subid, study, AGE_AT_SCAN, DX, SEX, FCtype, Z, QC.resid, Comp.1, Comp.2))
+
+ggplot(filter(combined, SEX == "Male", FCtype %in% c('HE','HO','I')),
+       aes(y=Z, x=study, color = DX)) +
+  geom_boxplot() +
+  facet_wrap(~FCtype)
+
+ggplot(filter(combined, SEX == "Male",  FCtype %in% c('HE','HO','I')),
+       aes(y=QC.resid, x=study, color = DX)) +
+  geom_boxplot() +
+  facet_wrap(~FCtype)
+
+ggplot(filter(combined, SEX == "Male", FCtype %in% c("CC01","CC02","CC03","CC04", "CC05","CC06","CC07","CC08","CC09", "CC10")), 
+       aes(x=as.numeric(factor(FCtype)), y=Z , color = DX)) + 
+ geom_jitter(width = 0.5) + geom_smooth(span = 0.5) +
+  
+   facet_wrap(~study, ncol = 1)
+
+```
+
+From Sen PNAS paper - how was the brain cut up for CC...
+
+| 1    |  2   | 3   |  4   | 5    | 6     | 7   |   8  | 9    | 10 |
+|------|------|-----|------|------|-------|-----|------|------|----|
+| F1MO | GR   | F1  | OC   | IN   | MCIN  | POST| FUSI | PQ   | V1 |
+| F2O  | ACIN | F2  | T1P  | SMA  | PHIP  | PCL | PCIN | P1   | Q  |
+| F1M  |      | F3O | T2P  | AMYG | HES   | T3  | P2   | AG   | O1 |
+| F1O  |      | F3T | F3OP | PRE  | HIP   | SMG |      | LING | O2 |
+|      |      |     |      | RO   | TI    | T2  |      |      | O3 |
+
+
+
+| Section | AAL Atlas ROIs                               | aparc ROIs
+|---|----|----|
+|1 | FIMO - Superior Frontal Gyrus - Medial Orbital part | lateralorbitofrontal
+|  | F2O - Middle Frontal Gyrus -orbital part            | parsopercularis
+|  | F1M - Superior Frontal Gyrus -medial                | frontalpole
+|  | F1O - Superior Frontal Gyrus - Orbital part
+|---|----|----|
+| 2| Gyrus Rectus                                        | medialorbitofrontal
+|  | Anterior cingulate and paracingulate gyri           | rostralanteriorcingulate
+|---|----|----|
+|3 | Superior frontal gyrus, dorsolateral                | rostralmiddlefrontal 
+|  | Middle frontal gyru                                 | superiorfrontal 
+|  | Inferior frontal gyrus, opercular part              | parsorbitalis
+|  | Inferior frontal gyrus, triangular part             | parstriangularis 
+|---|----|----|
+| 4| Olfactory cortex                                    | temporalpole
+|  | Temporal pole: superior temporal gyrus              | entorhinal
+|  | Temporal pole: middle temporal gyrus                |
+|  | Inferior frontal gyrus, opercular part              |
+|---|----|----|
+| 5| Insula                                              | insula
+|  | Supplementary motor area                            | caudalmiddlefrontal
+|  | Amygdala
+|  | Precentral gyrus                                    | precentral
+|  | Rolandic operculum                                  |
+|---|----|----|
+| 6| Superior temporal gyru                              | superiortemporal
+|  | Heschl gyrus                                        | transversetemporal
+|  | Hippocampus                                         | posteriorcingulate
+|  | Parahippocampal gyrus                               | parahippocampal
+|  | Median cingulate and paracingulate gyri             | caudalanteriorcingulate 
+|---|----|----|
+| 7| Postcentral gyrus                                   | postcentral 
+|  | Paracentral lobule                                  | paracentral
+|  | Middle temporal gyrus                               | middletemporal
+|  | Supramarginal gyrus                                 | supramarginal
+|  | Inferior temporal gyrus                             | inferiortemporal
+|---|----|----|
+| 8| Fusiform gyrus                                      | fusiform
+|  | Posterior cingulate gyrus                           | isthmuscingulate
+|  | Inferior parietal, but supramarginal and angular gyri banksts?
+|---|----|----|
+| 9| Precuneus                                           | precuneus
+|  | Superior parietal gyrus                             | superiorparietal
+|  | Angular gyrus                                       | inferiorparietal
+|  | Lingual gyrus                                       | lingual
+|---|----|----|
+| 10 |  V1                                               | pericalcarine
+|    | Cuneus                                            | cuneus
+|    | Superior occipital gyrus                          | lateraloccipital
+|    | Middle occipital gyrus
+|    | Inferior occipital gyrus
