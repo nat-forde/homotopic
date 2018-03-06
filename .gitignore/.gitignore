@@ -32,8 +32,9 @@ vignettes/*.pdf
 *.utf8.md
 *.knit.md
 
-# Data
-/POND/
+# Data directory
+POND/*
+POND/
 
 # output htmls
-/bin/*.html
+bin/*.html
