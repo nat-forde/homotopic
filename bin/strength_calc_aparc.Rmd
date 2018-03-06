@@ -18,7 +18,7 @@ library(car)
 ## set all the paths
 aparc_labels_clut <- "aparc_labels.txt"
 pond_demographics <- read.csv("/projects/stephanie/DataFiles_CT.DTI.Beh.POND/GlimExtIN_CTROIUF.csv")
-qap_functional_temporal <- read.csv("qap_functional_temporal.csv")
+qap_functional_temporal <- read.csv("/mnt/tigrlab/projects/edickie/analysis/POND_RST/qap/qap_functional_temporal.csv")
 pond_tsdir <- "/projects/edickie/analysis/POND_RST/hcp/aparc_meants"
 pond_ts_pattern <- "RST_pond42fix"
 ```
@@ -294,98 +294,98 @@ ggplot(filter(simplified_pond, FCtype %in% c("CC01","CC02","CC03","CC04", "CC05"
 ## Combined Plot of ABIDE NYU and POND (for comparison)
 
 ```{r, fig.width = 12}
-tmp <- simplified_pond
-tmp$DX <- as.character(tmp$NDD)
-tmp$SEX <- tmp$sex
-tmp$study <- "POND"
-tmp$AGE_AT_SCAN <- tmp$Age
-
-tmp2 <- mNYUdemZs1
-tmp2$DX <- as.character(tmp2$DX_GROUP)
-tmp2$study <- "ABIDEI_NYU"
-
-combined <- rbind(select(tmp, subid, study, AGE_AT_SCAN, DX, SEX, FCtype, Z, QC.resid, Comp.1, Comp.2),
-                  select(tmp2, subid, study, AGE_AT_SCAN, DX, SEX, FCtype, Z, QC.resid, Comp.1, Comp.2))
-
-ggplot(filter(combined, SEX == "Male", FCtype %in% c('HE','HO','I')),
-       aes(y=Z, x=study, color = DX)) +
-  geom_boxplot() +
-  facet_wrap(~FCtype)
-
-ggplot(filter(combined, SEX == "Male",  FCtype %in% c('HE','HO','I')),
-       aes(y=QC.resid, x=study, color = DX)) +
-  geom_boxplot() +
-  facet_wrap(~FCtype)
-
-ggplot(filter(combined, SEX == "Male", FCtype %in% c("CC01","CC02","CC03","CC04", "CC05","CC06","CC07","CC08","CC09", "CC10")), 
-       aes(x=as.numeric(factor(FCtype)), y=Z , color = DX)) + 
- geom_jitter(width = 0.5) + geom_smooth(span = 0.5) +
-  
-   facet_wrap(~study, ncol = 1)
+# tmp <- simplified_pond
+# tmp$DX <- as.character(tmp$NDD)
+# tmp$SEX <- tmp$sex
+# tmp$study <- "POND"
+# tmp$AGE_AT_SCAN <- tmp$Age
+# 
+# tmp2 <- mNYUdemZs1
+# tmp2$DX <- as.character(tmp2$DX_GROUP)
+# tmp2$study <- "ABIDEI_NYU"
+# 
+# combined <- rbind(select(tmp, subid, study, AGE_AT_SCAN, DX, SEX, FCtype, Z, QC.resid, Comp.1, Comp.2),
+#                   select(tmp2, subid, study, AGE_AT_SCAN, DX, SEX, FCtype, Z, QC.resid, Comp.1, Comp.2))
+# 
+# ggplot(filter(combined, SEX == "Male", FCtype %in% c('HE','HO','I')),
+#        aes(y=Z, x=study, color = DX)) +
+#   geom_boxplot() +
+#   facet_wrap(~FCtype)
+# 
+# ggplot(filter(combined, SEX == "Male",  FCtype %in% c('HE','HO','I')),
+#        aes(y=QC.resid, x=study, color = DX)) +
+#   geom_boxplot() +
+#   facet_wrap(~FCtype)
+# 
+# ggplot(filter(combined, SEX == "Male", FCtype %in% c("CC01","CC02","CC03","CC04", "CC05","CC06","CC07","CC08","CC09", "CC10")), 
+#        aes(x=as.numeric(factor(FCtype)), y=Z , color = DX)) + 
+#  geom_jitter(width = 0.5) + geom_smooth(span = 0.5) +
+#   
+#    facet_wrap(~study, ncol = 1)
 
 ```
 
-From Sen PNAS paper - how was the brain cut up for CC...
+<!-- From Sen PNAS paper - how was the brain cut up for CC... -->
 
-| 1    |  2   | 3   |  4   | 5    | 6     | 7   |   8  | 9    | 10 |
-|------|------|-----|------|------|-------|-----|------|------|----|
-| F1MO | GR   | F1  | OC   | IN   | MCIN  | POST| FUSI | PQ   | V1 |
-| F2O  | ACIN | F2  | T1P  | SMA  | PHIP  | PCL | PCIN | P1   | Q  |
-| F1M  |      | F3O | T2P  | AMYG | HES   | T3  | P2   | AG   | O1 |
-| F1O  |      | F3T | F3OP | PRE  | HIP   | SMG |      | LING | O2 |
-|      |      |     |      | RO   | TI    | T2  |      |      | O3 |
+<!-- | 1    |  2   | 3   |  4   | 5    | 6     | 7   |   8  | 9    | 10 | -->
+<!-- |------|------|-----|------|------|-------|-----|------|------|----| -->
+<!-- | F1MO | GR   | F1  | OC   | IN   | MCIN  | POST| FUSI | PQ   | V1 | -->
+<!-- | F2O  | ACIN | F2  | T1P  | SMA  | PHIP  | PCL | PCIN | P1   | Q  | -->
+<!-- | F1M  |      | F3O | T2P  | AMYG | HES   | T3  | P2   | AG   | O1 | -->
+<!-- | F1O  |      | F3T | F3OP | PRE  | HIP   | SMG |      | LING | O2 | -->
+<!-- |      |      |     |      | RO   | TI    | T2  |      |      | O3 | -->
 
 
 
-| Section | AAL Atlas ROIs                               | aparc ROIs
-|---|----|----|
-|1 | FIMO - Superior Frontal Gyrus - Medial Orbital part | lateralorbitofrontal
-|  | F2O - Middle Frontal Gyrus -orbital part            | parsopercularis
-|  | F1M - Superior Frontal Gyrus -medial                | frontalpole
-|  | F1O - Superior Frontal Gyrus - Orbital part
-|---|----|----|
-| 2| Gyrus Rectus                                        | medialorbitofrontal
-|  | Anterior cingulate and paracingulate gyri           | rostralanteriorcingulate
-|---|----|----|
-|3 | Superior frontal gyrus, dorsolateral                | rostralmiddlefrontal 
-|  | Middle frontal gyru                                 | superiorfrontal 
-|  | Inferior frontal gyrus, opercular part              | parsorbitalis
-|  | Inferior frontal gyrus, triangular part             | parstriangularis 
-|---|----|----|
-| 4| Olfactory cortex                                    | temporalpole
-|  | Temporal pole: superior temporal gyrus              | entorhinal
-|  | Temporal pole: middle temporal gyrus                |
-|  | Inferior frontal gyrus, opercular part              |
-|---|----|----|
-| 5| Insula                                              | insula
-|  | Supplementary motor area                            | caudalmiddlefrontal
-|  | Amygdala
-|  | Precentral gyrus                                    | precentral
-|  | Rolandic operculum                                  |
-|---|----|----|
-| 6| Superior temporal gyru                              | superiortemporal
-|  | Heschl gyrus                                        | transversetemporal
-|  | Hippocampus                                         | posteriorcingulate
-|  | Parahippocampal gyrus                               | parahippocampal
-|  | Median cingulate and paracingulate gyri             | caudalanteriorcingulate 
-|---|----|----|
-| 7| Postcentral gyrus                                   | postcentral 
-|  | Paracentral lobule                                  | paracentral
-|  | Middle temporal gyrus                               | middletemporal
-|  | Supramarginal gyrus                                 | supramarginal
-|  | Inferior temporal gyrus                             | inferiortemporal
-|---|----|----|
-| 8| Fusiform gyrus                                      | fusiform
-|  | Posterior cingulate gyrus                           | isthmuscingulate
-|  | Inferior parietal, but supramarginal and angular gyri banksts?
-|---|----|----|
-| 9| Precuneus                                           | precuneus
-|  | Superior parietal gyrus                             | superiorparietal
-|  | Angular gyrus                                       | inferiorparietal
-|  | Lingual gyrus                                       | lingual
-|---|----|----|
-| 10 |  V1                                               | pericalcarine
-|    | Cuneus                                            | cuneus
-|    | Superior occipital gyrus                          | lateraloccipital
-|    | Middle occipital gyrus
-|    | Inferior occipital gyrus
+<!-- | Section | AAL Atlas ROIs                               | aparc ROIs -->
+<!-- |---|----|----| -->
+<!-- |1 | FIMO - Superior Frontal Gyrus - Medial Orbital part | lateralorbitofrontal -->
+<!-- |  | F2O - Middle Frontal Gyrus -orbital part            | parsopercularis -->
+<!-- |  | F1M - Superior Frontal Gyrus -medial                | frontalpole -->
+<!-- |  | F1O - Superior Frontal Gyrus - Orbital part -->
+<!-- |---|----|----| -->
+<!-- | 2| Gyrus Rectus                                        | medialorbitofrontal -->
+<!-- |  | Anterior cingulate and paracingulate gyri           | rostralanteriorcingulate -->
+<!-- |---|----|----| -->
+<!-- |3 | Superior frontal gyrus, dorsolateral                | rostralmiddlefrontal  -->
+<!-- |  | Middle frontal gyru                                 | superiorfrontal  -->
+<!-- |  | Inferior frontal gyrus, opercular part              | parsorbitalis -->
+<!-- |  | Inferior frontal gyrus, triangular part             | parstriangularis  -->
+<!-- |---|----|----| -->
+<!-- | 4| Olfactory cortex                                    | temporalpole -->
+<!-- |  | Temporal pole: superior temporal gyrus              | entorhinal -->
+<!-- |  | Temporal pole: middle temporal gyrus                | -->
+<!-- |  | Inferior frontal gyrus, opercular part              | -->
+<!-- |---|----|----| -->
+<!-- | 5| Insula                                              | insula -->
+<!-- |  | Supplementary motor area                            | caudalmiddlefrontal -->
+<!-- |  | Amygdala -->
+<!-- |  | Precentral gyrus                                    | precentral -->
+<!-- |  | Rolandic operculum                                  | -->
+<!-- |---|----|----| -->
+<!-- | 6| Superior temporal gyru                              | superiortemporal -->
+<!-- |  | Heschl gyrus                                        | transversetemporal -->
+<!-- |  | Hippocampus                                         | posteriorcingulate -->
+<!-- |  | Parahippocampal gyrus                               | parahippocampal -->
+<!-- |  | Median cingulate and paracingulate gyri             | caudalanteriorcingulate  -->
+<!-- |---|----|----| -->
+<!-- | 7| Postcentral gyrus                                   | postcentral  -->
+<!-- |  | Paracentral lobule                                  | paracentral -->
+<!-- |  | Middle temporal gyrus                               | middletemporal -->
+<!-- |  | Supramarginal gyrus                                 | supramarginal -->
+<!-- |  | Inferior temporal gyrus                             | inferiortemporal -->
+<!-- |---|----|----| -->
+<!-- | 8| Fusiform gyrus                                      | fusiform -->
+<!-- |  | Posterior cingulate gyrus                           | isthmuscingulate -->
+<!-- |  | Inferior parietal, but supramarginal and angular gyri banksts? -->
+<!-- |---|----|----| -->
+<!-- | 9| Precuneus                                           | precuneus -->
+<!-- |  | Superior parietal gyrus                             | superiorparietal -->
+<!-- |  | Angular gyrus                                       | inferiorparietal -->
+<!-- |  | Lingual gyrus                                       | lingual -->
+<!-- |---|----|----| -->
+<!-- | 10 |  V1                                               | pericalcarine -->
+<!-- |    | Cuneus                                            | cuneus -->
+<!-- |    | Superior occipital gyrus                          | lateraloccipital -->
+<!-- |    | Middle occipital gyrus -->
+<!-- |    | Inferior occipital gyrus -->

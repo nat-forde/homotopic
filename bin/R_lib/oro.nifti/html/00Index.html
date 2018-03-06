@@ -1,0 +1,1587 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>R: Rigorous - NIfTI + ANALYZE + AFNI : Input / Output</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="R.css" />
+</head><body>
+<h1> Rigorous - NIfTI + ANALYZE + AFNI : Input / Output
+<img class="toplogo" src="../../../doc/html/Rlogo.svg" alt="[R logo]" />
+</h1>
+<hr/>
+<div style="text-align: center;">
+<a href="../../../doc/html/packages.html"><img class="arrow" src="../../../doc/html/left.jpg" alt="[Up]" /></a>
+<a href="../../../doc/html/index.html"><img class="arrow" src="../../../doc/html/up.jpg" alt="[Top]" /></a>
+</div><h2>Documentation for package &lsquo;oro.nifti&rsquo; version 0.9.1</h2>
+
+<ul><li><a href="../DESCRIPTION">DESCRIPTION file</a>.</li>
+<li><a href="../doc/index.html">User guides, package vignettes and other documentation.</a></li>
+<li><a href="../demo">Code demos</a>.  Use <a href="../../utils/help/demo">demo()</a> to run them.</li>
+</ul>
+
+<h2>Help Pages</h2>
+
+
+<p style="text-align: center;">
+<a href="#A">A</a>
+<a href="#B">B</a>
+<a href="#C">C</a>
+<a href="#D">D</a>
+<a href="#E">E</a>
+<a href="#F">F</a>
+<a href="#G">G</a>
+<a href="#H">H</a>
+<a href="#I">I</a>
+<a href="#M">M</a>
+<a href="#N">N</a>
+<a href="#O">O</a>
+<a href="#P">P</a>
+<a href="#Q">Q</a>
+<a href="#R">R</a>
+<a href="#S">S</a>
+<a href="#T">T</a>
+<a href="#U">U</a>
+<a href="#V">V</a>
+<a href="#W">W</a>
+<a href="#X">X</a>
+<a href="#Z">Z</a>
+<a href="#misc">misc</a>
+</p>
+
+
+<h2><a name="A">-- A --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="afni-class.html">afni-class</a></td>
+<td>Class "afni"</td></tr>
+<tr><td style="width: 25%;"><a href="anlz.html">anlz</a></td>
+<td>Constructor for Analyze</td></tr>
+<tr><td style="width: 25%;"><a href="anlz-class.html">anlz-class</a></td>
+<td>Class "anlz"</td></tr>
+<tr><td style="width: 25%;"><a href="anlz-nifti-ops.html">anlz-nifti-ops</a></td>
+<td>Operations for Objects in the ANALYZE and NIfTI classes</td></tr>
+<tr><td style="width: 25%;"><a href="coerce-methods.html">as-method</a></td>
+<td>Force an Object to Belong to the ANALYZE or NIfTI Class</td></tr>
+<tr><td style="width: 25%;"><a href="as.anlz.html">as.anlz</a></td>
+<td>as.anlz</td></tr>
+<tr><td style="width: 25%;"><a href="as.nifti.html">as.nifti</a></td>
+<td>as.nifti</td></tr>
+<tr><td style="width: 25%;"><a href="coerce-methods.html">as&lt;--method</a></td>
+<td>Force an Object to Belong to the ANALYZE or NIfTI Class</td></tr>
+<tr><td style="width: 25%;"><a href="audit_trail.html">Audit Trails</a></td>
+<td>Facilitate the Creation and Modification of Audit Trails</td></tr>
+<tr><td style="width: 25%;"><a href="audit_trail-methods.html">audit.trail</a></td>
+<td>Extract or Replace NIfTI Audit Trail</td></tr>
+<tr><td style="width: 25%;"><a href="audit_trail-methods.html">audit.trail-method</a></td>
+<td>Extract or Replace NIfTI Audit Trail</td></tr>
+<tr><td style="width: 25%;"><a href="audit_trail-methods.html">audit.trail-methods</a></td>
+<td>Extract or Replace NIfTI Audit Trail</td></tr>
+<tr><td style="width: 25%;"><a href="audit_trail-methods.html">audit.trail&lt;-</a></td>
+<td>Extract or Replace NIfTI Audit Trail</td></tr>
+<tr><td style="width: 25%;"><a href="audit_trail-methods.html">audit.trail&lt;--method</a></td>
+<td>Extract or Replace NIfTI Audit Trail</td></tr>
+<tr><td style="width: 25%;"><a href="aux_file-methods.html">aux.file</a></td>
+<td>Extract Image Attribute 'aux_file'</td></tr>
+<tr><td style="width: 25%;"><a href="aux_file-methods.html">aux.file-method</a></td>
+<td>Extract Image Attribute 'aux_file'</td></tr>
+<tr><td style="width: 25%;"><a href="aux_file-methods.html">aux.file&lt;-</a></td>
+<td>Extract Image Attribute 'aux_file'</td></tr>
+<tr><td style="width: 25%;"><a href="aux_file-methods.html">aux.file&lt;--method</a></td>
+<td>Extract Image Attribute 'aux_file'</td></tr>
+<tr><td style="width: 25%;"><a href="aux_file-methods.html">aux_file</a></td>
+<td>Extract Image Attribute 'aux_file'</td></tr>
+<tr><td style="width: 25%;"><a href="aux_file-methods.html">aux_file-method</a></td>
+<td>Extract Image Attribute 'aux_file'</td></tr>
+<tr><td style="width: 25%;"><a href="aux_file-methods.html">aux_file-methods</a></td>
+<td>Extract Image Attribute 'aux_file'</td></tr>
+<tr><td style="width: 25%;"><a href="aux_file-methods.html">aux_file-methods,</a></td>
+<td>Extract Image Attribute 'aux_file'</td></tr>
+<tr><td style="width: 25%;"><a href="aux_file-methods.html">aux_file&lt;-</a></td>
+<td>Extract Image Attribute 'aux_file'</td></tr>
+<tr><td style="width: 25%;"><a href="aux_file-methods.html">aux_file&lt;--method</a></td>
+<td>Extract Image Attribute 'aux_file'</td></tr>
+</table>
+
+<h2><a name="B">-- B --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="bitpix-methods.html">bitpix</a></td>
+<td>Extract Image Attribute 'bitpix'</td></tr>
+<tr><td style="width: 25%;"><a href="bitpix-methods.html">bitpix-method</a></td>
+<td>Extract Image Attribute 'bitpix'</td></tr>
+<tr><td style="width: 25%;"><a href="bitpix-methods.html">bitpix-methods</a></td>
+<td>Extract Image Attribute 'bitpix'</td></tr>
+<tr><td style="width: 25%;"><a href="bitpix-methods.html">bitpix-methods,</a></td>
+<td>Extract Image Attribute 'bitpix'</td></tr>
+<tr><td style="width: 25%;"><a href="bitpix-methods.html">bitpix&lt;-</a></td>
+<td>Extract Image Attribute 'bitpix'</td></tr>
+<tr><td style="width: 25%;"><a href="bitpix-methods.html">bitpix&lt;--method</a></td>
+<td>Extract Image Attribute 'bitpix'</td></tr>
+<tr><td style="width: 25%;"><a href="blend-methods.html">blend</a></td>
+<td>Merge Two NIfTI or ANALYZE Volumes</td></tr>
+<tr><td style="width: 25%;"><a href="blend-methods.html">blend,anlz,anlz-methods</a></td>
+<td>Merge Two NIfTI or ANALYZE Volumes</td></tr>
+<tr><td style="width: 25%;"><a href="blend-methods.html">blend,anlz,nifti-methods</a></td>
+<td>Merge Two NIfTI or ANALYZE Volumes</td></tr>
+<tr><td style="width: 25%;"><a href="blend-methods.html">blend,nifti,anlz-methods</a></td>
+<td>Merge Two NIfTI or ANALYZE Volumes</td></tr>
+<tr><td style="width: 25%;"><a href="blend-methods.html">blend,nifti,nifti-methods</a></td>
+<td>Merge Two NIfTI or ANALYZE Volumes</td></tr>
+<tr><td style="width: 25%;"><a href="blend-methods.html">blend-method</a></td>
+<td>Merge Two NIfTI or ANALYZE Volumes</td></tr>
+<tr><td style="width: 25%;"><a href="blend-methods.html">blendVolumes</a></td>
+<td>Merge Two NIfTI or ANALYZE Volumes</td></tr>
+</table>
+
+<h2><a name="C">-- C --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="cal_max-methods.html">cal.max</a></td>
+<td>Extract Image Attribute 'cal_max'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_max-methods.html">cal.max-method</a></td>
+<td>Extract Image Attribute 'cal_max'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_max-methods.html">cal.max&lt;-</a></td>
+<td>Extract Image Attribute 'cal_max'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_max-methods.html">cal.max&lt;--method</a></td>
+<td>Extract Image Attribute 'cal_max'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_min-methods.html">cal.min</a></td>
+<td>Extract Image Attribute 'cal_min'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_min-methods.html">cal.min-method</a></td>
+<td>Extract Image Attribute 'cal_min'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_min-methods.html">cal.min&lt;-</a></td>
+<td>Extract Image Attribute 'cal_min'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_min-methods.html">cal.min&lt;--method</a></td>
+<td>Extract Image Attribute 'cal_min'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_units-methods.html">cal.units</a></td>
+<td>Extract Image Attribute 'cal_units'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_units-methods.html">cal.units-method</a></td>
+<td>Extract Image Attribute 'cal_units'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_units-methods.html">cal.units&lt;-</a></td>
+<td>Extract Image Attribute 'cal_units'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_units-methods.html">cal.units&lt;--method</a></td>
+<td>Extract Image Attribute 'cal_units'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_img.html">calibrateImage</a></td>
+<td>Set Minimum/Maximum Values for NIfTI data</td></tr>
+<tr><td style="width: 25%;"><a href="cal_img.html">cal_img</a></td>
+<td>Set Minimum/Maximum Values for NIfTI data</td></tr>
+<tr><td style="width: 25%;"><a href="cal_max-methods.html">cal_max</a></td>
+<td>Extract Image Attribute 'cal_max'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_max-methods.html">cal_max-method</a></td>
+<td>Extract Image Attribute 'cal_max'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_max-methods.html">cal_max-methods</a></td>
+<td>Extract Image Attribute 'cal_max'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_max-methods.html">cal_max-methods,</a></td>
+<td>Extract Image Attribute 'cal_max'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_max-methods.html">cal_max&lt;-</a></td>
+<td>Extract Image Attribute 'cal_max'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_max-methods.html">cal_max&lt;--method</a></td>
+<td>Extract Image Attribute 'cal_max'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_min-methods.html">cal_min</a></td>
+<td>Extract Image Attribute 'cal_min'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_min-methods.html">cal_min-method</a></td>
+<td>Extract Image Attribute 'cal_min'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_min-methods.html">cal_min-methods</a></td>
+<td>Extract Image Attribute 'cal_min'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_min-methods.html">cal_min-methods,</a></td>
+<td>Extract Image Attribute 'cal_min'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_min-methods.html">cal_min&lt;-</a></td>
+<td>Extract Image Attribute 'cal_min'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_min-methods.html">cal_min&lt;--method</a></td>
+<td>Extract Image Attribute 'cal_min'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_units-methods.html">cal_units</a></td>
+<td>Extract Image Attribute 'cal_units'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_units-methods.html">cal_units-method</a></td>
+<td>Extract Image Attribute 'cal_units'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_units-methods.html">cal_units-methods</a></td>
+<td>Extract Image Attribute 'cal_units'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_units-methods.html">cal_units-methods,</a></td>
+<td>Extract Image Attribute 'cal_units'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_units-methods.html">cal_units&lt;-</a></td>
+<td>Extract Image Attribute 'cal_units'</td></tr>
+<tr><td style="width: 25%;"><a href="cal_units-methods.html">cal_units&lt;--method</a></td>
+<td>Extract Image Attribute 'cal_units'</td></tr>
+<tr><td style="width: 25%;"><a href="coerce-methods.html">coerce-method</a></td>
+<td>Force an Object to Belong to the ANALYZE or NIfTI Class</td></tr>
+<tr><td style="width: 25%;"><a href="coerce-methods.html">coerce-methods</a></td>
+<td>Force an Object to Belong to the ANALYZE or NIfTI Class</td></tr>
+<tr><td style="width: 25%;"><a href="coerce-methods.html">coerce&lt;--method</a></td>
+<td>Force an Object to Belong to the ANALYZE or NIfTI Class</td></tr>
+<tr><td style="width: 25%;"><a href="compressed-methods.html">compressed</a></td>
+<td>Extract Image Attribute 'compressed'</td></tr>
+<tr><td style="width: 25%;"><a href="compressed-methods.html">compressed-method</a></td>
+<td>Extract Image Attribute 'compressed'</td></tr>
+<tr><td style="width: 25%;"><a href="compressed-methods.html">compressed-methods</a></td>
+<td>Extract Image Attribute 'compressed'</td></tr>
+<tr><td style="width: 25%;"><a href="compressed-methods.html">compressed-methods,</a></td>
+<td>Extract Image Attribute 'compressed'</td></tr>
+<tr><td style="width: 25%;"><a href="compressed-methods.html">compressed&lt;-</a></td>
+<td>Extract Image Attribute 'compressed'</td></tr>
+<tr><td style="width: 25%;"><a href="compressed-methods.html">compressed&lt;--method</a></td>
+<td>Extract Image Attribute 'compressed'</td></tr>
+<tr><td style="width: 25%;"><a href="convert_anlz.html">Convert ANALYZE Codes</a></td>
+<td>Convert ANALYZE Codes</td></tr>
+<tr><td style="width: 25%;"><a href="convert_nifti.html">Convert NIfTI Codes</a></td>
+<td>Convert NIfTI Codes</td></tr>
+<tr><td style="width: 25%;"><a href="convert_nifti.html">convert.bitpix</a></td>
+<td>Convert NIfTI Codes</td></tr>
+<tr><td style="width: 25%;"><a href="convert_anlz.html">convert.bitpix.anlz</a></td>
+<td>Convert ANALYZE Codes</td></tr>
+<tr><td style="width: 25%;"><a href="convert_nifti.html">convert.datatype</a></td>
+<td>Convert NIfTI Codes</td></tr>
+<tr><td style="width: 25%;"><a href="convert_anlz.html">convert.datatype.anlz</a></td>
+<td>Convert ANALYZE Codes</td></tr>
+<tr><td style="width: 25%;"><a href="convert_nifti.html">convert.form</a></td>
+<td>Convert NIfTI Codes</td></tr>
+<tr><td style="width: 25%;"><a href="convert_nifti.html">convert.intent</a></td>
+<td>Convert NIfTI Codes</td></tr>
+<tr><td style="width: 25%;"><a href="convert_anlz.html">convert.orient.anlz</a></td>
+<td>Convert ANALYZE Codes</td></tr>
+<tr><td style="width: 25%;"><a href="convert_afni.html">convert.scene</a></td>
+<td>Convert AFNI data codes</td></tr>
+<tr><td style="width: 25%;"><a href="convert_nifti.html">convert.slice</a></td>
+<td>Convert NIfTI Codes</td></tr>
+<tr><td style="width: 25%;"><a href="convert_nifti.html">convert.units</a></td>
+<td>Convert NIfTI Codes</td></tr>
+</table>
+
+<h2><a name="D">-- D --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="data_type-methods.html">data.type</a></td>
+<td>Extract Image Attribute 'data_type'</td></tr>
+<tr><td style="width: 25%;"><a href="data_type-methods.html">data.type-method</a></td>
+<td>Extract Image Attribute 'data_type'</td></tr>
+<tr><td style="width: 25%;"><a href="data_type-methods.html">data.type&lt;-</a></td>
+<td>Extract Image Attribute 'data_type'</td></tr>
+<tr><td style="width: 25%;"><a href="data_type-methods.html">data.type&lt;--method</a></td>
+<td>Extract Image Attribute 'data_type'</td></tr>
+<tr><td style="width: 25%;"><a href="datatype-methods.html">datatype</a></td>
+<td>Extract Image Attribute 'datatype'</td></tr>
+<tr><td style="width: 25%;"><a href="datatype-methods.html">datatype-method</a></td>
+<td>Extract Image Attribute 'datatype'</td></tr>
+<tr><td style="width: 25%;"><a href="datatype-methods.html">datatype-methods</a></td>
+<td>Extract Image Attribute 'datatype'</td></tr>
+<tr><td style="width: 25%;"><a href="datatype-methods.html">datatype-methods,</a></td>
+<td>Extract Image Attribute 'datatype'</td></tr>
+<tr><td style="width: 25%;"><a href="datatype-methods.html">datatype&lt;-</a></td>
+<td>Extract Image Attribute 'datatype'</td></tr>
+<tr><td style="width: 25%;"><a href="datatype-methods.html">datatype&lt;--method</a></td>
+<td>Extract Image Attribute 'datatype'</td></tr>
+<tr><td style="width: 25%;"><a href="data_type-methods.html">data_type</a></td>
+<td>Extract Image Attribute 'data_type'</td></tr>
+<tr><td style="width: 25%;"><a href="data_type-methods.html">data_type-method</a></td>
+<td>Extract Image Attribute 'data_type'</td></tr>
+<tr><td style="width: 25%;"><a href="data_type-methods.html">data_type-methods</a></td>
+<td>Extract Image Attribute 'data_type'</td></tr>
+<tr><td style="width: 25%;"><a href="data_type-methods.html">data_type-methods,</a></td>
+<td>Extract Image Attribute 'data_type'</td></tr>
+<tr><td style="width: 25%;"><a href="data_type-methods.html">data_type&lt;-</a></td>
+<td>Extract Image Attribute 'data_type'</td></tr>
+<tr><td style="width: 25%;"><a href="data_type-methods.html">data_type&lt;--method</a></td>
+<td>Extract Image Attribute 'data_type'</td></tr>
+<tr><td style="width: 25%;"><a href="db_name-methods.html">db.name</a></td>
+<td>Extract Image Attribute 'db_name'</td></tr>
+<tr><td style="width: 25%;"><a href="db_name-methods.html">db.name-method</a></td>
+<td>Extract Image Attribute 'db_name'</td></tr>
+<tr><td style="width: 25%;"><a href="db_name-methods.html">db.name&lt;-</a></td>
+<td>Extract Image Attribute 'db_name'</td></tr>
+<tr><td style="width: 25%;"><a href="db_name-methods.html">db.name&lt;--method</a></td>
+<td>Extract Image Attribute 'db_name'</td></tr>
+<tr><td style="width: 25%;"><a href="db_name-methods.html">db_name</a></td>
+<td>Extract Image Attribute 'db_name'</td></tr>
+<tr><td style="width: 25%;"><a href="db_name-methods.html">db_name-method</a></td>
+<td>Extract Image Attribute 'db_name'</td></tr>
+<tr><td style="width: 25%;"><a href="db_name-methods.html">db_name-methods</a></td>
+<td>Extract Image Attribute 'db_name'</td></tr>
+<tr><td style="width: 25%;"><a href="db_name-methods.html">db_name-methods,</a></td>
+<td>Extract Image Attribute 'db_name'</td></tr>
+<tr><td style="width: 25%;"><a href="db_name-methods.html">db_name&lt;-</a></td>
+<td>Extract Image Attribute 'db_name'</td></tr>
+<tr><td style="width: 25%;"><a href="db_name-methods.html">db_name&lt;--method</a></td>
+<td>Extract Image Attribute 'db_name'</td></tr>
+<tr><td style="width: 25%;"><a href="descrip-methods.html">descrip</a></td>
+<td>Extract Image Attribute 'descrip'</td></tr>
+<tr><td style="width: 25%;"><a href="descrip-methods.html">descrip-method</a></td>
+<td>Extract Image Attribute 'descrip'</td></tr>
+<tr><td style="width: 25%;"><a href="descrip-methods.html">descrip-methods</a></td>
+<td>Extract Image Attribute 'descrip'</td></tr>
+<tr><td style="width: 25%;"><a href="descrip-methods.html">descrip-methods,</a></td>
+<td>Extract Image Attribute 'descrip'</td></tr>
+<tr><td style="width: 25%;"><a href="descrip-methods.html">descrip&lt;-</a></td>
+<td>Extract Image Attribute 'descrip'</td></tr>
+<tr><td style="width: 25%;"><a href="descrip-methods.html">descrip&lt;--method</a></td>
+<td>Extract Image Attribute 'descrip'</td></tr>
+<tr><td style="width: 25%;"><a href="bitwise.html">dim2freq</a></td>
+<td>Bitwise Conversion Subroutines</td></tr>
+<tr><td style="width: 25%;"><a href="bitwise.html">dim2phase</a></td>
+<td>Bitwise Conversion Subroutines</td></tr>
+<tr><td style="width: 25%;"><a href="bitwise.html">dim2slice</a></td>
+<td>Bitwise Conversion Subroutines</td></tr>
+<tr><td style="width: 25%;"><a href="dim_-methods.html">dim_</a></td>
+<td>Extract Image Attribute 'dim_'</td></tr>
+<tr><td style="width: 25%;"><a href="dim_-methods.html">dim_-method</a></td>
+<td>Extract Image Attribute 'dim_'</td></tr>
+<tr><td style="width: 25%;"><a href="dim_-methods.html">dim_-methods</a></td>
+<td>Extract Image Attribute 'dim_'</td></tr>
+<tr><td style="width: 25%;"><a href="dim_-methods.html">dim_-methods,</a></td>
+<td>Extract Image Attribute 'dim_'</td></tr>
+<tr><td style="width: 25%;"><a href="dim_-methods.html">dim_&lt;-</a></td>
+<td>Extract Image Attribute 'dim_'</td></tr>
+<tr><td style="width: 25%;"><a href="dim_-methods.html">dim_&lt;--method</a></td>
+<td>Extract Image Attribute 'dim_'</td></tr>
+<tr><td style="width: 25%;"><a href="dim_info-methods.html">dim_info</a></td>
+<td>Extract Image Attribute 'dim_info'</td></tr>
+<tr><td style="width: 25%;"><a href="dim_info-methods.html">dim_info-method</a></td>
+<td>Extract Image Attribute 'dim_info'</td></tr>
+<tr><td style="width: 25%;"><a href="dim_info-methods.html">dim_info-methods</a></td>
+<td>Extract Image Attribute 'dim_info'</td></tr>
+<tr><td style="width: 25%;"><a href="dim_info-methods.html">dim_info-methods,</a></td>
+<td>Extract Image Attribute 'dim_info'</td></tr>
+<tr><td style="width: 25%;"><a href="dim_info-methods.html">dim_info&lt;-</a></td>
+<td>Extract Image Attribute 'dim_info'</td></tr>
+<tr><td style="width: 25%;"><a href="dim_info-methods.html">dim_info&lt;--method</a></td>
+<td>Extract Image Attribute 'dim_info'</td></tr>
+<tr><td style="width: 25%;"><a href="dim_un0-methods.html">dim_un0</a></td>
+<td>Extract Image Attribute 'dim_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="dim_un0-methods.html">dim_un0-method</a></td>
+<td>Extract Image Attribute 'dim_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="dim_un0-methods.html">dim_un0-methods</a></td>
+<td>Extract Image Attribute 'dim_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="dim_un0-methods.html">dim_un0-methods,</a></td>
+<td>Extract Image Attribute 'dim_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="dim_un0-methods.html">dim_un0&lt;-</a></td>
+<td>Extract Image Attribute 'dim_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="dim_un0-methods.html">dim_un0&lt;--method</a></td>
+<td>Extract Image Attribute 'dim_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="drop_img_dim.html">dropImageDimension</a></td>
+<td>Drop Image Dimension</td></tr>
+<tr><td style="width: 25%;"><a href="drop_img_dim.html">drop_img_dim</a></td>
+<td>Drop Image Dimension</td></tr>
+</table>
+
+<h2><a name="E">-- E --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="audit_trail.html">enableAuditTrail</a></td>
+<td>Facilitate the Creation and Modification of Audit Trails</td></tr>
+<tr><td style="width: 25%;"><a href="exp_date-methods.html">exp_date</a></td>
+<td>Extract Image Attribute 'exp_date'</td></tr>
+<tr><td style="width: 25%;"><a href="exp_date-methods.html">exp_date-method</a></td>
+<td>Extract Image Attribute 'exp_date'</td></tr>
+<tr><td style="width: 25%;"><a href="exp_date-methods.html">exp_date-methods</a></td>
+<td>Extract Image Attribute 'exp_date'</td></tr>
+<tr><td style="width: 25%;"><a href="exp_date-methods.html">exp_date-methods,</a></td>
+<td>Extract Image Attribute 'exp_date'</td></tr>
+<tr><td style="width: 25%;"><a href="exp_date-methods.html">exp_date&lt;-</a></td>
+<td>Extract Image Attribute 'exp_date'</td></tr>
+<tr><td style="width: 25%;"><a href="exp_date-methods.html">exp_date&lt;--method</a></td>
+<td>Extract Image Attribute 'exp_date'</td></tr>
+<tr><td style="width: 25%;"><a href="exp_time-methods.html">exp_time</a></td>
+<td>Extract Image Attribute 'exp_time'</td></tr>
+<tr><td style="width: 25%;"><a href="exp_time-methods.html">exp_time-method</a></td>
+<td>Extract Image Attribute 'exp_time'</td></tr>
+<tr><td style="width: 25%;"><a href="exp_time-methods.html">exp_time-methods</a></td>
+<td>Extract Image Attribute 'exp_time'</td></tr>
+<tr><td style="width: 25%;"><a href="exp_time-methods.html">exp_time-methods,</a></td>
+<td>Extract Image Attribute 'exp_time'</td></tr>
+<tr><td style="width: 25%;"><a href="exp_time-methods.html">exp_time&lt;-</a></td>
+<td>Extract Image Attribute 'exp_time'</td></tr>
+<tr><td style="width: 25%;"><a href="exp_time-methods.html">exp_time&lt;--method</a></td>
+<td>Extract Image Attribute 'exp_time'</td></tr>
+<tr><td style="width: 25%;"><a href="extender-methods.html">extender</a></td>
+<td>Extract Image Attribute 'extender'</td></tr>
+<tr><td style="width: 25%;"><a href="extender-methods.html">extender-method</a></td>
+<td>Extract Image Attribute 'extender'</td></tr>
+<tr><td style="width: 25%;"><a href="extender-methods.html">extender-methods</a></td>
+<td>Extract Image Attribute 'extender'</td></tr>
+<tr><td style="width: 25%;"><a href="extender-methods.html">extender-methods,</a></td>
+<td>Extract Image Attribute 'extender'</td></tr>
+<tr><td style="width: 25%;"><a href="extender-methods.html">extender&lt;-</a></td>
+<td>Extract Image Attribute 'extender'</td></tr>
+<tr><td style="width: 25%;"><a href="extender-methods.html">extender&lt;--method</a></td>
+<td>Extract Image Attribute 'extender'</td></tr>
+<tr><td style="width: 25%;"><a href="extents-methods.html">extents</a></td>
+<td>Extract Image Attribute 'extents'</td></tr>
+<tr><td style="width: 25%;"><a href="extents-methods.html">extents-method</a></td>
+<td>Extract Image Attribute 'extents'</td></tr>
+<tr><td style="width: 25%;"><a href="extents-methods.html">extents-methods</a></td>
+<td>Extract Image Attribute 'extents'</td></tr>
+<tr><td style="width: 25%;"><a href="extents-methods.html">extents-methods,</a></td>
+<td>Extract Image Attribute 'extents'</td></tr>
+<tr><td style="width: 25%;"><a href="extents-methods.html">extents&lt;-</a></td>
+<td>Extract Image Attribute 'extents'</td></tr>
+<tr><td style="width: 25%;"><a href="extents-methods.html">extents&lt;--method</a></td>
+<td>Extract Image Attribute 'extents'</td></tr>
+</table>
+
+<h2><a name="F">-- F --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="field_skip-methods.html">field.skip</a></td>
+<td>Extract Image Attribute 'field_skip'</td></tr>
+<tr><td style="width: 25%;"><a href="field_skip-methods.html">field.skip-method</a></td>
+<td>Extract Image Attribute 'field_skip'</td></tr>
+<tr><td style="width: 25%;"><a href="field_skip-methods.html">field.skip&lt;-</a></td>
+<td>Extract Image Attribute 'field_skip'</td></tr>
+<tr><td style="width: 25%;"><a href="field_skip-methods.html">field.skip&lt;--method</a></td>
+<td>Extract Image Attribute 'field_skip'</td></tr>
+<tr><td style="width: 25%;"><a href="field_skip-methods.html">field_skip</a></td>
+<td>Extract Image Attribute 'field_skip'</td></tr>
+<tr><td style="width: 25%;"><a href="field_skip-methods.html">field_skip-method</a></td>
+<td>Extract Image Attribute 'field_skip'</td></tr>
+<tr><td style="width: 25%;"><a href="field_skip-methods.html">field_skip-methods</a></td>
+<td>Extract Image Attribute 'field_skip'</td></tr>
+<tr><td style="width: 25%;"><a href="field_skip-methods.html">field_skip-methods,</a></td>
+<td>Extract Image Attribute 'field_skip'</td></tr>
+<tr><td style="width: 25%;"><a href="field_skip-methods.html">field_skip&lt;-</a></td>
+<td>Extract Image Attribute 'field_skip'</td></tr>
+<tr><td style="width: 25%;"><a href="field_skip-methods.html">field_skip&lt;--method</a></td>
+<td>Extract Image Attribute 'field_skip'</td></tr>
+<tr><td style="width: 25%;"><a href="funused1-methods.html">funused1</a></td>
+<td>Extract Image Attribute 'funused1'</td></tr>
+<tr><td style="width: 25%;"><a href="funused1-methods.html">funused1-method</a></td>
+<td>Extract Image Attribute 'funused1'</td></tr>
+<tr><td style="width: 25%;"><a href="funused1-methods.html">funused1-methods</a></td>
+<td>Extract Image Attribute 'funused1'</td></tr>
+<tr><td style="width: 25%;"><a href="funused1-methods.html">funused1-methods,</a></td>
+<td>Extract Image Attribute 'funused1'</td></tr>
+<tr><td style="width: 25%;"><a href="funused1-methods.html">funused1&lt;-</a></td>
+<td>Extract Image Attribute 'funused1'</td></tr>
+<tr><td style="width: 25%;"><a href="funused1-methods.html">funused1&lt;--method</a></td>
+<td>Extract Image Attribute 'funused1'</td></tr>
+<tr><td style="width: 25%;"><a href="funused2-methods.html">funused2</a></td>
+<td>Extract Image Attribute 'funused2'</td></tr>
+<tr><td style="width: 25%;"><a href="funused2-methods.html">funused2-method</a></td>
+<td>Extract Image Attribute 'funused2'</td></tr>
+<tr><td style="width: 25%;"><a href="funused2-methods.html">funused2-methods</a></td>
+<td>Extract Image Attribute 'funused2'</td></tr>
+<tr><td style="width: 25%;"><a href="funused2-methods.html">funused2-methods,</a></td>
+<td>Extract Image Attribute 'funused2'</td></tr>
+<tr><td style="width: 25%;"><a href="funused2-methods.html">funused2&lt;-</a></td>
+<td>Extract Image Attribute 'funused2'</td></tr>
+<tr><td style="width: 25%;"><a href="funused2-methods.html">funused2&lt;--method</a></td>
+<td>Extract Image Attribute 'funused2'</td></tr>
+<tr><td style="width: 25%;"><a href="funused3-methods.html">funused3</a></td>
+<td>Extract Image Attribute 'funused3'</td></tr>
+<tr><td style="width: 25%;"><a href="funused3-methods.html">funused3-method</a></td>
+<td>Extract Image Attribute 'funused3'</td></tr>
+<tr><td style="width: 25%;"><a href="funused3-methods.html">funused3-methods</a></td>
+<td>Extract Image Attribute 'funused3'</td></tr>
+<tr><td style="width: 25%;"><a href="funused3-methods.html">funused3-methods,</a></td>
+<td>Extract Image Attribute 'funused3'</td></tr>
+<tr><td style="width: 25%;"><a href="funused3-methods.html">funused3&lt;-</a></td>
+<td>Extract Image Attribute 'funused3'</td></tr>
+<tr><td style="width: 25%;"><a href="funused3-methods.html">funused3&lt;--method</a></td>
+<td>Extract Image Attribute 'funused3'</td></tr>
+</table>
+
+<h2><a name="G">-- G --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="generated-methods.html">generated</a></td>
+<td>Extract Image Attribute 'generated'</td></tr>
+<tr><td style="width: 25%;"><a href="generated-methods.html">generated-method</a></td>
+<td>Extract Image Attribute 'generated'</td></tr>
+<tr><td style="width: 25%;"><a href="generated-methods.html">generated-methods</a></td>
+<td>Extract Image Attribute 'generated'</td></tr>
+<tr><td style="width: 25%;"><a href="generated-methods.html">generated-methods,</a></td>
+<td>Extract Image Attribute 'generated'</td></tr>
+<tr><td style="width: 25%;"><a href="generated-methods.html">generated&lt;-</a></td>
+<td>Extract Image Attribute 'generated'</td></tr>
+<tr><td style="width: 25%;"><a href="generated-methods.html">generated&lt;--method</a></td>
+<td>Extract Image Attribute 'generated'</td></tr>
+<tr><td style="width: 25%;"><a href="audit_trail.html">getLastCallWithName</a></td>
+<td>Facilitate the Creation and Modification of Audit Trails</td></tr>
+<tr><td style="width: 25%;"><a href="glmax-methods.html">glmax</a></td>
+<td>Extract Image Attribute 'glmax'</td></tr>
+<tr><td style="width: 25%;"><a href="glmax-methods.html">glmax-method</a></td>
+<td>Extract Image Attribute 'glmax'</td></tr>
+<tr><td style="width: 25%;"><a href="glmax-methods.html">glmax-methods</a></td>
+<td>Extract Image Attribute 'glmax'</td></tr>
+<tr><td style="width: 25%;"><a href="glmax-methods.html">glmax-methods,</a></td>
+<td>Extract Image Attribute 'glmax'</td></tr>
+<tr><td style="width: 25%;"><a href="glmax-methods.html">glmax&lt;-</a></td>
+<td>Extract Image Attribute 'glmax'</td></tr>
+<tr><td style="width: 25%;"><a href="glmax-methods.html">glmax&lt;--method</a></td>
+<td>Extract Image Attribute 'glmax'</td></tr>
+<tr><td style="width: 25%;"><a href="glmin-methods.html">glmin</a></td>
+<td>Extract Image Attribute 'glmin'</td></tr>
+<tr><td style="width: 25%;"><a href="glmin-methods.html">glmin-method</a></td>
+<td>Extract Image Attribute 'glmin'</td></tr>
+<tr><td style="width: 25%;"><a href="glmin-methods.html">glmin-methods</a></td>
+<td>Extract Image Attribute 'glmin'</td></tr>
+<tr><td style="width: 25%;"><a href="glmin-methods.html">glmin-methods,</a></td>
+<td>Extract Image Attribute 'glmin'</td></tr>
+<tr><td style="width: 25%;"><a href="glmin-methods.html">glmin&lt;-</a></td>
+<td>Extract Image Attribute 'glmin'</td></tr>
+<tr><td style="width: 25%;"><a href="glmin-methods.html">glmin&lt;--method</a></td>
+<td>Extract Image Attribute 'glmin'</td></tr>
+</table>
+
+<h2><a name="H">-- H --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="hist_un0-methods.html">hist_un0</a></td>
+<td>Extract Image Attribute 'hist_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="hist_un0-methods.html">hist_un0-method</a></td>
+<td>Extract Image Attribute 'hist_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="hist_un0-methods.html">hist_un0-methods</a></td>
+<td>Extract Image Attribute 'hist_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="hist_un0-methods.html">hist_un0-methods,</a></td>
+<td>Extract Image Attribute 'hist_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="hist_un0-methods.html">hist_un0&lt;-</a></td>
+<td>Extract Image Attribute 'hist_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="hist_un0-methods.html">hist_un0&lt;--method</a></td>
+<td>Extract Image Attribute 'hist_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="hkey_un0-methods.html">hkey.un0</a></td>
+<td>Extract Image Attribute 'hkey_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="hkey_un0-methods.html">hkey.un0-method</a></td>
+<td>Extract Image Attribute 'hkey_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="hkey_un0-methods.html">hkey.un0&lt;-</a></td>
+<td>Extract Image Attribute 'hkey_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="hkey_un0-methods.html">hkey.un0&lt;--method</a></td>
+<td>Extract Image Attribute 'hkey_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="hkey_un0-methods.html">hkey_un0</a></td>
+<td>Extract Image Attribute 'hkey_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="hkey_un0-methods.html">hkey_un0-method</a></td>
+<td>Extract Image Attribute 'hkey_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="hkey_un0-methods.html">hkey_un0-methods</a></td>
+<td>Extract Image Attribute 'hkey_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="hkey_un0-methods.html">hkey_un0-methods,</a></td>
+<td>Extract Image Attribute 'hkey_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="hkey_un0-methods.html">hkey_un0&lt;-</a></td>
+<td>Extract Image Attribute 'hkey_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="hkey_un0-methods.html">hkey_un0&lt;--method</a></td>
+<td>Extract Image Attribute 'hkey_un0'</td></tr>
+<tr><td style="width: 25%;"><a href="hotmetal.html">hotmetal</a></td>
+<td>Hot Metal Color Table</td></tr>
+</table>
+
+<h2><a name="I">-- I --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="image-methods.html">image-method</a></td>
+<td>Methods for Function 'image'</td></tr>
+<tr><td style="width: 25%;"><a href="image-methods.html">image-methods</a></td>
+<td>Methods for Function 'image'</td></tr>
+<tr><td style="width: 25%;"><a href="image-methods.html">image.nifti</a></td>
+<td>Methods for Function 'image'</td></tr>
+<tr><td style="width: 25%;"><a href="img_data-methods.html">img_data</a></td>
+<td>Extract Image Attribute '.Data'</td></tr>
+<tr><td style="width: 25%;"><a href="img_data-methods.html">img_data-method</a></td>
+<td>Extract Image Attribute '.Data'</td></tr>
+<tr><td style="width: 25%;"><a href="img_data-methods.html">img_data-methods</a></td>
+<td>Extract Image Attribute '.Data'</td></tr>
+<tr><td style="width: 25%;"><a href="img_data-methods.html">img_data-methods,</a></td>
+<td>Extract Image Attribute '.Data'</td></tr>
+<tr><td style="width: 25%;"><a href="img_data-methods.html">img_data&lt;-</a></td>
+<td>Extract Image Attribute '.Data'</td></tr>
+<tr><td style="width: 25%;"><a href="img_data-methods.html">img_data&lt;--method</a></td>
+<td>Extract Image Attribute '.Data'</td></tr>
+<tr><td style="width: 25%;"><a href="integerTranslation.html">integerTranslation</a></td>
+<td>integerTranslation</td></tr>
+<tr><td style="width: 25%;"><a href="intent_code-methods.html">intent.code</a></td>
+<td>Extract Image Attribute 'intent_code'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_code-methods.html">intent.code-method</a></td>
+<td>Extract Image Attribute 'intent_code'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_code-methods.html">intent.code&lt;-</a></td>
+<td>Extract Image Attribute 'intent_code'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_code-methods.html">intent.code&lt;--method</a></td>
+<td>Extract Image Attribute 'intent_code'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_name-methods.html">intent.name</a></td>
+<td>Extract Image Attribute 'intent_name'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_name-methods.html">intent.name-method</a></td>
+<td>Extract Image Attribute 'intent_name'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_name-methods.html">intent.name&lt;-</a></td>
+<td>Extract Image Attribute 'intent_name'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_name-methods.html">intent.name&lt;--method</a></td>
+<td>Extract Image Attribute 'intent_name'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p1-methods.html">intent.p1</a></td>
+<td>Extract Image Attribute 'intent_p1'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p1-methods.html">intent.p1-method</a></td>
+<td>Extract Image Attribute 'intent_p1'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p1-methods.html">intent.p1&lt;-</a></td>
+<td>Extract Image Attribute 'intent_p1'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p1-methods.html">intent.p1&lt;--method</a></td>
+<td>Extract Image Attribute 'intent_p1'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p2-methods.html">intent.p2</a></td>
+<td>Extract Image Attribute 'intent_p2'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p2-methods.html">intent.p2-method</a></td>
+<td>Extract Image Attribute 'intent_p2'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p2-methods.html">intent.p2&lt;-</a></td>
+<td>Extract Image Attribute 'intent_p2'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p2-methods.html">intent.p2&lt;--method</a></td>
+<td>Extract Image Attribute 'intent_p2'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p3-methods.html">intent.p3</a></td>
+<td>Extract Image Attribute 'intent_p3'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p3-methods.html">intent.p3-method</a></td>
+<td>Extract Image Attribute 'intent_p3'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p3-methods.html">intent.p3&lt;-</a></td>
+<td>Extract Image Attribute 'intent_p3'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p3-methods.html">intent.p3&lt;--method</a></td>
+<td>Extract Image Attribute 'intent_p3'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_code-methods.html">intent_code</a></td>
+<td>Extract Image Attribute 'intent_code'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_code-methods.html">intent_code-method</a></td>
+<td>Extract Image Attribute 'intent_code'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_code-methods.html">intent_code-methods</a></td>
+<td>Extract Image Attribute 'intent_code'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_code-methods.html">intent_code-methods,</a></td>
+<td>Extract Image Attribute 'intent_code'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_code-methods.html">intent_code&lt;-</a></td>
+<td>Extract Image Attribute 'intent_code'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_code-methods.html">intent_code&lt;--method</a></td>
+<td>Extract Image Attribute 'intent_code'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_name-methods.html">intent_name</a></td>
+<td>Extract Image Attribute 'intent_name'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_name-methods.html">intent_name-method</a></td>
+<td>Extract Image Attribute 'intent_name'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_name-methods.html">intent_name-methods</a></td>
+<td>Extract Image Attribute 'intent_name'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_name-methods.html">intent_name-methods,</a></td>
+<td>Extract Image Attribute 'intent_name'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_name-methods.html">intent_name&lt;-</a></td>
+<td>Extract Image Attribute 'intent_name'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_name-methods.html">intent_name&lt;--method</a></td>
+<td>Extract Image Attribute 'intent_name'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p1-methods.html">intent_p1</a></td>
+<td>Extract Image Attribute 'intent_p1'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p1-methods.html">intent_p1-method</a></td>
+<td>Extract Image Attribute 'intent_p1'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p1-methods.html">intent_p1-methods</a></td>
+<td>Extract Image Attribute 'intent_p1'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p1-methods.html">intent_p1-methods,</a></td>
+<td>Extract Image Attribute 'intent_p1'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p1-methods.html">intent_p1&lt;-</a></td>
+<td>Extract Image Attribute 'intent_p1'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p1-methods.html">intent_p1&lt;--method</a></td>
+<td>Extract Image Attribute 'intent_p1'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p2-methods.html">intent_p2</a></td>
+<td>Extract Image Attribute 'intent_p2'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p2-methods.html">intent_p2-method</a></td>
+<td>Extract Image Attribute 'intent_p2'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p2-methods.html">intent_p2-methods</a></td>
+<td>Extract Image Attribute 'intent_p2'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p2-methods.html">intent_p2-methods,</a></td>
+<td>Extract Image Attribute 'intent_p2'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p2-methods.html">intent_p2&lt;-</a></td>
+<td>Extract Image Attribute 'intent_p2'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p2-methods.html">intent_p2&lt;--method</a></td>
+<td>Extract Image Attribute 'intent_p2'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p3-methods.html">intent_p3</a></td>
+<td>Extract Image Attribute 'intent_p3'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p3-methods.html">intent_p3-method</a></td>
+<td>Extract Image Attribute 'intent_p3'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p3-methods.html">intent_p3-methods</a></td>
+<td>Extract Image Attribute 'intent_p3'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p3-methods.html">intent_p3-methods,</a></td>
+<td>Extract Image Attribute 'intent_p3'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p3-methods.html">intent_p3&lt;-</a></td>
+<td>Extract Image Attribute 'intent_p3'</td></tr>
+<tr><td style="width: 25%;"><a href="intent_p3-methods.html">intent_p3&lt;--method</a></td>
+<td>Extract Image Attribute 'intent_p3'</td></tr>
+<tr><td style="width: 25%;"><a href="reorient.html">inverseReorient</a></td>
+<td>Reorient Image using NIfTI header</td></tr>
+<tr><td style="width: 25%;"><a href="integerTranslation.html">invertIntegerTranslation</a></td>
+<td>integerTranslation</td></tr>
+<tr><td style="width: 25%;"><a href="is_afni.html">is.afni</a></td>
+<td>check object</td></tr>
+<tr><td style="width: 25%;"><a href="is_anlz.html">is.anlz</a></td>
+<td>check object</td></tr>
+<tr><td style="width: 25%;"><a href="is_nifti.html">is.nifti</a></td>
+<td>check object</td></tr>
+<tr><td style="width: 25%;"><a href="is_nifti.html">is.niftiExtension</a></td>
+<td>check object</td></tr>
+</table>
+
+<h2><a name="M">-- M --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="magic-methods.html">magic</a></td>
+<td>Extract Image Attribute 'magic'</td></tr>
+<tr><td style="width: 25%;"><a href="magic-methods.html">magic-method</a></td>
+<td>Extract Image Attribute 'magic'</td></tr>
+<tr><td style="width: 25%;"><a href="magic-methods.html">magic-methods</a></td>
+<td>Extract Image Attribute 'magic'</td></tr>
+<tr><td style="width: 25%;"><a href="magic-methods.html">magic-methods,</a></td>
+<td>Extract Image Attribute 'magic'</td></tr>
+<tr><td style="width: 25%;"><a href="magic-methods.html">magic&lt;-</a></td>
+<td>Extract Image Attribute 'magic'</td></tr>
+<tr><td style="width: 25%;"><a href="magic-methods.html">magic&lt;--method</a></td>
+<td>Extract Image Attribute 'magic'</td></tr>
+</table>
+
+<h2><a name="N">-- N --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="audit_trail.html">newAuditTrail</a></td>
+<td>Facilitate the Creation and Modification of Audit Trails</td></tr>
+<tr><td style="width: 25%;"><a href="nifti.html">nifti</a></td>
+<td>Constructor for NIfTI</td></tr>
+<tr><td style="width: 25%;"><a href="nifti-class.html">nifti-class</a></td>
+<td>Class "nifti"</td></tr>
+<tr><td style="width: 25%;"><a href="niftiops.html">nifti-operators</a></td>
+<td>Operations for NIfTI Objects</td></tr>
+<tr><td style="width: 25%;"><a href="niftiAuditTrail-class.html">niftiAuditTrail-class</a></td>
+<td>Class "niftiAuditTrail"</td></tr>
+<tr><td style="width: 25%;"><a href="audit_trail.html">niftiAuditTrailCreated</a></td>
+<td>Facilitate the Creation and Modification of Audit Trails</td></tr>
+<tr><td style="width: 25%;"><a href="audit_trail.html">niftiAuditTrailEvent</a></td>
+<td>Facilitate the Creation and Modification of Audit Trails</td></tr>
+<tr><td style="width: 25%;"><a href="audit_trail.html">niftiAuditTrailSystemNode</a></td>
+<td>Facilitate the Creation and Modification of Audit Trails</td></tr>
+<tr><td style="width: 25%;"><a href="audit_trail.html">niftiAuditTrailSystemNodeEvent</a></td>
+<td>Facilitate the Creation and Modification of Audit Trails</td></tr>
+<tr><td style="width: 25%;"><a href="audit_trail.html">niftiAuditTrailToExtension</a></td>
+<td>Facilitate the Creation and Modification of Audit Trails</td></tr>
+<tr><td style="width: 25%;"><a href="niftiExtension-class.html">niftiExtension-class</a></td>
+<td>Class "niftiExtension"</td></tr>
+<tr><td style="width: 25%;"><a href="niftiExtensionSection-class.html">niftiExtensionSection-class</a></td>
+<td>Class "niftiExtensionSection"</td></tr>
+<tr><td style="width: 25%;"><a href="audit_trail.html">niftiExtensionToAuditTrail</a></td>
+<td>Facilitate the Creation and Modification of Audit Trails</td></tr>
+<tr><td style="width: 25%;"><a href="nifti_assign-methods.html">nifti_assign-methods</a></td>
+<td>Methods for Function [&lt;- in Package 'base'</td></tr>
+<tr><td style="width: 25%;"><a href="read_nifti.html">nifti_header</a></td>
+<td>readNIfTI</td></tr>
+<tr><td style="width: 25%;"><a href="nii2oro.html">nii2oro</a></td>
+<td>Convert RNifti niftiImage to oro.nifti nifti object</td></tr>
+<tr><td style="width: 25%;"><a href="miscellaneous.html">NSLI</a></td>
+<td>Dimension Accessor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="miscellaneous.html">nsli</a></td>
+<td>Dimension Accessor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="miscellaneous.html">NTIM</a></td>
+<td>Dimension Accessor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="miscellaneous.html">ntim</a></td>
+<td>Dimension Accessor Functions</td></tr>
+</table>
+
+<h2><a name="O">-- O --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="omax-methods.html">omax</a></td>
+<td>Extract Image Attribute 'omax'</td></tr>
+<tr><td style="width: 25%;"><a href="omax-methods.html">omax-method</a></td>
+<td>Extract Image Attribute 'omax'</td></tr>
+<tr><td style="width: 25%;"><a href="omax-methods.html">omax-methods</a></td>
+<td>Extract Image Attribute 'omax'</td></tr>
+<tr><td style="width: 25%;"><a href="omax-methods.html">omax-methods,</a></td>
+<td>Extract Image Attribute 'omax'</td></tr>
+<tr><td style="width: 25%;"><a href="omax-methods.html">omax&lt;-</a></td>
+<td>Extract Image Attribute 'omax'</td></tr>
+<tr><td style="width: 25%;"><a href="omax-methods.html">omax&lt;--method</a></td>
+<td>Extract Image Attribute 'omax'</td></tr>
+<tr><td style="width: 25%;"><a href="omin-methods.html">omin</a></td>
+<td>Extract Image Attribute 'omin'</td></tr>
+<tr><td style="width: 25%;"><a href="omin-methods.html">omin-method</a></td>
+<td>Extract Image Attribute 'omin'</td></tr>
+<tr><td style="width: 25%;"><a href="omin-methods.html">omin-methods</a></td>
+<td>Extract Image Attribute 'omin'</td></tr>
+<tr><td style="width: 25%;"><a href="omin-methods.html">omin-methods,</a></td>
+<td>Extract Image Attribute 'omin'</td></tr>
+<tr><td style="width: 25%;"><a href="omin-methods.html">omin&lt;-</a></td>
+<td>Extract Image Attribute 'omin'</td></tr>
+<tr><td style="width: 25%;"><a href="omin-methods.html">omin&lt;--method</a></td>
+<td>Extract Image Attribute 'omin'</td></tr>
+<tr><td style="width: 25%;"><a href="onefile.html">onefile</a></td>
+<td>Creates the 'onefile' Specification for NIfTI</td></tr>
+<tr><td style="width: 25%;"><a href="anlz-nifti-ops.html">Ops-method</a></td>
+<td>Operations for Objects in the ANALYZE and NIfTI classes</td></tr>
+<tr><td style="width: 25%;"><a href="niftiops.html">Ops-method</a></td>
+<td>Operations for NIfTI Objects</td></tr>
+<tr><td style="width: 25%;"><a href="orient-methods.html">orient</a></td>
+<td>Extract Image Attribute 'orient'</td></tr>
+<tr><td style="width: 25%;"><a href="orient-methods.html">orient-method</a></td>
+<td>Extract Image Attribute 'orient'</td></tr>
+<tr><td style="width: 25%;"><a href="orient-methods.html">orient-methods</a></td>
+<td>Extract Image Attribute 'orient'</td></tr>
+<tr><td style="width: 25%;"><a href="orient-methods.html">orient-methods,</a></td>
+<td>Extract Image Attribute 'orient'</td></tr>
+<tr><td style="width: 25%;"><a href="orient-methods.html">orient&lt;-</a></td>
+<td>Extract Image Attribute 'orient'</td></tr>
+<tr><td style="width: 25%;"><a href="orient-methods.html">orient&lt;--method</a></td>
+<td>Extract Image Attribute 'orient'</td></tr>
+<tr><td style="width: 25%;"><a href="orientation-methods.html">orientation-methods</a></td>
+<td>Extract NIfTI 3D Image Orientation</td></tr>
+<tr><td style="width: 25%;"><a href="origin-methods.html">origin</a></td>
+<td>Extract Image Attribute 'origin'</td></tr>
+<tr><td style="width: 25%;"><a href="origin-methods.html">origin-method</a></td>
+<td>Extract Image Attribute 'origin'</td></tr>
+<tr><td style="width: 25%;"><a href="origin-methods.html">origin-methods</a></td>
+<td>Extract Image Attribute 'origin'</td></tr>
+<tr><td style="width: 25%;"><a href="origin-methods.html">origin-methods,</a></td>
+<td>Extract Image Attribute 'origin'</td></tr>
+<tr><td style="width: 25%;"><a href="origin-methods.html">origin&lt;-</a></td>
+<td>Extract Image Attribute 'origin'</td></tr>
+<tr><td style="width: 25%;"><a href="origin-methods.html">origin&lt;--method</a></td>
+<td>Extract Image Attribute 'origin'</td></tr>
+<tr><td style="width: 25%;"><a href="audit_trail.html">oro.nifti.info</a></td>
+<td>Facilitate the Creation and Modification of Audit Trails</td></tr>
+<tr><td style="width: 25%;"><a href="oro2nii.html">oro2nii</a></td>
+<td>Convert oro.nifti nifti to RNifti niftiImage object</td></tr>
+<tr><td style="width: 25%;"><a href="orthographic-methods.html">orthographic</a></td>
+<td>Methods for Function 'orthographic' in Package 'dcemriS4'</td></tr>
+<tr><td style="width: 25%;"><a href="orthographic-methods.html">orthographic-method</a></td>
+<td>Methods for Function 'orthographic' in Package 'dcemriS4'</td></tr>
+<tr><td style="width: 25%;"><a href="orthographic-methods.html">orthographic-methods</a></td>
+<td>Methods for Function 'orthographic' in Package 'dcemriS4'</td></tr>
+<tr><td style="width: 25%;"><a href="orthographic-methods.html">orthographic.nifti</a></td>
+<td>Methods for Function 'orthographic' in Package 'dcemriS4'</td></tr>
+<tr><td style="width: 25%;"><a href="overlay-methods.html">overlay</a></td>
+<td>Methods for Function overlay</td></tr>
+<tr><td style="width: 25%;"><a href="overlay-methods.html">overlay-method</a></td>
+<td>Methods for Function overlay</td></tr>
+<tr><td style="width: 25%;"><a href="overlay-methods.html">overlay-methods</a></td>
+<td>Methods for Function overlay</td></tr>
+<tr><td style="width: 25%;"><a href="overlay-methods.html">overlay.nifti</a></td>
+<td>Methods for Function overlay</td></tr>
+</table>
+
+<h2><a name="P">-- P --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="patient_id-methods.html">patient.id</a></td>
+<td>Extract Image Attribute 'patient_id'</td></tr>
+<tr><td style="width: 25%;"><a href="patient_id-methods.html">patient.id-method</a></td>
+<td>Extract Image Attribute 'patient_id'</td></tr>
+<tr><td style="width: 25%;"><a href="patient_id-methods.html">patient.id&lt;-</a></td>
+<td>Extract Image Attribute 'patient_id'</td></tr>
+<tr><td style="width: 25%;"><a href="patient_id-methods.html">patient.id&lt;--method</a></td>
+<td>Extract Image Attribute 'patient_id'</td></tr>
+<tr><td style="width: 25%;"><a href="patient_id-methods.html">patient_id</a></td>
+<td>Extract Image Attribute 'patient_id'</td></tr>
+<tr><td style="width: 25%;"><a href="patient_id-methods.html">patient_id-method</a></td>
+<td>Extract Image Attribute 'patient_id'</td></tr>
+<tr><td style="width: 25%;"><a href="patient_id-methods.html">patient_id-methods</a></td>
+<td>Extract Image Attribute 'patient_id'</td></tr>
+<tr><td style="width: 25%;"><a href="patient_id-methods.html">patient_id-methods,</a></td>
+<td>Extract Image Attribute 'patient_id'</td></tr>
+<tr><td style="width: 25%;"><a href="patient_id-methods.html">patient_id&lt;-</a></td>
+<td>Extract Image Attribute 'patient_id'</td></tr>
+<tr><td style="width: 25%;"><a href="patient_id-methods.html">patient_id&lt;--method</a></td>
+<td>Extract Image Attribute 'patient_id'</td></tr>
+<tr><td style="width: 25%;"><a href="performPermutation.html">performPermutation</a></td>
+<td>Transform array with orthogonal permutation matrix</td></tr>
+<tr><td style="width: 25%;"><a href="pixdim-methods.html">pixdim</a></td>
+<td>Extract Image Attribute 'pixdim'</td></tr>
+<tr><td style="width: 25%;"><a href="pixdim-methods.html">pixdim-method</a></td>
+<td>Extract Image Attribute 'pixdim'</td></tr>
+<tr><td style="width: 25%;"><a href="pixdim-methods.html">pixdim-methods</a></td>
+<td>Extract Image Attribute 'pixdim'</td></tr>
+<tr><td style="width: 25%;"><a href="pixdim-methods.html">pixdim-methods,</a></td>
+<td>Extract Image Attribute 'pixdim'</td></tr>
+<tr><td style="width: 25%;"><a href="pixdim-methods.html">pixdim&lt;-</a></td>
+<td>Extract Image Attribute 'pixdim'</td></tr>
+<tr><td style="width: 25%;"><a href="pixdim-methods.html">pixdim&lt;--method</a></td>
+<td>Extract Image Attribute 'pixdim'</td></tr>
+</table>
+
+<h2><a name="Q">-- Q --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="orientation-methods.html">qform</a></td>
+<td>Extract NIfTI 3D Image Orientation</td></tr>
+<tr><td style="width: 25%;"><a href="orientation-methods.html">qform-method</a></td>
+<td>Extract NIfTI 3D Image Orientation</td></tr>
+<tr><td style="width: 25%;"><a href="orientation-methods.html">qform-methods</a></td>
+<td>Extract NIfTI 3D Image Orientation</td></tr>
+<tr><td style="width: 25%;"><a href="qform_code-methods.html">qform.code</a></td>
+<td>Extract Image Attribute 'qform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="qform_code-methods.html">qform.code-method</a></td>
+<td>Extract Image Attribute 'qform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="qform_code-methods.html">qform.code&lt;-</a></td>
+<td>Extract Image Attribute 'qform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="qform_code-methods.html">qform.code&lt;--method</a></td>
+<td>Extract Image Attribute 'qform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="qform_code-methods.html">qform_code</a></td>
+<td>Extract Image Attribute 'qform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="qform_code-methods.html">qform_code-method</a></td>
+<td>Extract Image Attribute 'qform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="qform_code-methods.html">qform_code-methods</a></td>
+<td>Extract Image Attribute 'qform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="qform_code-methods.html">qform_code-methods,</a></td>
+<td>Extract Image Attribute 'qform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="qform_code-methods.html">qform_code&lt;-</a></td>
+<td>Extract Image Attribute 'qform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="qform_code-methods.html">qform_code&lt;--method</a></td>
+<td>Extract Image Attribute 'qform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_x-methods.html">qoffset.x</a></td>
+<td>Extract Image Attribute 'qoffset_x'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_x-methods.html">qoffset.x-method</a></td>
+<td>Extract Image Attribute 'qoffset_x'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_x-methods.html">qoffset.x&lt;-</a></td>
+<td>Extract Image Attribute 'qoffset_x'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_x-methods.html">qoffset.x&lt;--method</a></td>
+<td>Extract Image Attribute 'qoffset_x'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_y-methods.html">qoffset.y</a></td>
+<td>Extract Image Attribute 'qoffset_y'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_y-methods.html">qoffset.y-method</a></td>
+<td>Extract Image Attribute 'qoffset_y'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_y-methods.html">qoffset.y&lt;-</a></td>
+<td>Extract Image Attribute 'qoffset_y'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_y-methods.html">qoffset.y&lt;--method</a></td>
+<td>Extract Image Attribute 'qoffset_y'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_z-methods.html">qoffset.z</a></td>
+<td>Extract Image Attribute 'qoffset_z'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_z-methods.html">qoffset.z-method</a></td>
+<td>Extract Image Attribute 'qoffset_z'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_z-methods.html">qoffset.z&lt;-</a></td>
+<td>Extract Image Attribute 'qoffset_z'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_z-methods.html">qoffset.z&lt;--method</a></td>
+<td>Extract Image Attribute 'qoffset_z'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_x-methods.html">qoffset_x</a></td>
+<td>Extract Image Attribute 'qoffset_x'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_x-methods.html">qoffset_x-method</a></td>
+<td>Extract Image Attribute 'qoffset_x'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_x-methods.html">qoffset_x-methods</a></td>
+<td>Extract Image Attribute 'qoffset_x'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_x-methods.html">qoffset_x-methods,</a></td>
+<td>Extract Image Attribute 'qoffset_x'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_x-methods.html">qoffset_x&lt;-</a></td>
+<td>Extract Image Attribute 'qoffset_x'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_x-methods.html">qoffset_x&lt;--method</a></td>
+<td>Extract Image Attribute 'qoffset_x'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_y-methods.html">qoffset_y</a></td>
+<td>Extract Image Attribute 'qoffset_y'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_y-methods.html">qoffset_y-method</a></td>
+<td>Extract Image Attribute 'qoffset_y'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_y-methods.html">qoffset_y-methods</a></td>
+<td>Extract Image Attribute 'qoffset_y'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_y-methods.html">qoffset_y-methods,</a></td>
+<td>Extract Image Attribute 'qoffset_y'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_y-methods.html">qoffset_y&lt;-</a></td>
+<td>Extract Image Attribute 'qoffset_y'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_y-methods.html">qoffset_y&lt;--method</a></td>
+<td>Extract Image Attribute 'qoffset_y'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_z-methods.html">qoffset_z</a></td>
+<td>Extract Image Attribute 'qoffset_z'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_z-methods.html">qoffset_z-method</a></td>
+<td>Extract Image Attribute 'qoffset_z'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_z-methods.html">qoffset_z-methods</a></td>
+<td>Extract Image Attribute 'qoffset_z'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_z-methods.html">qoffset_z-methods,</a></td>
+<td>Extract Image Attribute 'qoffset_z'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_z-methods.html">qoffset_z&lt;-</a></td>
+<td>Extract Image Attribute 'qoffset_z'</td></tr>
+<tr><td style="width: 25%;"><a href="qoffset_z-methods.html">qoffset_z&lt;--method</a></td>
+<td>Extract Image Attribute 'qoffset_z'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_b-methods.html">quatern.b</a></td>
+<td>Extract Image Attribute 'quatern_b'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_b-methods.html">quatern.b-method</a></td>
+<td>Extract Image Attribute 'quatern_b'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_b-methods.html">quatern.b&lt;-</a></td>
+<td>Extract Image Attribute 'quatern_b'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_b-methods.html">quatern.b&lt;--method</a></td>
+<td>Extract Image Attribute 'quatern_b'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_c-methods.html">quatern.c</a></td>
+<td>Extract Image Attribute 'quatern_c'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_c-methods.html">quatern.c-method</a></td>
+<td>Extract Image Attribute 'quatern_c'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_c-methods.html">quatern.c&lt;-</a></td>
+<td>Extract Image Attribute 'quatern_c'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_c-methods.html">quatern.c&lt;--method</a></td>
+<td>Extract Image Attribute 'quatern_c'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_d-methods.html">quatern.d</a></td>
+<td>Extract Image Attribute 'quatern_d'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_d-methods.html">quatern.d-method</a></td>
+<td>Extract Image Attribute 'quatern_d'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_d-methods.html">quatern.d&lt;-</a></td>
+<td>Extract Image Attribute 'quatern_d'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_d-methods.html">quatern.d&lt;--method</a></td>
+<td>Extract Image Attribute 'quatern_d'</td></tr>
+<tr><td style="width: 25%;"><a href="quaternion2rotation.html">quaternion2mat44</a></td>
+<td>Convert Quaternion into a Rotation Matrix</td></tr>
+<tr><td style="width: 25%;"><a href="quaternion2rotation.html">quaternion2rotation</a></td>
+<td>Convert Quaternion into a Rotation Matrix</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_b-methods.html">quatern_b</a></td>
+<td>Extract Image Attribute 'quatern_b'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_b-methods.html">quatern_b-method</a></td>
+<td>Extract Image Attribute 'quatern_b'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_b-methods.html">quatern_b-methods</a></td>
+<td>Extract Image Attribute 'quatern_b'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_b-methods.html">quatern_b-methods,</a></td>
+<td>Extract Image Attribute 'quatern_b'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_b-methods.html">quatern_b&lt;-</a></td>
+<td>Extract Image Attribute 'quatern_b'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_b-methods.html">quatern_b&lt;--method</a></td>
+<td>Extract Image Attribute 'quatern_b'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_c-methods.html">quatern_c</a></td>
+<td>Extract Image Attribute 'quatern_c'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_c-methods.html">quatern_c-method</a></td>
+<td>Extract Image Attribute 'quatern_c'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_c-methods.html">quatern_c-methods</a></td>
+<td>Extract Image Attribute 'quatern_c'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_c-methods.html">quatern_c-methods,</a></td>
+<td>Extract Image Attribute 'quatern_c'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_c-methods.html">quatern_c&lt;-</a></td>
+<td>Extract Image Attribute 'quatern_c'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_c-methods.html">quatern_c&lt;--method</a></td>
+<td>Extract Image Attribute 'quatern_c'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_d-methods.html">quatern_d</a></td>
+<td>Extract Image Attribute 'quatern_d'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_d-methods.html">quatern_d-method</a></td>
+<td>Extract Image Attribute 'quatern_d'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_d-methods.html">quatern_d-methods</a></td>
+<td>Extract Image Attribute 'quatern_d'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_d-methods.html">quatern_d-methods,</a></td>
+<td>Extract Image Attribute 'quatern_d'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_d-methods.html">quatern_d&lt;-</a></td>
+<td>Extract Image Attribute 'quatern_d'</td></tr>
+<tr><td style="width: 25%;"><a href="quatern_d-methods.html">quatern_d&lt;--method</a></td>
+<td>Extract Image Attribute 'quatern_d'</td></tr>
+</table>
+
+<h2><a name="R">-- R --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="read_afni.html">readAFNI</a></td>
+<td>readAFNI</td></tr>
+<tr><td style="width: 25%;"><a href="read_anlz.html">readANALYZE</a></td>
+<td>readANALYZE</td></tr>
+<tr><td style="width: 25%;"><a href="read_nifti.html">readNIfTI</a></td>
+<td>readNIfTI</td></tr>
+<tr><td style="width: 25%;"><a href="regular-methods.html">regular</a></td>
+<td>Extract Image Attribute 'regular'</td></tr>
+<tr><td style="width: 25%;"><a href="regular-methods.html">regular-method</a></td>
+<td>Extract Image Attribute 'regular'</td></tr>
+<tr><td style="width: 25%;"><a href="regular-methods.html">regular-methods</a></td>
+<td>Extract Image Attribute 'regular'</td></tr>
+<tr><td style="width: 25%;"><a href="regular-methods.html">regular-methods,</a></td>
+<td>Extract Image Attribute 'regular'</td></tr>
+<tr><td style="width: 25%;"><a href="regular-methods.html">regular&lt;-</a></td>
+<td>Extract Image Attribute 'regular'</td></tr>
+<tr><td style="width: 25%;"><a href="regular-methods.html">regular&lt;--method</a></td>
+<td>Extract Image Attribute 'regular'</td></tr>
+<tr><td style="width: 25%;"><a href="reorient.html">reorient</a></td>
+<td>Reorient Image using NIfTI header</td></tr>
+<tr><td style="width: 25%;"><a href="zero_trans.html">resetSlopeIntercept</a></td>
+<td>Change Intercept to 0 and Slope to 1 in NIfTI Object</td></tr>
+<tr><td style="width: 25%;"><a href="remove.html">rmgz</a></td>
+<td>Remove File Extensions Around the NIfTI/ANALYZE Formats</td></tr>
+<tr><td style="width: 25%;"><a href="remove.html">rmhdr</a></td>
+<td>Remove File Extensions Around the NIfTI/ANALYZE Formats</td></tr>
+<tr><td style="width: 25%;"><a href="remove.html">rmhdrgz</a></td>
+<td>Remove File Extensions Around the NIfTI/ANALYZE Formats</td></tr>
+<tr><td style="width: 25%;"><a href="remove.html">rmimg</a></td>
+<td>Remove File Extensions Around the NIfTI/ANALYZE Formats</td></tr>
+<tr><td style="width: 25%;"><a href="remove.html">rmimggz</a></td>
+<td>Remove File Extensions Around the NIfTI/ANALYZE Formats</td></tr>
+<tr><td style="width: 25%;"><a href="remove.html">rmnii</a></td>
+<td>Remove File Extensions Around the NIfTI/ANALYZE Formats</td></tr>
+<tr><td style="width: 25%;"><a href="remove.html">rmniigz</a></td>
+<td>Remove File Extensions Around the NIfTI/ANALYZE Formats</td></tr>
+</table>
+
+<h2><a name="S">-- S --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="scannum-methods.html">scannum</a></td>
+<td>Extract Image Attribute 'scannum'</td></tr>
+<tr><td style="width: 25%;"><a href="scannum-methods.html">scannum-method</a></td>
+<td>Extract Image Attribute 'scannum'</td></tr>
+<tr><td style="width: 25%;"><a href="scannum-methods.html">scannum-methods</a></td>
+<td>Extract Image Attribute 'scannum'</td></tr>
+<tr><td style="width: 25%;"><a href="scannum-methods.html">scannum-methods,</a></td>
+<td>Extract Image Attribute 'scannum'</td></tr>
+<tr><td style="width: 25%;"><a href="scannum-methods.html">scannum&lt;-</a></td>
+<td>Extract Image Attribute 'scannum'</td></tr>
+<tr><td style="width: 25%;"><a href="scannum-methods.html">scannum&lt;--method</a></td>
+<td>Extract Image Attribute 'scannum'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_inter-methods.html">scl.inter</a></td>
+<td>Extract Image Attribute 'scl_inter'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_inter-methods.html">scl.inter-method</a></td>
+<td>Extract Image Attribute 'scl_inter'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_inter-methods.html">scl.inter&lt;-</a></td>
+<td>Extract Image Attribute 'scl_inter'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_inter-methods.html">scl.inter&lt;--method</a></td>
+<td>Extract Image Attribute 'scl_inter'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_slope-methods.html">scl.slope</a></td>
+<td>Extract Image Attribute 'scl_slope'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_slope-methods.html">scl.slope-method</a></td>
+<td>Extract Image Attribute 'scl_slope'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_slope-methods.html">scl.slope&lt;-</a></td>
+<td>Extract Image Attribute 'scl_slope'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_slope-methods.html">scl.slope&lt;--method</a></td>
+<td>Extract Image Attribute 'scl_slope'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_inter-methods.html">scl_inter</a></td>
+<td>Extract Image Attribute 'scl_inter'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_inter-methods.html">scl_inter-method</a></td>
+<td>Extract Image Attribute 'scl_inter'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_inter-methods.html">scl_inter-methods</a></td>
+<td>Extract Image Attribute 'scl_inter'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_inter-methods.html">scl_inter-methods,</a></td>
+<td>Extract Image Attribute 'scl_inter'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_inter-methods.html">scl_inter&lt;-</a></td>
+<td>Extract Image Attribute 'scl_inter'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_inter-methods.html">scl_inter&lt;--method</a></td>
+<td>Extract Image Attribute 'scl_inter'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_slope-methods.html">scl_slope</a></td>
+<td>Extract Image Attribute 'scl_slope'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_slope-methods.html">scl_slope-method</a></td>
+<td>Extract Image Attribute 'scl_slope'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_slope-methods.html">scl_slope-methods</a></td>
+<td>Extract Image Attribute 'scl_slope'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_slope-methods.html">scl_slope-methods,</a></td>
+<td>Extract Image Attribute 'scl_slope'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_slope-methods.html">scl_slope&lt;-</a></td>
+<td>Extract Image Attribute 'scl_slope'</td></tr>
+<tr><td style="width: 25%;"><a href="scl_slope-methods.html">scl_slope&lt;--method</a></td>
+<td>Extract Image Attribute 'scl_slope'</td></tr>
+<tr><td style="width: 25%;"><a href="session_error-methods.html">session.error</a></td>
+<td>Extract Image Attribute 'session_error'</td></tr>
+<tr><td style="width: 25%;"><a href="session_error-methods.html">session.error-method</a></td>
+<td>Extract Image Attribute 'session_error'</td></tr>
+<tr><td style="width: 25%;"><a href="session_error-methods.html">session.error&lt;-</a></td>
+<td>Extract Image Attribute 'session_error'</td></tr>
+<tr><td style="width: 25%;"><a href="session_error-methods.html">session.error&lt;--method</a></td>
+<td>Extract Image Attribute 'session_error'</td></tr>
+<tr><td style="width: 25%;"><a href="session_error-methods.html">session_error</a></td>
+<td>Extract Image Attribute 'session_error'</td></tr>
+<tr><td style="width: 25%;"><a href="session_error-methods.html">session_error-method</a></td>
+<td>Extract Image Attribute 'session_error'</td></tr>
+<tr><td style="width: 25%;"><a href="session_error-methods.html">session_error-methods</a></td>
+<td>Extract Image Attribute 'session_error'</td></tr>
+<tr><td style="width: 25%;"><a href="session_error-methods.html">session_error-methods,</a></td>
+<td>Extract Image Attribute 'session_error'</td></tr>
+<tr><td style="width: 25%;"><a href="session_error-methods.html">session_error&lt;-</a></td>
+<td>Extract Image Attribute 'session_error'</td></tr>
+<tr><td style="width: 25%;"><a href="session_error-methods.html">session_error&lt;--method</a></td>
+<td>Extract Image Attribute 'session_error'</td></tr>
+<tr><td style="width: 25%;"><a href="orientation-methods.html">sform</a></td>
+<td>Extract NIfTI 3D Image Orientation</td></tr>
+<tr><td style="width: 25%;"><a href="orientation-methods.html">sform-method</a></td>
+<td>Extract NIfTI 3D Image Orientation</td></tr>
+<tr><td style="width: 25%;"><a href="orientation-methods.html">sform-methods</a></td>
+<td>Extract NIfTI 3D Image Orientation</td></tr>
+<tr><td style="width: 25%;"><a href="sform_code-methods.html">sform.code</a></td>
+<td>Extract Image Attribute 'sform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="sform_code-methods.html">sform.code-method</a></td>
+<td>Extract Image Attribute 'sform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="sform_code-methods.html">sform.code&lt;-</a></td>
+<td>Extract Image Attribute 'sform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="sform_code-methods.html">sform.code&lt;--method</a></td>
+<td>Extract Image Attribute 'sform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="sform_code-methods.html">sform_code</a></td>
+<td>Extract Image Attribute 'sform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="sform_code-methods.html">sform_code-method</a></td>
+<td>Extract Image Attribute 'sform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="sform_code-methods.html">sform_code-methods</a></td>
+<td>Extract Image Attribute 'sform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="sform_code-methods.html">sform_code-methods,</a></td>
+<td>Extract Image Attribute 'sform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="sform_code-methods.html">sform_code&lt;-</a></td>
+<td>Extract Image Attribute 'sform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="sform_code-methods.html">sform_code&lt;--method</a></td>
+<td>Extract Image Attribute 'sform_code'</td></tr>
+<tr><td style="width: 25%;"><a href="afni-class.html">show-method</a></td>
+<td>Class "afni"</td></tr>
+<tr><td style="width: 25%;"><a href="anlz-class.html">show-method</a></td>
+<td>Class "anlz"</td></tr>
+<tr><td style="width: 25%;"><a href="nifti-class.html">show-method</a></td>
+<td>Class "nifti"</td></tr>
+<tr><td style="width: 25%;"><a href="sizeof_hdr-methods.html">sizeof.hdr</a></td>
+<td>Extract Image Attribute 'sizeof_hdr'</td></tr>
+<tr><td style="width: 25%;"><a href="sizeof_hdr-methods.html">sizeof.hdr-method</a></td>
+<td>Extract Image Attribute 'sizeof_hdr'</td></tr>
+<tr><td style="width: 25%;"><a href="sizeof_hdr-methods.html">sizeof_hdr</a></td>
+<td>Extract Image Attribute 'sizeof_hdr'</td></tr>
+<tr><td style="width: 25%;"><a href="sizeof_hdr-methods.html">sizeof_hdr-method</a></td>
+<td>Extract Image Attribute 'sizeof_hdr'</td></tr>
+<tr><td style="width: 25%;"><a href="sizeof_hdr-methods.html">sizeof_hdr-methods</a></td>
+<td>Extract Image Attribute 'sizeof_hdr'</td></tr>
+<tr><td style="width: 25%;"><a href="sizeof_hdr-methods.html">sizeof_hdr-methods,</a></td>
+<td>Extract Image Attribute 'sizeof_hdr'</td></tr>
+<tr><td style="width: 25%;"><a href="slice-methods.html">slice</a></td>
+<td>Methods for Function 'slice'</td></tr>
+<tr><td style="width: 25%;"><a href="slice-methods.html">slice-method</a></td>
+<td>Methods for Function 'slice'</td></tr>
+<tr><td style="width: 25%;"><a href="slice-methods.html">slice-methods</a></td>
+<td>Methods for Function 'slice'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_code-methods.html">slice.code</a></td>
+<td>Extract Image Attribute 'slice_code'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_code-methods.html">slice.code-method</a></td>
+<td>Extract Image Attribute 'slice_code'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_code-methods.html">slice.code&lt;-</a></td>
+<td>Extract Image Attribute 'slice_code'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_code-methods.html">slice.code&lt;--method</a></td>
+<td>Extract Image Attribute 'slice_code'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_duration-methods.html">slice.duration</a></td>
+<td>Extract Image Attribute 'slice_duration'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_duration-methods.html">slice.duration-method</a></td>
+<td>Extract Image Attribute 'slice_duration'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_duration-methods.html">slice.duration&lt;-</a></td>
+<td>Extract Image Attribute 'slice_duration'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_duration-methods.html">slice.duration&lt;--method</a></td>
+<td>Extract Image Attribute 'slice_duration'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_end-methods.html">slice.end</a></td>
+<td>Extract Image Attribute 'slice_end'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_end-methods.html">slice.end-method</a></td>
+<td>Extract Image Attribute 'slice_end'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_end-methods.html">slice.end&lt;-</a></td>
+<td>Extract Image Attribute 'slice_end'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_end-methods.html">slice.end&lt;--method</a></td>
+<td>Extract Image Attribute 'slice_end'</td></tr>
+<tr><td style="width: 25%;"><a href="slice-methods.html">slice.nifti</a></td>
+<td>Methods for Function 'slice'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_start-methods.html">slice.start</a></td>
+<td>Extract Image Attribute 'slice_start'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_start-methods.html">slice.start-method</a></td>
+<td>Extract Image Attribute 'slice_start'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_start-methods.html">slice.start&lt;-</a></td>
+<td>Extract Image Attribute 'slice_start'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_start-methods.html">slice.start&lt;--method</a></td>
+<td>Extract Image Attribute 'slice_start'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_code-methods.html">slice_code</a></td>
+<td>Extract Image Attribute 'slice_code'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_code-methods.html">slice_code-method</a></td>
+<td>Extract Image Attribute 'slice_code'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_code-methods.html">slice_code-methods</a></td>
+<td>Extract Image Attribute 'slice_code'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_code-methods.html">slice_code-methods,</a></td>
+<td>Extract Image Attribute 'slice_code'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_code-methods.html">slice_code&lt;-</a></td>
+<td>Extract Image Attribute 'slice_code'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_code-methods.html">slice_code&lt;--method</a></td>
+<td>Extract Image Attribute 'slice_code'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_duration-methods.html">slice_duration</a></td>
+<td>Extract Image Attribute 'slice_duration'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_duration-methods.html">slice_duration-method</a></td>
+<td>Extract Image Attribute 'slice_duration'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_duration-methods.html">slice_duration-methods</a></td>
+<td>Extract Image Attribute 'slice_duration'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_duration-methods.html">slice_duration-methods,</a></td>
+<td>Extract Image Attribute 'slice_duration'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_duration-methods.html">slice_duration&lt;-</a></td>
+<td>Extract Image Attribute 'slice_duration'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_duration-methods.html">slice_duration&lt;--method</a></td>
+<td>Extract Image Attribute 'slice_duration'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_end-methods.html">slice_end</a></td>
+<td>Extract Image Attribute 'slice_end'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_end-methods.html">slice_end-method</a></td>
+<td>Extract Image Attribute 'slice_end'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_end-methods.html">slice_end-methods</a></td>
+<td>Extract Image Attribute 'slice_end'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_end-methods.html">slice_end-methods,</a></td>
+<td>Extract Image Attribute 'slice_end'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_end-methods.html">slice_end&lt;-</a></td>
+<td>Extract Image Attribute 'slice_end'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_end-methods.html">slice_end&lt;--method</a></td>
+<td>Extract Image Attribute 'slice_end'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_overlay-methods.html">slice_overlay</a></td>
+<td>Methods for Function slice_overlay</td></tr>
+<tr><td style="width: 25%;"><a href="slice_overlay-methods.html">slice_overlay-method</a></td>
+<td>Methods for Function slice_overlay</td></tr>
+<tr><td style="width: 25%;"><a href="slice_overlay-methods.html">slice_overlay-methods</a></td>
+<td>Methods for Function slice_overlay</td></tr>
+<tr><td style="width: 25%;"><a href="slice_overlay-methods.html">slice_overlay.nifti</a></td>
+<td>Methods for Function slice_overlay</td></tr>
+<tr><td style="width: 25%;"><a href="slice_start-methods.html">slice_start</a></td>
+<td>Extract Image Attribute 'slice_start'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_start-methods.html">slice_start-method</a></td>
+<td>Extract Image Attribute 'slice_start'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_start-methods.html">slice_start-methods</a></td>
+<td>Extract Image Attribute 'slice_start'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_start-methods.html">slice_start-methods,</a></td>
+<td>Extract Image Attribute 'slice_start'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_start-methods.html">slice_start&lt;-</a></td>
+<td>Extract Image Attribute 'slice_start'</td></tr>
+<tr><td style="width: 25%;"><a href="slice_start-methods.html">slice_start&lt;--method</a></td>
+<td>Extract Image Attribute 'slice_start'</td></tr>
+<tr><td style="width: 25%;"><a href="smax-methods.html">smax</a></td>
+<td>Extract Image Attribute 'smax'</td></tr>
+<tr><td style="width: 25%;"><a href="smax-methods.html">smax-method</a></td>
+<td>Extract Image Attribute 'smax'</td></tr>
+<tr><td style="width: 25%;"><a href="smax-methods.html">smax-methods</a></td>
+<td>Extract Image Attribute 'smax'</td></tr>
+<tr><td style="width: 25%;"><a href="smax-methods.html">smax-methods,</a></td>
+<td>Extract Image Attribute 'smax'</td></tr>
+<tr><td style="width: 25%;"><a href="smax-methods.html">smax&lt;-</a></td>
+<td>Extract Image Attribute 'smax'</td></tr>
+<tr><td style="width: 25%;"><a href="smax-methods.html">smax&lt;--method</a></td>
+<td>Extract Image Attribute 'smax'</td></tr>
+<tr><td style="width: 25%;"><a href="smin-methods.html">smin</a></td>
+<td>Extract Image Attribute 'smin'</td></tr>
+<tr><td style="width: 25%;"><a href="smin-methods.html">smin-method</a></td>
+<td>Extract Image Attribute 'smin'</td></tr>
+<tr><td style="width: 25%;"><a href="smin-methods.html">smin-methods</a></td>
+<td>Extract Image Attribute 'smin'</td></tr>
+<tr><td style="width: 25%;"><a href="smin-methods.html">smin-methods,</a></td>
+<td>Extract Image Attribute 'smin'</td></tr>
+<tr><td style="width: 25%;"><a href="smin-methods.html">smin&lt;-</a></td>
+<td>Extract Image Attribute 'smin'</td></tr>
+<tr><td style="width: 25%;"><a href="smin-methods.html">smin&lt;--method</a></td>
+<td>Extract Image Attribute 'smin'</td></tr>
+<tr><td style="width: 25%;"><a href="bitwise.html">space.time2xyzt</a></td>
+<td>Bitwise Conversion Subroutines</td></tr>
+<tr><td style="width: 25%;"><a href="srow_x-methods.html">srow.x</a></td>
+<td>Extract Image Attribute 'srow_x'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_x-methods.html">srow.x-method</a></td>
+<td>Extract Image Attribute 'srow_x'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_x-methods.html">srow.x&lt;-</a></td>
+<td>Extract Image Attribute 'srow_x'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_x-methods.html">srow.x&lt;--method</a></td>
+<td>Extract Image Attribute 'srow_x'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_y-methods.html">srow.y</a></td>
+<td>Extract Image Attribute 'srow_y'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_y-methods.html">srow.y-method</a></td>
+<td>Extract Image Attribute 'srow_y'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_y-methods.html">srow.y&lt;-</a></td>
+<td>Extract Image Attribute 'srow_y'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_y-methods.html">srow.y&lt;--method</a></td>
+<td>Extract Image Attribute 'srow_y'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_z-methods.html">srow.z</a></td>
+<td>Extract Image Attribute 'srow_z'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_z-methods.html">srow.z-method</a></td>
+<td>Extract Image Attribute 'srow_z'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_z-methods.html">srow.z&lt;-</a></td>
+<td>Extract Image Attribute 'srow_z'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_z-methods.html">srow.z&lt;--method</a></td>
+<td>Extract Image Attribute 'srow_z'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_x-methods.html">srow_x</a></td>
+<td>Extract Image Attribute 'srow_x'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_x-methods.html">srow_x-method</a></td>
+<td>Extract Image Attribute 'srow_x'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_x-methods.html">srow_x-methods</a></td>
+<td>Extract Image Attribute 'srow_x'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_x-methods.html">srow_x-methods,</a></td>
+<td>Extract Image Attribute 'srow_x'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_x-methods.html">srow_x&lt;-</a></td>
+<td>Extract Image Attribute 'srow_x'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_x-methods.html">srow_x&lt;--method</a></td>
+<td>Extract Image Attribute 'srow_x'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_y-methods.html">srow_y</a></td>
+<td>Extract Image Attribute 'srow_y'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_y-methods.html">srow_y-method</a></td>
+<td>Extract Image Attribute 'srow_y'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_y-methods.html">srow_y-methods</a></td>
+<td>Extract Image Attribute 'srow_y'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_y-methods.html">srow_y-methods,</a></td>
+<td>Extract Image Attribute 'srow_y'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_y-methods.html">srow_y&lt;-</a></td>
+<td>Extract Image Attribute 'srow_y'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_y-methods.html">srow_y&lt;--method</a></td>
+<td>Extract Image Attribute 'srow_y'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_z-methods.html">srow_z</a></td>
+<td>Extract Image Attribute 'srow_z'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_z-methods.html">srow_z-method</a></td>
+<td>Extract Image Attribute 'srow_z'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_z-methods.html">srow_z-methods</a></td>
+<td>Extract Image Attribute 'srow_z'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_z-methods.html">srow_z-methods,</a></td>
+<td>Extract Image Attribute 'srow_z'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_z-methods.html">srow_z&lt;-</a></td>
+<td>Extract Image Attribute 'srow_z'</td></tr>
+<tr><td style="width: 25%;"><a href="srow_z-methods.html">srow_z&lt;--method</a></td>
+<td>Extract Image Attribute 'srow_z'</td></tr>
+<tr><td style="width: 25%;"><a href="start_field-methods.html">start_field</a></td>
+<td>Extract Image Attribute 'start_field'</td></tr>
+<tr><td style="width: 25%;"><a href="start_field-methods.html">start_field-method</a></td>
+<td>Extract Image Attribute 'start_field'</td></tr>
+<tr><td style="width: 25%;"><a href="start_field-methods.html">start_field-methods</a></td>
+<td>Extract Image Attribute 'start_field'</td></tr>
+<tr><td style="width: 25%;"><a href="start_field-methods.html">start_field-methods,</a></td>
+<td>Extract Image Attribute 'start_field'</td></tr>
+<tr><td style="width: 25%;"><a href="start_field-methods.html">start_field&lt;-</a></td>
+<td>Extract Image Attribute 'start_field'</td></tr>
+<tr><td style="width: 25%;"><a href="start_field-methods.html">start_field&lt;--method</a></td>
+<td>Extract Image Attribute 'start_field'</td></tr>
+</table>
+
+<h2><a name="T">-- T --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="tim_colors.html">tim.colors</a></td>
+<td>Tim's Useful Color Table</td></tr>
+<tr><td style="width: 25%;"><a href="toffset-methods.html">toffset</a></td>
+<td>Extract Image Attribute 'toffset'</td></tr>
+<tr><td style="width: 25%;"><a href="toffset-methods.html">toffset-method</a></td>
+<td>Extract Image Attribute 'toffset'</td></tr>
+<tr><td style="width: 25%;"><a href="toffset-methods.html">toffset-methods</a></td>
+<td>Extract Image Attribute 'toffset'</td></tr>
+<tr><td style="width: 25%;"><a href="toffset-methods.html">toffset-methods,</a></td>
+<td>Extract Image Attribute 'toffset'</td></tr>
+<tr><td style="width: 25%;"><a href="toffset-methods.html">toffset&lt;-</a></td>
+<td>Extract Image Attribute 'toffset'</td></tr>
+<tr><td style="width: 25%;"><a href="toffset-methods.html">toffset&lt;--method</a></td>
+<td>Extract Image Attribute 'toffset'</td></tr>
+<tr><td style="width: 25%;"><a href="transformCoordinate.html">translateCoordinate</a></td>
+<td>Translate Voxel Coordinates</td></tr>
+</table>
+
+<h2><a name="U">-- U --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="unused1-methods.html">unused1</a></td>
+<td>Extract Image Attribute 'unused1'</td></tr>
+<tr><td style="width: 25%;"><a href="unused1-methods.html">unused1-method</a></td>
+<td>Extract Image Attribute 'unused1'</td></tr>
+<tr><td style="width: 25%;"><a href="unused1-methods.html">unused1-methods</a></td>
+<td>Extract Image Attribute 'unused1'</td></tr>
+<tr><td style="width: 25%;"><a href="unused1-methods.html">unused1-methods,</a></td>
+<td>Extract Image Attribute 'unused1'</td></tr>
+<tr><td style="width: 25%;"><a href="unused1-methods.html">unused1&lt;-</a></td>
+<td>Extract Image Attribute 'unused1'</td></tr>
+<tr><td style="width: 25%;"><a href="unused1-methods.html">unused1&lt;--method</a></td>
+<td>Extract Image Attribute 'unused1'</td></tr>
+</table>
+
+<h2><a name="V">-- V --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="verified-methods.html">verified</a></td>
+<td>Extract Image Attribute 'verified'</td></tr>
+<tr><td style="width: 25%;"><a href="verified-methods.html">verified-method</a></td>
+<td>Extract Image Attribute 'verified'</td></tr>
+<tr><td style="width: 25%;"><a href="verified-methods.html">verified-methods</a></td>
+<td>Extract Image Attribute 'verified'</td></tr>
+<tr><td style="width: 25%;"><a href="verified-methods.html">verified-methods,</a></td>
+<td>Extract Image Attribute 'verified'</td></tr>
+<tr><td style="width: 25%;"><a href="verified-methods.html">verified&lt;-</a></td>
+<td>Extract Image Attribute 'verified'</td></tr>
+<tr><td style="width: 25%;"><a href="verified-methods.html">verified&lt;--method</a></td>
+<td>Extract Image Attribute 'verified'</td></tr>
+<tr><td style="width: 25%;"><a href="views-methods.html">views</a></td>
+<td>Extract Image Attribute 'views'</td></tr>
+<tr><td style="width: 25%;"><a href="views-methods.html">views-method</a></td>
+<td>Extract Image Attribute 'views'</td></tr>
+<tr><td style="width: 25%;"><a href="views-methods.html">views-methods</a></td>
+<td>Extract Image Attribute 'views'</td></tr>
+<tr><td style="width: 25%;"><a href="views-methods.html">views-methods,</a></td>
+<td>Extract Image Attribute 'views'</td></tr>
+<tr><td style="width: 25%;"><a href="views-methods.html">views&lt;-</a></td>
+<td>Extract Image Attribute 'views'</td></tr>
+<tr><td style="width: 25%;"><a href="views-methods.html">views&lt;--method</a></td>
+<td>Extract Image Attribute 'views'</td></tr>
+<tr><td style="width: 25%;"><a href="vols_added-methods.html">vols.added</a></td>
+<td>Extract Image Attribute 'vols_added'</td></tr>
+<tr><td style="width: 25%;"><a href="vols_added-methods.html">vols.added-method</a></td>
+<td>Extract Image Attribute 'vols_added'</td></tr>
+<tr><td style="width: 25%;"><a href="vols_added-methods.html">vols.added&lt;-</a></td>
+<td>Extract Image Attribute 'vols_added'</td></tr>
+<tr><td style="width: 25%;"><a href="vols_added-methods.html">vols.added&lt;--method</a></td>
+<td>Extract Image Attribute 'vols_added'</td></tr>
+<tr><td style="width: 25%;"><a href="vols_added-methods.html">vols_added</a></td>
+<td>Extract Image Attribute 'vols_added'</td></tr>
+<tr><td style="width: 25%;"><a href="vols_added-methods.html">vols_added-method</a></td>
+<td>Extract Image Attribute 'vols_added'</td></tr>
+<tr><td style="width: 25%;"><a href="vols_added-methods.html">vols_added-methods</a></td>
+<td>Extract Image Attribute 'vols_added'</td></tr>
+<tr><td style="width: 25%;"><a href="vols_added-methods.html">vols_added-methods,</a></td>
+<td>Extract Image Attribute 'vols_added'</td></tr>
+<tr><td style="width: 25%;"><a href="vols_added-methods.html">vols_added&lt;-</a></td>
+<td>Extract Image Attribute 'vols_added'</td></tr>
+<tr><td style="width: 25%;"><a href="vols_added-methods.html">vols_added&lt;--method</a></td>
+<td>Extract Image Attribute 'vols_added'</td></tr>
+<tr><td style="width: 25%;"><a href="vox_offset-methods.html">vox.offset</a></td>
+<td>Extract Image Attribute 'vox_offset'</td></tr>
+<tr><td style="width: 25%;"><a href="vox_offset-methods.html">vox.offset-method</a></td>
+<td>Extract Image Attribute 'vox_offset'</td></tr>
+<tr><td style="width: 25%;"><a href="vox_offset-methods.html">vox.offset&lt;-</a></td>
+<td>Extract Image Attribute 'vox_offset'</td></tr>
+<tr><td style="width: 25%;"><a href="vox_offset-methods.html">vox.offset&lt;--method</a></td>
+<td>Extract Image Attribute 'vox_offset'</td></tr>
+<tr><td style="width: 25%;"><a href="vox_units-methods.html">vox.units</a></td>
+<td>Extract Image Attribute 'vox_units'</td></tr>
+<tr><td style="width: 25%;"><a href="vox_units-methods.html">vox.units-method</a></td>
+<td>Extract Image Attribute 'vox_units'</td></tr>
+<tr><td style="width: 25%;"><a href="vox_units-methods.html">vox.units&lt;-</a></td>
+<td>Extract Image Attribute 'vox_units'</td></tr>
+<tr><td style="width: 25%;"><a href="vox_units-methods.html">vox.units&lt;--method</a></td>
+<td>Extract Image Attribute 'vox_units'</td></tr>
+<tr><td style="width: 25%;"><a href="voxdim.html">voxdim</a></td>
+<td>Gets Voxel Dimensions</td></tr>
+<tr><td style="width: 25%;"><a href="voxres.html">voxres</a></td>
+<td>Gets Voxel Resolution</td></tr>
+<tr><td style="width: 25%;"><a href="vox_offset-methods.html">vox_offset</a></td>
+<td>Extract Image Attribute 'vox_offset'</td></tr>
+<tr><td style="width: 25%;"><a href="vox_offset-methods.html">vox_offset-method</a></td>
+<td>Extract Image Attribute 'vox_offset'</td></tr>
+<tr><td style="width: 25%;"><a href="vox_offset-methods.html">vox_offset-methods</a></td>
+<td>Extract Image Attribute 'vox_offset'</td></tr>
+<tr><td style="width: 25%;"><a href="vox_offset-methods.html">vox_offset-methods,</a></td>
+<td>Extract Image Attribute 'vox_offset'</td></tr>
+<tr><td style="width: 25%;"><a href="vox_offset-methods.html">vox_offset&lt;-</a></td>
+<td>Extract Image Attribute 'vox_offset'</td></tr>
+<tr><td style="width: 25%;"><a href="vox_offset-methods.html">vox_offset&lt;--method</a></td>
+<td>Extract Image Attribute 'vox_offset'</td></tr>
+<tr><td style="width: 25%;"><a href="vox_units-methods.html">vox_units</a></td>
+<td>Extract Image Attribute 'vox_units'</td></tr>
+<tr><td style="width: 25%;"><a href="vox_units-methods.html">vox_units-method</a></td>
+<td>Extract Image Attribute 'vox_units'</td></tr>
+<tr><td style="width: 25%;"><a href="vox_units-methods.html">vox_units-methods</a></td>
+<td>Extract Image Attribute 'vox_units'</td></tr>
+<tr><td style="width: 25%;"><a href="vox_units-methods.html">vox_units-methods,</a></td>
+<td>Extract Image Attribute 'vox_units'</td></tr>
+<tr><td style="width: 25%;"><a href="vox_units-methods.html">vox_units&lt;-</a></td>
+<td>Extract Image Attribute 'vox_units'</td></tr>
+<tr><td style="width: 25%;"><a href="vox_units-methods.html">vox_units&lt;--method</a></td>
+<td>Extract Image Attribute 'vox_units'</td></tr>
+</table>
+
+<h2><a name="W">-- W --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="write_afni-methods.html">writeAFNI</a></td>
+<td>writeAFNI</td></tr>
+<tr><td style="width: 25%;"><a href="write_afni-methods.html">writeAFNI-method</a></td>
+<td>writeAFNI</td></tr>
+<tr><td style="width: 25%;"><a href="write_afni-methods.html">writeAFNI-methods</a></td>
+<td>writeAFNI</td></tr>
+<tr><td style="width: 25%;"><a href="write_anlz.html">writeANALYZE</a></td>
+<td>writeANALYZE</td></tr>
+<tr><td style="width: 25%;"><a href="write_anlz.html">writeANALYZE-method</a></td>
+<td>writeANALYZE</td></tr>
+<tr><td style="width: 25%;"><a href="write_anlz.html">writeANALYZE-methods</a></td>
+<td>writeANALYZE</td></tr>
+<tr><td style="width: 25%;"><a href="write_nifti.html">writeNIfTI</a></td>
+<td>writeNIfTI</td></tr>
+<tr><td style="width: 25%;"><a href="write_nifti.html">writeNIfTI-method</a></td>
+<td>writeNIfTI</td></tr>
+<tr><td style="width: 25%;"><a href="write_nifti.html">writeNIfTI-methods</a></td>
+<td>writeNIfTI</td></tr>
+</table>
+
+<h2><a name="X">-- X --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="xyzt_units-methods.html">xyzt.units</a></td>
+<td>Extract Image Attribute 'xyzt_units'</td></tr>
+<tr><td style="width: 25%;"><a href="xyzt_units-methods.html">xyzt.units-method</a></td>
+<td>Extract Image Attribute 'xyzt_units'</td></tr>
+<tr><td style="width: 25%;"><a href="xyzt_units-methods.html">xyzt.units&lt;-</a></td>
+<td>Extract Image Attribute 'xyzt_units'</td></tr>
+<tr><td style="width: 25%;"><a href="xyzt_units-methods.html">xyzt.units&lt;--method</a></td>
+<td>Extract Image Attribute 'xyzt_units'</td></tr>
+<tr><td style="width: 25%;"><a href="bitwise.html">xyzt2space</a></td>
+<td>Bitwise Conversion Subroutines</td></tr>
+<tr><td style="width: 25%;"><a href="bitwise.html">xyzt2time</a></td>
+<td>Bitwise Conversion Subroutines</td></tr>
+<tr><td style="width: 25%;"><a href="xyzt_units-methods.html">xyzt_units</a></td>
+<td>Extract Image Attribute 'xyzt_units'</td></tr>
+<tr><td style="width: 25%;"><a href="xyzt_units-methods.html">xyzt_units-method</a></td>
+<td>Extract Image Attribute 'xyzt_units'</td></tr>
+<tr><td style="width: 25%;"><a href="xyzt_units-methods.html">xyzt_units-methods</a></td>
+<td>Extract Image Attribute 'xyzt_units'</td></tr>
+<tr><td style="width: 25%;"><a href="xyzt_units-methods.html">xyzt_units-methods,</a></td>
+<td>Extract Image Attribute 'xyzt_units'</td></tr>
+<tr><td style="width: 25%;"><a href="xyzt_units-methods.html">xyzt_units&lt;-</a></td>
+<td>Extract Image Attribute 'xyzt_units'</td></tr>
+<tr><td style="width: 25%;"><a href="xyzt_units-methods.html">xyzt_units&lt;--method</a></td>
+<td>Extract Image Attribute 'xyzt_units'</td></tr>
+</table>
+
+<h2><a name="Z">-- Z --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="zero_trans.html">zero_trans</a></td>
+<td>Change Intercept to 0 and Slope to 1 in NIfTI Object</td></tr>
+</table>
+
+<h2><a name="misc">-- misc --</a></h2>
+
+<table width="100%">
+<tr><td style="width: 25%;"><a href="nifti_assign-methods.html">[&lt;--method</a></td>
+<td>Methods for Function [&lt;- in Package 'base'</td></tr>
+<tr><td style="width: 25%;"><a href="nifti_assign-methods.html">[&lt;--methods</a></td>
+<td>Methods for Function [&lt;- in Package 'base'</td></tr>
+</table>
+</body></html>

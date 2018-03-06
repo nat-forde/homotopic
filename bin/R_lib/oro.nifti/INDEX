@@ -1,0 +1,135 @@
+Audit Trails            Facilitate the Creation and Modification of
+                        Audit Trails
+Convert ANALYZE Codes   Convert ANALYZE Codes
+Convert NIfTI Codes     Convert NIfTI Codes
+afni-class              Class "afni"
+anlz                    Constructor for Analyze
+anlz-class              Class "anlz"
+anlz-nifti-ops          Operations for Objects in the ANALYZE and NIfTI
+                        classes
+as.anlz                 as.anlz
+as.nifti                as.nifti
+audit.trail-methods     Extract or Replace NIfTI Audit Trail
+aux_file-methods        Extract Image Attribute 'aux_file'
+bitpix-methods          Extract Image Attribute 'bitpix'
+blend                   Merge Two NIfTI or ANALYZE Volumes
+cal_max-methods         Extract Image Attribute 'cal_max'
+cal_min-methods         Extract Image Attribute 'cal_min'
+cal_units-methods       Extract Image Attribute 'cal_units'
+calibrateImage          Set Minimum/Maximum Values for NIfTI data
+coerce-methods          Force an Object to Belong to the ANALYZE or
+                        NIfTI Class
+compressed-methods      Extract Image Attribute 'compressed'
+convert.scene           Convert AFNI data codes
+data_type-methods       Extract Image Attribute 'data_type'
+datatype-methods        Extract Image Attribute 'datatype'
+db_name-methods         Extract Image Attribute 'db_name'
+descrip-methods         Extract Image Attribute 'descrip'
+dim_-methods            Extract Image Attribute 'dim_'
+dim_info-methods        Extract Image Attribute 'dim_info'
+dim_un0-methods         Extract Image Attribute 'dim_un0'
+dropImageDimension      Drop Image Dimension
+exp_date-methods        Extract Image Attribute 'exp_date'
+exp_time-methods        Extract Image Attribute 'exp_time'
+extender-methods        Extract Image Attribute 'extender'
+extents-methods         Extract Image Attribute 'extents'
+field_skip-methods      Extract Image Attribute 'field_skip'
+funused1-methods        Extract Image Attribute 'funused1'
+funused2-methods        Extract Image Attribute 'funused2'
+funused3-methods        Extract Image Attribute 'funused3'
+generated-methods       Extract Image Attribute 'generated'
+glmax-methods           Extract Image Attribute 'glmax'
+glmin-methods           Extract Image Attribute 'glmin'
+hist_un0-methods        Extract Image Attribute 'hist_un0'
+hkey_un0-methods        Extract Image Attribute 'hkey_un0'
+hotmetal                Hot Metal Color Table
+image-methods           Methods for Function 'image'
+img_data-methods        Extract Image Attribute '.Data'
+integerTranslation      integerTranslation
+intent_code-methods     Extract Image Attribute 'intent_code'
+intent_name-methods     Extract Image Attribute 'intent_name'
+intent_p1-methods       Extract Image Attribute 'intent_p1'
+intent_p2-methods       Extract Image Attribute 'intent_p2'
+intent_p3-methods       Extract Image Attribute 'intent_p3'
+is.afni                 check object
+is.anlz                 check object
+is.nifti                check object
+magic-methods           Extract Image Attribute 'magic'
+nifti                   Constructor for NIfTI
+nifti-class             Class "nifti"
+nifti-operators         Operations for NIfTI Objects
+niftiAuditTrail-class   Class "niftiAuditTrail"
+niftiExtension-class    Class "niftiExtension"
+niftiExtensionSection-class
+                        Class "niftiExtensionSection"
+nifti_assign-methods    Methods for Function [<- in Package 'base'
+nii2oro                 Convert RNifti niftiImage to oro.nifti nifti
+                        object
+nsli                    Dimension Accessor Functions
+omax-methods            Extract Image Attribute 'omax'
+omin-methods            Extract Image Attribute 'omin'
+onefile                 Creates the 'onefile' Specification for NIfTI
+orient-methods          Extract Image Attribute 'orient'
+orientation-methods     Extract NIfTI 3D Image Orientation
+origin-methods          Extract Image Attribute 'origin'
+oro2nii                 Convert oro.nifti nifti to RNifti niftiImage
+                        object
+orthographic-methods    Methods for Function 'orthographic' in Package
+                        'dcemriS4'
+overlay-methods         Methods for Function overlay
+patient_id-methods      Extract Image Attribute 'patient_id'
+performPermutation      Transform array with orthogonal permutation
+                        matrix
+pixdim-methods          Extract Image Attribute 'pixdim'
+qform_code-methods      Extract Image Attribute 'qform_code'
+qoffset_x-methods       Extract Image Attribute 'qoffset_x'
+qoffset_y-methods       Extract Image Attribute 'qoffset_y'
+qoffset_z-methods       Extract Image Attribute 'qoffset_z'
+quatern_b-methods       Extract Image Attribute 'quatern_b'
+quatern_c-methods       Extract Image Attribute 'quatern_c'
+quatern_d-methods       Extract Image Attribute 'quatern_d'
+quaternion2rotation     Convert Quaternion into a Rotation Matrix
+readAFNI                readAFNI
+readANALYZE             readANALYZE
+readNIfTI               readNIfTI
+regular-methods         Extract Image Attribute 'regular'
+reorient                Reorient Image using NIfTI header
+resetSlopeIntercept     Change Intercept to 0 and Slope to 1 in NIfTI
+                        Object
+rmniigz                 Remove File Extensions Around the NIfTI/ANALYZE
+                        Formats
+scannum-methods         Extract Image Attribute 'scannum'
+scl_inter-methods       Extract Image Attribute 'scl_inter'
+scl_slope-methods       Extract Image Attribute 'scl_slope'
+session_error-methods   Extract Image Attribute 'session_error'
+sform_code-methods      Extract Image Attribute 'sform_code'
+sizeof_hdr-methods      Extract Image Attribute 'sizeof_hdr'
+slice-methods           Methods for Function 'slice'
+slice_code-methods      Extract Image Attribute 'slice_code'
+slice_duration-methods
+                        Extract Image Attribute 'slice_duration'
+slice_end-methods       Extract Image Attribute 'slice_end'
+slice_overlay-methods   Methods for Function slice_overlay
+slice_start-methods     Extract Image Attribute 'slice_start'
+smax-methods            Extract Image Attribute 'smax'
+smin-methods            Extract Image Attribute 'smin'
+srow_x-methods          Extract Image Attribute 'srow_x'
+srow_y-methods          Extract Image Attribute 'srow_y'
+srow_z-methods          Extract Image Attribute 'srow_z'
+start_field-methods     Extract Image Attribute 'start_field'
+tim.colors              Tim's Useful Color Table
+toffset-methods         Extract Image Attribute 'toffset'
+translateCoordinate     Translate Voxel Coordinates
+unused1-methods         Extract Image Attribute 'unused1'
+verified-methods        Extract Image Attribute 'verified'
+views-methods           Extract Image Attribute 'views'
+vols_added-methods      Extract Image Attribute 'vols_added'
+vox_offset-methods      Extract Image Attribute 'vox_offset'
+vox_units-methods       Extract Image Attribute 'vox_units'
+voxdim                  Gets Voxel Dimensions
+voxres                  Gets Voxel Resolution
+writeAFNI-methods       writeAFNI
+writeANALYZE-methods    writeANALYZE
+writeNIfTI-methods      writeNIfTI
+xyzt2space              Bitwise Conversion Subroutines
+xyzt_units-methods      Extract Image Attribute 'xyzt_units'

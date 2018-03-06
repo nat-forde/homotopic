@@ -1,0 +1,326 @@
+#!/bin/bash
+#$ 
+#$ -j y
+#$ -o /mnt/tigrlab/scratch/nforde/homotopic/bin/logs
+#$ -wd /mnt/tigrlab/scratch/nforde/homotopic/bin
+#$ -N R_qbatch.txt
+#$ 
+#$ -t 1-227
+#$ -l h_rt=03:00:00
+#$ 
+#$ 
+# -- start copied env
+export MODULE_VERSION_STACK="3.2.10"
+export XDG_VTNR="7"
+export ORBIT_SOCKETDIR="/tmp/orbit-nforde"
+export MANPATH="/opt/quarantine/R/3.4.3/build2/share/man:/usr/share/man"
+export XDG_SESSION_ID="c4"
+export RSTUDIO_PANDOC="/mnt/tigrlab/quarantine/rstudio/1.1.414/build/rstudio-1.1.414/bin/pandoc"
+export CLUTTER_IM_MODULE="xim"
+export IBUS_DISABLE_SNOOPER="1"
+export TERMINATOR_UUID="urn:uuid:9776fd69-3870-4533-8a74-084ef7a22c2e"
+export XDG_GREETER_DATA_DIR="/var/lib/lightdm-data/nforde"
+export GIO_LAUNCHED_DESKTOP_FILE_PID="35068"
+export QUARANTINE_ENV="cic"
+export SESSION="ubuntu"
+export GPG_AGENT_INFO="/home/nforde/.gnupg/S.gpg-agent:0:1"
+export SHELL="/bin/bash"
+export TERM="xterm"
+export QT_LINUX_ACCESSIBILITY_ALWAYS_ON="1"
+export QUARANTINE_PATH="/opt/quarantine"
+export WINDOWID="62914564"
+export GNOME_KEYRING_CONTROL=""
+export UPSTART_SESSION="unix:abstract=/com/ubuntu/upstart-session/10066/21147"
+export OLDPWD="/projects/edickie/analysis/POND_RST/hcp"
+export GTK_MODULES="gail:atk-bridge:unity-gtk-module"
+export USER="nforde"
+export QT_ACCESSIBILITY="1"
+export LS_COLORS="rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:"
+export LD_LIBRARY_PATH="/opt/quarantine/R/3.4.3/build2/lib"
+export XDG_SESSION_PATH="/org/freedesktop/DisplayManager/Session0"
+export XDG_SEAT_PATH="/org/freedesktop/DisplayManager/Seat0"
+export SSH_AUTH_SOCK="/run/user/10066/keyring/ssh"
+export DEFAULTS_PATH="/usr/share/gconf/ubuntu.default.path"
+export GIO_LAUNCHED_DESKTOP_FILE="/usr/share/applications/terminator.desktop"
+export XDG_CONFIG_DIRS="/etc/xdg/xdg-ubuntu:/usr/share/upstart/xdg:/etc/xdg"
+export PATH="/opt/quarantine/python/3.6_ciftify_01/build/bin:/opt/quarantine/rstudio/1.1.414/build/rstudio-1.1.414//bin:/opt/quarantine/R/3.4.3/build2/bin:/home/nforde/bin:/home/nforde/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+export MODULE_VERSION="3.2.10"
+export DESKTOP_SESSION="ubuntu"
+export QT_QPA_PLATFORMTHEME="appmenu-qt5"
+export QT_IM_MODULE="ibus"
+export JOB="unity-settings-daemon"
+export XDG_SESSION_TYPE="x11"
+export XMODIFIERS="@im=ibus"
+export _LMFILES_="/opt/quarantine/modules/quarantine:/opt/quarantine/modules/R/3.4.3:/opt/quarantine/modules/rstudio/1.1.414:/opt/quarantine/modules/python/3.6_ciftify_01"
+export LANG="en_CA.UTF-8"
+export GNOME_KEYRING_PID=""
+export MANDATORY_PATH="/usr/share/gconf/ubuntu.mandatory.path"
+export MODULEPATH="/etc/environment-modules/modules:/usr/share/modules/versions:/usr/Modules/$$MODULE_VERSION/modulefiles:/usr/share/modules/modulefiles:/opt/quarantine/modules"
+export GDM_LANG="en_CA"
+export LOADEDMODULES="quarantine:R/3.4.3:rstudio/1.1.414:python/3.6_ciftify_01"
+export IM_CONFIG_PHASE="1"
+export COMPIZ_CONFIG_PROFILE="ubuntu"
+export GDMSESSION="ubuntu"
+export KRB5CCNAME="KEYRING:persistent:10066"
+export GTK2_MODULES="overlay-scrollbar"
+export SESSIONTYPE="gnome-session"
+export XDG_SEAT="seat0"
+export HOME="/home/nforde"
+export SHLVL="2"
+export LANGUAGE="en_CA:en"
+export GNOME_DESKTOP_SESSION_ID="this-is-deprecated"
+export UPSTART_INSTANCE=""
+export LOGNAME="nforde"
+export UPSTART_EVENTS="xsession started"
+export XDG_SESSION_DESKTOP="ubuntu"
+export COMPIZ_BIN_PATH="/usr/bin/"
+export QT4_IM_MODULE="xim"
+export XDG_DATA_DIRS="/usr/share/ubuntu:/usr/share/gnome:/usr/local/share:/usr/share:/var/lib/snapd/desktop:/var/lib/snapd/desktop"
+export DBUS_SESSION_BUS_ADDRESS="unix:abstract=/tmp/dbus-uH0jNWnFC9"
+export MODULESHOME="/usr/share/modules"
+export LESSOPEN="| /usr/bin/lesspipe %s"
+export UPSTART_JOB="unity7"
+export INSTANCE=""
+export DISPLAY=":0"
+export XDG_RUNTIME_DIR="/run/user/10066"
+export GTK_IM_MODULE="ibus"
+export XDG_CURRENT_DESKTOP="Unity"
+export LESSCLOSE="/usr/bin/lesspipe %s %s"
+export COLORTERM="gnome-terminal"
+export XAUTHORITY="/home/nforde/.Xauthority"
+export _="/opt/quarantine/python/3.6_ciftify_01/build/bin/qbatch"
+# -- end copied env
+
+ARRAY_IND=$SGE_TASK_ID
+CHUNK_SIZE=1
+CORES=1
+sed -n "$(( (${ARRAY_IND} - 1) * ${CHUNK_SIZE} + 1 )),+$(( ${CHUNK_SIZE} - 1 ))p" << EOF | parallel -v -j${CORES}
+Rscript temp_stab_glasser.r MR160-088-0002-01
+Rscript temp_stab_glasser.r MR160-088-0023-01
+Rscript temp_stab_glasser.r MR160-088-0043-01
+Rscript temp_stab_glasser.r MR160-088-0044-01
+Rscript temp_stab_glasser.r MR160-088-0046-01
+Rscript temp_stab_glasser.r MR160-088-0050-01
+Rscript temp_stab_glasser.r MR160-088-0061-01
+Rscript temp_stab_glasser.r MR160-088-0062-01
+Rscript temp_stab_glasser.r MR160-088-0082-01
+Rscript temp_stab_glasser.r MR160-088-0096-01
+Rscript temp_stab_glasser.r MR160-088-0099-01
+Rscript temp_stab_glasser.r MR160-088-0100-01
+Rscript temp_stab_glasser.r MR160-088-0102-01
+Rscript temp_stab_glasser.r MR160-088-0107-01
+Rscript temp_stab_glasser.r MR160-088-0112-01
+Rscript temp_stab_glasser.r MR160-088-0114-01
+Rscript temp_stab_glasser.r MR160-088-0136-01
+Rscript temp_stab_glasser.r MR160-088-0137-01
+Rscript temp_stab_glasser.r MR160-088-0138-01
+Rscript temp_stab_glasser.r MR160-088-0139-01
+Rscript temp_stab_glasser.r MR160-088-0140-01
+Rscript temp_stab_glasser.r MR160-088-0146-01
+Rscript temp_stab_glasser.r MR160-088-0152-01
+Rscript temp_stab_glasser.r MR160-088-0155-01
+Rscript temp_stab_glasser.r MR160-088-0157-01
+Rscript temp_stab_glasser.r MR160-088-0167-01
+Rscript temp_stab_glasser.r MR160-088-0175-01
+Rscript temp_stab_glasser.r MR160-088-0182-01
+Rscript temp_stab_glasser.r MR160-088-0195-01
+Rscript temp_stab_glasser.r MR160-088-0208-01
+Rscript temp_stab_glasser.r MR160-088-0215-01
+Rscript temp_stab_glasser.r MR160-088-0221-01
+Rscript temp_stab_glasser.r MR160-088-0229-01
+Rscript temp_stab_glasser.r MR160-088-0250-01
+Rscript temp_stab_glasser.r MR160-088-0253-01
+Rscript temp_stab_glasser.r MR160-088-0254-01
+Rscript temp_stab_glasser.r MR160-088-0255-01
+Rscript temp_stab_glasser.r MR160-088-0258-01
+Rscript temp_stab_glasser.r MR160-088-0265-01
+Rscript temp_stab_glasser.r MR160-088-0276-01
+Rscript temp_stab_glasser.r MR160-088-0276-02
+Rscript temp_stab_glasser.r MR160-088-0279-01
+Rscript temp_stab_glasser.r MR160-088-0284-01
+Rscript temp_stab_glasser.r MR160-088-0291-01
+Rscript temp_stab_glasser.r MR160-088-0293-01
+Rscript temp_stab_glasser.r MR160-088-0303-01
+Rscript temp_stab_glasser.r MR160-088-0304-01
+Rscript temp_stab_glasser.r MR160-088-0325-02
+Rscript temp_stab_glasser.r MR160-088-0328-01
+Rscript temp_stab_glasser.r MR160-088-0338-01
+Rscript temp_stab_glasser.r MR160-088-0349-01
+Rscript temp_stab_glasser.r MR160-088-0353-01
+Rscript temp_stab_glasser.r MR160-088-0369-01
+Rscript temp_stab_glasser.r MR160-088-0370-01
+Rscript temp_stab_glasser.r MR160-088-0372-01
+Rscript temp_stab_glasser.r MR160-088-0386-01
+Rscript temp_stab_glasser.r MR160-088-0396-01
+Rscript temp_stab_glasser.r MR160-088-0415-01
+Rscript temp_stab_glasser.r MR160-088-0418-01
+Rscript temp_stab_glasser.r MR160-088-0419-01
+Rscript temp_stab_glasser.r MR160-088-0428-01
+Rscript temp_stab_glasser.r MR160-088-0436-01
+Rscript temp_stab_glasser.r MR160-088-0446-02
+Rscript temp_stab_glasser.r MR160-088-0447-01
+Rscript temp_stab_glasser.r MR160-088-0462-01
+Rscript temp_stab_glasser.r MR160-088-0464-01
+Rscript temp_stab_glasser.r MR160-088-0470-01
+Rscript temp_stab_glasser.r MR160-088-0473-01
+Rscript temp_stab_glasser.r MR160-088-0481-01
+Rscript temp_stab_glasser.r MR160-088-0494-01
+Rscript temp_stab_glasser.r MR160-088-0514-01
+Rscript temp_stab_glasser.r MR160-088-0515-01
+Rscript temp_stab_glasser.r MR160-088-0536-01
+Rscript temp_stab_glasser.r MR160-088-0539-01
+Rscript temp_stab_glasser.r MR160-088-0552-01
+Rscript temp_stab_glasser.r MR160-088-0584-01
+Rscript temp_stab_glasser.r MR160-088-0590-01
+Rscript temp_stab_glasser.r MR160-088-0601-01
+Rscript temp_stab_glasser.r MR160-088-0620-01
+Rscript temp_stab_glasser.r MR160-088-0624-01
+Rscript temp_stab_glasser.r MR160-088-0664-01
+Rscript temp_stab_glasser.r MR160-088-0665-01
+Rscript temp_stab_glasser.r MR160-088-0669-01
+Rscript temp_stab_glasser.r MR160-088-0686-01
+Rscript temp_stab_glasser.r MR160-088-0687-01
+Rscript temp_stab_glasser.r MR160-088-0688-01
+Rscript temp_stab_glasser.r MR160-088-0692-01
+Rscript temp_stab_glasser.r MR160-088-0693-01
+Rscript temp_stab_glasser.r MR160-088-0703-01
+Rscript temp_stab_glasser.r MR160-088-0738-01
+Rscript temp_stab_glasser.r MR160-088-0742-01
+Rscript temp_stab_glasser.r MR160-088-0745-01
+Rscript temp_stab_glasser.r MR160-088-0763-01
+Rscript temp_stab_glasser.r MR160-088-5005-01
+Rscript temp_stab_glasser.r MR160-105-0001-01
+Rscript temp_stab_glasser.r MR160-105-0004-01
+Rscript temp_stab_glasser.r MR160-105-0004-02
+Rscript temp_stab_glasser.r MR160-105-0004-03
+Rscript temp_stab_glasser.r MR160-105-0004-04
+Rscript temp_stab_glasser.r MR160-105-0004-05
+Rscript temp_stab_glasser.r MR160-105-0007-01
+Rscript temp_stab_glasser.r MR160-105-0026-01
+Rscript temp_stab_glasser.r MR160-105-0027-01
+Rscript temp_stab_glasser.r MR160-105-0033-02
+Rscript temp_stab_glasser.r MR160-105-0033-03
+Rscript temp_stab_glasser.r MR160-105-0038-02
+Rscript temp_stab_glasser.r MR160-105-0039-01
+Rscript temp_stab_glasser.r MR160-105-0040-01
+Rscript temp_stab_glasser.r MR160-105-0040-02
+Rscript temp_stab_glasser.r MR160-105-0051-01
+Rscript temp_stab_glasser.r MR160-105-0053-01
+Rscript temp_stab_glasser.r MR160-105-0053-03
+Rscript temp_stab_glasser.r MR160-105-0053-04
+Rscript temp_stab_glasser.r MR160-105-0054-01
+Rscript temp_stab_glasser.r MR160-105-0064-01
+Rscript temp_stab_glasser.r MR160-105-0065-01
+Rscript temp_stab_glasser.r MR160-105-0070-01
+Rscript temp_stab_glasser.r MR160-105-0084-01
+Rscript temp_stab_glasser.r MR160-105-0090-01
+Rscript temp_stab_glasser.r MR160-105-0093-01
+Rscript temp_stab_glasser.r MR160-105-0100-01
+Rscript temp_stab_glasser.r MR160-105-0116-01
+Rscript temp_stab_glasser.r MR160-105-0131-01
+Rscript temp_stab_glasser.r MR160-105-0132-01
+Rscript temp_stab_glasser.r MR160-105-0134-01
+Rscript temp_stab_glasser.r MR160-105-0135-01
+Rscript temp_stab_glasser.r MR160-105-0137-01
+Rscript temp_stab_glasser.r MR160-105-0141-01
+Rscript temp_stab_glasser.r MR160-105-0142-02
+Rscript temp_stab_glasser.r MR160-105-0145-01
+Rscript temp_stab_glasser.r MR160-105-0158-01
+Rscript temp_stab_glasser.r MR160-105-0165-01
+Rscript temp_stab_glasser.r MR160-105-0167-01
+Rscript temp_stab_glasser.r MR160-105-0172-01
+Rscript temp_stab_glasser.r MR160-105-0173-01
+Rscript temp_stab_glasser.r MR160-105-0180-01
+Rscript temp_stab_glasser.r MR160-105-0188-01
+Rscript temp_stab_glasser.r MR160-105-0189-01
+Rscript temp_stab_glasser.r MR160-105-0192-01
+Rscript temp_stab_glasser.r MR160-105-0194-03
+Rscript temp_stab_glasser.r MR160-105-0195-01
+Rscript temp_stab_glasser.r MR160-105-0195-02
+Rscript temp_stab_glasser.r MR160-105-0195-04
+Rscript temp_stab_glasser.r MR160-105-0198-01
+Rscript temp_stab_glasser.r MR160-105-0207-01
+Rscript temp_stab_glasser.r MR160-105-0208-01
+Rscript temp_stab_glasser.r MR160-105-0213-01
+Rscript temp_stab_glasser.r MR160-105-0218-01
+Rscript temp_stab_glasser.r MR160-105-0219-01
+Rscript temp_stab_glasser.r MR160-105-0220-01
+Rscript temp_stab_glasser.r MR160-105-0221-01
+Rscript temp_stab_glasser.r MR160-105-0222-01
+Rscript temp_stab_glasser.r MR160-105-0224-01
+Rscript temp_stab_glasser.r MR160-105-0225-01
+Rscript temp_stab_glasser.r MR160-105-0228-02
+Rscript temp_stab_glasser.r MR160-105-0229-01
+Rscript temp_stab_glasser.r MR160-105-0230-01
+Rscript temp_stab_glasser.r MR160-105-0230-02
+Rscript temp_stab_glasser.r MR160-105-0239-01
+Rscript temp_stab_glasser.r MR160-105-0241-01
+Rscript temp_stab_glasser.r MR160-105-0242-01
+Rscript temp_stab_glasser.r MR160-105-0245-01
+Rscript temp_stab_glasser.r MR160-105-0249-01
+Rscript temp_stab_glasser.r MR160-105-0249-02
+Rscript temp_stab_glasser.r MR160-105-0250-01
+Rscript temp_stab_glasser.r MR160-105-0250-02
+Rscript temp_stab_glasser.r MR160-105-0254-01
+Rscript temp_stab_glasser.r MR160-105-0257-01
+Rscript temp_stab_glasser.r MR160-105-0265-01
+Rscript temp_stab_glasser.r MR160-105-0265-02
+Rscript temp_stab_glasser.r MR160-105-0268-02
+Rscript temp_stab_glasser.r MR160-105-0273-01
+Rscript temp_stab_glasser.r MR160-105-0280-01
+Rscript temp_stab_glasser.r MR160-105-0280-02
+Rscript temp_stab_glasser.r MR160-105-0281-01
+Rscript temp_stab_glasser.r MR160-105-0284-01
+Rscript temp_stab_glasser.r MR160-105-0286-01
+Rscript temp_stab_glasser.r MR160-105-0292-01
+Rscript temp_stab_glasser.r MR160-105-0292-02
+Rscript temp_stab_glasser.r MR160-105-0293-02
+Rscript temp_stab_glasser.r MR160-105-0296-01
+Rscript temp_stab_glasser.r MR160-105-0308-01
+Rscript temp_stab_glasser.r MR160-105-0320-01
+Rscript temp_stab_glasser.r MR160-105-0321-01
+Rscript temp_stab_glasser.r MR160-105-0322-01
+Rscript temp_stab_glasser.r MR160-105-0325-01
+Rscript temp_stab_glasser.r MR160-105-0331-02
+Rscript temp_stab_glasser.r MR160-105-0334-01
+Rscript temp_stab_glasser.r MR160-105-0335-01
+Rscript temp_stab_glasser.r MR160-105-0335-02
+Rscript temp_stab_glasser.r MR160-105-0336-01
+Rscript temp_stab_glasser.r MR160-105-0336-02
+Rscript temp_stab_glasser.r MR160-105-0336-03
+Rscript temp_stab_glasser.r MR160-105-0337-02
+Rscript temp_stab_glasser.r MR160-105-0340-01
+Rscript temp_stab_glasser.r MR160-105-0341-01
+Rscript temp_stab_glasser.r MR160-105-0341-02
+Rscript temp_stab_glasser.r MR160-105-0342-01
+Rscript temp_stab_glasser.r MR160-105-0363-01
+Rscript temp_stab_glasser.r MR160-105-0363-02
+Rscript temp_stab_glasser.r MR160-105-0368-01
+Rscript temp_stab_glasser.r MR160-105-0371-01
+Rscript temp_stab_glasser.r MR160-105-0376-01
+Rscript temp_stab_glasser.r MR160-105-0377-01
+Rscript temp_stab_glasser.r MR160-105-0383-01
+Rscript temp_stab_glasser.r MR160-105-0385-01
+Rscript temp_stab_glasser.r MR160-105-0389-01
+Rscript temp_stab_glasser.r MR160-105-0393-01
+Rscript temp_stab_glasser.r MR160-105-0395-01
+Rscript temp_stab_glasser.r MR160-105-0398-01
+Rscript temp_stab_glasser.r MR160-105-0399-01
+Rscript temp_stab_glasser.r MR160-105-0401-01
+Rscript temp_stab_glasser.r MR160-105-0402-01
+Rscript temp_stab_glasser.r MR160-105-0404-01
+Rscript temp_stab_glasser.r MR160-105-0414-01
+Rscript temp_stab_glasser.r MR160-105-0422-01
+Rscript temp_stab_glasser.r MR160-105-0430-01_a
+Rscript temp_stab_glasser.r MR160-105-0431-01
+Rscript temp_stab_glasser.r MR160-105-0432-01
+Rscript temp_stab_glasser.r MR160-105-0438-01
+Rscript temp_stab_glasser.r MR160-105-0440-01
+Rscript temp_stab_glasser.r MR160-105-0451-01
+Rscript temp_stab_glasser.r MR160-105-0460-01
+Rscript temp_stab_glasser.r MR160-105-0461-01
+Rscript temp_stab_glasser.r MR160-105-9997-01
+Rscript temp_stab_glasser.r MR160-105-9998-01
+Rscript temp_stab_glasser.r MR160-105-9999-01
+
+EOF

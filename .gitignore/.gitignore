@@ -34,3 +34,6 @@ vignettes/*.pdf
 
 # Data
 /POND/
+
+# output htmls
+/bin/*.html

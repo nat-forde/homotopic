@@ -1,0 +1,14 @@
+dim.internalImage       Internal images
+dumpNifti               Dump the contents of an internal NIfTI-1 object
+ndim                    Number of dimensions
+pixdim                  Pixel dimensions and units
+readNifti               Read a NIfTI-1 format file
+retrieveNifti           Obtain an internal NIfTI representation of an
+                        object
+updateNifti             Update an internal NIfTI-1 object using a
+                        template
+voxelToWorld            Transform points between voxel and "world"
+                        coordinates
+writeNifti              Write a NIfTI-1 format file
+xform                   Obtain or replace the "xform" transforms for an
+                        image

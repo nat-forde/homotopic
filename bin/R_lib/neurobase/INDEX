@@ -1,0 +1,80 @@
+applyEmptyImageDimensions-methods
+                        Apply Subsetting from Empty Image Dimensions
+boxplot.nifti           Boxplot of Values in an Image
+breaker                 Find Breaks for nifti Image Plotting
+check_mask              Check Mask is Binary
+check_mask_fail         Check Mask is Binary, Fail otherwise
+check_nifti-methods     Check if nifti image or read in a nifti image
+check_nifti_header-methods
+                        Check if nifti image or read in a nifti header
+check_outfile           Check output filename
+checkimg-methods        Force object to filename
+checknii-methods        Force object to filename with .nii extension
+checkniigz-methods      Force object to filename with .nii.gz extension
+cog                     Image Center of Gravity
+colorbar                Add a colorbar to an ortho2 object
+copyNIfTIHeader         Copy NIfTI Header to an array
+cut.nifti               Perform Cut on an image
+datatype                Change Data type for img
+density.nifti           Density of Values in an Image
+dicer                   Calculate Dice from a Table
+double_ortho            Double Orthographic Display
+dropEmptyImageDimensions
+                        Drop Empty Image Dimensions
+emptyImageDimensionsMask
+                        Make Mask from Empty Image Dimensions
+ensure_array            Ensure an array output
+fast_readnii            Reading NIfTI images through RNifti
+file_imgext             Get Image file extension
+finite_img-methods      Finite Image
+flip_img                Flip NifTI Image
+getEmptyImageDimensions
+                        Get Empty Image Dimensions
+hist.nifti              Histogram of Values in an Image
+images2matrix           Transform set of images to matrix
+img_colour_df           Convert Image to Data.frame with Colors
+img_indices             Retrieve Image Indices
+img_list_to_ts          Image List to Time Series
+img_ts_to_df            Image Time Series to Data.frame
+img_ts_to_list          Image Time Series to list
+img_ts_to_matrix        Image Time Series to Matrix
+maskEmptyImageDimensions-methods
+                        Apply Masking from Empty Image Dimensions
+mask_img                Mask Image
+mask_vals               Extract or Replace Values Inside a Mask
+mean.nifti              Mean of Values in an Image
+minmax_img-methods      Normalize Image using Range
+multi_overlay           Create Multi-Image Plot with Overlays
+newnii                  Resets image parameters for a copied nifti
+                        object
+niftiarr                Make new nifti from array
+nii.stub                Grab nii file stubname
+ortho2                  Orthographic Display, added options
+ortho_diff              Plot differences for Prediction and Gold
+                        Standard
+parse_img_ext           Parse Image Extensions
+quantile.nifti          Sample Quantiles
+quantile_img            Create Quantile Image
+randomize_mask          Randomize Image based on Mask
+readNIfTI2              readNIfTI with default non-reorientation
+remake_img              Remake Image from Vector
+remap_filename          Build Filename (usually for images)
+replace_dropped_dimensions
+                        Remake Dropped Dimensions
+replace_outside_surface
+                        Replace Values Outside Surface of image
+rescale_img             Image Rescaler
+robust_window           Window image based on quantiles of Image
+same_dims               Check if Objects have Same Dimensions
+separate_img-methods    Separate Labeled Image into Multiple Binary
+                        Images
+slice_colour_df         Slice a Image Color Data.frame
+subset_dti-methods      Subset DTI data based on b-values #'
+tempimg                 Create temporary nii.gz file
+window_img              nifti image windower
+writeNIfTI2             writeNIfTI with default non-reorientation
+write_nifti             General NIfTI Writer
+xyz                     Image Center of Gravity Wrapper
+zero_pad                Zero pads an image
+zlimmer                 Find Image z-limits
+zscore_img              Get Z-score over a margin of an img

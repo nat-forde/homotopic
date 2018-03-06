@@ -1,0 +1,36 @@
+#!/bin/bash
+#PBS -l nodes=1:ppn=8,walltime=03:00:00
+#PBS -j oe
+#PBS -o logs
+#PBS -V
+cd $PBS_O_WORKDIR
+parallel -j8 <<TASKS
+Rscript temp_stab_glasser.r MR160-105-0368-01
+Rscript temp_stab_glasser.r MR160-105-0371-01
+Rscript temp_stab_glasser.r MR160-105-0376-01
+Rscript temp_stab_glasser.r MR160-105-0377-01
+Rscript temp_stab_glasser.r MR160-105-0383-01
+Rscript temp_stab_glasser.r MR160-105-0385-01
+Rscript temp_stab_glasser.r MR160-105-0389-01
+Rscript temp_stab_glasser.r MR160-105-0393-01
+Rscript temp_stab_glasser.r MR160-105-0395-01
+Rscript temp_stab_glasser.r MR160-105-0398-01
+Rscript temp_stab_glasser.r MR160-105-0399-01
+Rscript temp_stab_glasser.r MR160-105-0401-01
+Rscript temp_stab_glasser.r MR160-105-0402-01
+Rscript temp_stab_glasser.r MR160-105-0404-01
+Rscript temp_stab_glasser.r MR160-105-0414-01
+Rscript temp_stab_glasser.r MR160-105-0422-01
+Rscript temp_stab_glasser.r MR160-105-0430-01_a
+Rscript temp_stab_glasser.r MR160-105-0431-01
+Rscript temp_stab_glasser.r MR160-105-0432-01
+Rscript temp_stab_glasser.r MR160-105-0438-01
+Rscript temp_stab_glasser.r MR160-105-0440-01
+Rscript temp_stab_glasser.r MR160-105-0451-01
+Rscript temp_stab_glasser.r MR160-105-0460-01
+Rscript temp_stab_glasser.r MR160-105-0461-01
+Rscript temp_stab_glasser.r MR160-105-9997-01
+Rscript temp_stab_glasser.r MR160-105-9998-01
+Rscript temp_stab_glasser.r MR160-105-9999-01
+
+TASKS

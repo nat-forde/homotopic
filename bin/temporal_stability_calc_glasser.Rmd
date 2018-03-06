@@ -4,7 +4,7 @@ author: "nforde"
 date: "February 22, 2018"
 output: html_document
 ---
-
+## get libraries / set paths
 ```{r}
 library(igraph)
 library(dplyr)
@@ -15,6 +15,7 @@ library(knitr)
 library(car)
 library(zoo)
 library(forecast)
+library(rmarkdown)
 
 window_size = 15
 
@@ -25,9 +26,8 @@ tsdir <- "/scratch/nforde/homotopic/POND/hcp/glasser_meants"
 ts_pattern <- "RST_pond42fix"
 
 ```
-
+## define functions
 ```{r} 
-## functions
 
 ## for normalising data
 transform_to_normal <- function(X) {
@@ -42,11 +42,11 @@ transform_to_normal <- function(X) {
 ## to make dataframe that labels connection as I, HE and HO
 make_g_template <- function(subid, tsdir, ts_pattern) {
   meants <- read.csv(file.path(tsdir,
-                               paste(subid, ts_pattern, "Atlas_s8_glasser_meants.csv", sep="_")),
+                               paste(subid, ts_pattern, "glasser_meants.csv", sep="_")),
                      header=FALSE)  
 
   roiids <- read.csv(file.path(tsdir,
-                               paste(subid, ts_pattern, "Atlas_s8_glasser_roiids.csv", sep="_")),
+                               paste(subid, ts_pattern, "glasser_roiids.csv", sep="_")),
                      header=TRUE)  
   
   rois <- as.character(roiids$labelname)
@@ -119,11 +119,11 @@ make_g_template <- function(subid, tsdir, ts_pattern) {
 ## to calculate temporal stability between pairs of ROIs (gets called by calc_all_stability)
 calc_subject_stability <- function(subid, tsdir, ts_pattern, g.df, window_size) {
   meants.file <- file.path(tsdir,
-                           paste(subid, ts_pattern, "Atlas_s8_glasser_meants.csv", sep="_"))
+                           paste(subid, ts_pattern, "glasser_meants.csv", sep="_"))
   meants <- read.csv(meants.file, header = F)
  
   roiids <- read.csv(file.path(tsdir,
-                               paste(representative_subid, ts_pattern, "Atlas_s8_glasser_roiids.csv", sep="_")),
+                               paste(subid, ts_pattern, "glasser_roiids.csv", sep="_")),
                      header=TRUE) 
   
   rois <- as.character(roiids$labelname)
@@ -148,17 +148,18 @@ calc_all_stability <- function(subids, tsdir, ts_pattern, g.df, window_size) {
   tStab <- data.frame("subid" = subids, 
                       "HO" = numeric(length(subids)),
                       "HE" = numeric(length(subids)),
-                      "I" = numeric(length(subids)),
-                      "CC01" = numeric(length(subids)),
-                      "CC02" = numeric(length(subids)),
-                      "CC03" = numeric(length(subids)),
-                      "CC04" = numeric(length(subids)),
-                      "CC05" = numeric(length(subids)),
-                      "CC06" = numeric(length(subids)),
-                      "CC07" = numeric(length(subids)),
-                      "CC08" = numeric(length(subids)),
-                      "CC09" = numeric(length(subids)),
-                      "CC10" = numeric(length(subids)))
+                      "I" = numeric(length(subids)))
+                      #,
+                      #"CC01" = numeric(length(subids)),
+                      #"CC02" = numeric(length(subids)),
+                      #"CC03" = numeric(length(subids)),
+                      #"CC04" = numeric(length(subids)),
+                      #"CC05" = numeric(length(subids)),
+                      #"CC06" = numeric(length(subids)),
+                      #"CC07" = numeric(length(subids)),
+                      #"CC08" = numeric(length(subids)),
+                      #"CC09" = numeric(length(subids)),
+                      #"CC10" = numeric(length(subids)))
   tStab[ ,2:ncol(tStab)] <- numeric(nrow(tStab)*(ncol(tStab)-1))
   
   ## create a column in g.df to merge by
@@ -169,11 +170,11 @@ calc_all_stability <- function(subids, tsdir, ts_pattern, g.df, window_size) {
     ## get the subid from the dataframe and read in the meants
     subid <- tStab$subid[i]
     meants.file <- file.path(tsdir,
-                             paste(subid, ts_pattern, "Atlas_s8_glasser_meants.csv", sep="_"))
+                             paste(subid, ts_pattern, "glasser_meants.csv", sep="_"))
     if (file.exists(meants.file)) {
       ## look and see if a stability output exists
       stab.file <- file.path(tsdir,
-                             paste(subid, ts_pattern, "Atlas_s8_glasser", window_size, "tempstab.csv", sep="_"))
+                             paste(subid, ts_pattern, "glasser", window_size, "tempstab.csv", sep="_"))
       if (file.exists(stab.file)) {
         sub.df <- read.csv(stab.file) 
       } else {
@@ -189,16 +190,16 @@ calc_all_stability <- function(subids, tsdir, ts_pattern, g.df, window_size) {
       tStab$HE[i] <- mean(filter(sub.df, FCtype == "Heterotopic")$Stability)
       tStab$I[i] <- mean(filter(sub.df, FCtype == "Intrahemispheric")$Stability)
       
-      tStab$CC01[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 1)$Stability)
-      tStab$CC02[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 2)$Stability)
-      tStab$CC03[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 3)$Stability)
-      tStab$CC04[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 4)$Stability)
-      tStab$CC05[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 5)$Stability)
-      tStab$CC06[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 6)$Stability)
-      tStab$CC07[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 7)$Stability)
-      tStab$CC08[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 8)$Stability)
-      tStab$CC09[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 9)$Stability)
-      tStab$CC10[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 10)$Stability)
+      #tStab$CC01[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 1)$Stability)
+      #tStab$CC02[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 2)$Stability)
+      #tStab$CC03[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 3)$Stability)
+      #tStab$CC04[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 4)$Stability)
+      #tStab$CC05[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 5)$Stability)
+      #tStab$CC06[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 6)$Stability)
+      #tStab$CC07[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 7)$Stability)
+      #tStab$CC08[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 8)$Stability)
+      #tStab$CC09[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 9)$Stability)
+      #tStab$CC10[i] <- mean(filter(sub.df, FCtype == "Homotopic", CCsetion == 10)$Stability)
     } else {
       print(paste(meants.file, "does not exist"))
       tStab[i,2:ncol(tStab)] <- NA
@@ -208,10 +209,9 @@ calc_all_stability <- function(subids, tsdir, ts_pattern, g.df, window_size) {
 }
 
 ```
-
+## run POND
 ```{r}
 ### 
-
 
 #### Running POND
 pond_demographics$subid <- paste0("MR160-",pond_demographics$DTI.CT.codes)
@@ -241,24 +241,20 @@ g.df <- make_g_template(subids[1], tsdir, ts_pattern)
 
 tStab_pond <- calc_all_stability(subids, tsdir, ts_pattern, g.df, window_size)
 
-#tStab_pond60 <- calc_all_stability(pond_subids, pond_tsdir, pond_ts_pattern, aparc_labels, g.df, 60)
-
 #write.csv(tStab_pond, "temporal_stability_aparc_pond_window30_20161130.csv", row.names = F)
 #write.csv(tStab_pond60, "temporal_stability_aparc_pond_window60_20161130.csv", row.names = F)
 
 ```
-
+### plot Stability with QC
 ```{r, fig.width = 12}
 
-### plot Stability with QC
+#PONDdemZs <- merge(tStab_pond, pond_demographics,by="subid") %>%
+#  gather(FCtype, Z, HO, HE, I, starts_with("CC")) %>%
+#  filter(NDD != "", !is.na(Z))
 
 PONDdemZs <- merge(tStab_pond, pond_demographics,by="subid") %>%
-  gather(FCtype, Z, HO, HE, I, starts_with("CC")) %>%
+  gather(FCtype, Z, HO, HE, I) %>%
   filter(NDD != "", !is.na(Z))
-
-#PONDdemZs <- merge(tStab_pond, pond_demographics,by="subid") %>%
-#  gather(FCtype, Z, HO, HE, I) %>%
-#  filter(NDD != "", !is.na(Z))
 
 ggplot(PONDdemZs, aes(x=Comp.1, y=Z , color = NDD)) + 
   geom_point() + geom_smooth(method = "lm") +
@@ -284,8 +280,11 @@ ggplot(PONDdemZs1, aes(x=Age, y=QC.resid , color = NDD)) +
   geom_point() + geom_smooth(method = "lm") +
   facet_wrap(~FCtype)
 
+#simplified_pond <- PONDdemZs1 %>%
+#  filter(Age > 6, Age < 18, NDD != "HC")
+
 simplified_pond <- PONDdemZs1 %>%
-  filter(Age > 6, Age < 18, NDD != "HC")
+  filter(Age > 6, Age < 18)
 
 ggplot(simplified_pond, aes(x=Age, y=QC.resid , color = NDD)) + 
   geom_point() + geom_smooth(method = "lm") +
@@ -303,28 +302,49 @@ ggplot(simplified_pond, aes(x=sex, y=QC.resid , color = NDD)) +
   geom_boxplot() + 
   facet_wrap(~FCtype)
 ```
-
+#### statistics STABILITY
 ```{r, fig.width=12}
-#### statistics
 
+# fctype x dx
+print(paste("Anova Table for fctype X NDD"))
+a1 <- aov(Z ~ FCtype*NDD + Age + sex + Comp.1 + Comp.2, 
+               data = filter(simplified_pond))
+print(summary(a1))
+print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
+
+# plot fctype X dx
+ggplot(simplified_pond, aes(x=FCtype, y=Z, color = NDD)) + 
+  geom_boxplot() 
+
+# dx per fctype
+for (fctype in c('HE','HO','I')) {
+  print(paste("Anova Table for",fctype))
+  a1 <- aov(Z ~ NDD + Age + sex + Comp.1 + Comp.2, 
+                 data = filter(simplified_pond, FCtype == fctype))
+  print(summary(a1))
+  print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
+}
+
+#male only dx per fctype
 for (fctype in c('HE','HO','I')) {
   print(paste("Anova Table for",fctype))
   a1 <- aov(Z ~ NDD + Age + Comp.1 + Comp.2, 
-            data = filter(simplified_pond, sex == "Male", FCtype == fctype))
+                 data = filter(simplified_pond, sex == "Male", FCtype == fctype))
   print(summary(a1))
   print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
 }
 
-for (fctype in c("CC01","CC02","CC03","CC04", "CC05","CC06","CC07","CC08","CC09", "CC10")) {
-  print(paste("Anova Table for",fctype))
-  a1 <- aov(Z ~ NDD + Age + Comp.1 + Comp.2, 
-            data = filter(simplified_pond, sex == "Male", FCtype == fctype))
-  print(summary(a1))
-  print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
-}
 
-ggplot(filter(simplified_pond, FCtype %in% c("CC01","CC02","CC03","CC04", "CC05","CC06","CC07","CC08","CC09", "CC10")), 
-       aes(x=as.numeric(factor(FCtype)), y=Z , color = NDD)) + 
-  geom_jitter(width = 0.5) + geom_smooth(span = 0.5) 
+#for (fctype in c("CC01","CC02","CC03","CC04", "CC05","CC06","CC07","CC08","CC09", "CC10")) {
+#  print(paste("Anova Table for",fctype))
+#  a1 <- aov(Z ~ NDD + Age + Comp.1 + Comp.2, 
+#            data = filter(simplified_pond, sex == "Male", FCtype == fctype))
+#  print(summary(a1))
+#  print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
+#}
+
+#ggplot(filter(simplified_pond, FCtype %in% c("CC01","CC02","CC03","CC04", "CC05","CC06","CC07","CC08","CC09", "CC10")), 
+#       aes(x=as.numeric(factor(FCtype)), y=Z , color = NDD)) + 
+#  geom_jitter(width = 0.5) + geom_smooth(span = 0.5) 
 
 ```

@@ -1,0 +1,59 @@
+#!/bin/bash
+#PBS -l nodes=1:ppn=8,walltime=03:00:00
+#PBS -j oe
+#PBS -o logs
+#PBS -V
+cd $PBS_O_WORKDIR
+parallel -j8 <<TASKS
+Rscript temp_stab_glasser.r MR160-088-0002-01
+Rscript temp_stab_glasser.r MR160-088-0023-01
+Rscript temp_stab_glasser.r MR160-088-0043-01
+Rscript temp_stab_glasser.r MR160-088-0044-01
+Rscript temp_stab_glasser.r MR160-088-0046-01
+Rscript temp_stab_glasser.r MR160-088-0050-01
+Rscript temp_stab_glasser.r MR160-088-0061-01
+Rscript temp_stab_glasser.r MR160-088-0062-01
+Rscript temp_stab_glasser.r MR160-088-0082-01
+Rscript temp_stab_glasser.r MR160-088-0096-01
+Rscript temp_stab_glasser.r MR160-088-0099-01
+Rscript temp_stab_glasser.r MR160-088-0100-01
+Rscript temp_stab_glasser.r MR160-088-0102-01
+Rscript temp_stab_glasser.r MR160-088-0107-01
+Rscript temp_stab_glasser.r MR160-088-0112-01
+Rscript temp_stab_glasser.r MR160-088-0114-01
+Rscript temp_stab_glasser.r MR160-088-0136-01
+Rscript temp_stab_glasser.r MR160-088-0137-01
+Rscript temp_stab_glasser.r MR160-088-0138-01
+Rscript temp_stab_glasser.r MR160-088-0139-01
+Rscript temp_stab_glasser.r MR160-088-0140-01
+Rscript temp_stab_glasser.r MR160-088-0146-01
+Rscript temp_stab_glasser.r MR160-088-0152-01
+Rscript temp_stab_glasser.r MR160-088-0155-01
+Rscript temp_stab_glasser.r MR160-088-0157-01
+Rscript temp_stab_glasser.r MR160-088-0167-01
+Rscript temp_stab_glasser.r MR160-088-0175-01
+Rscript temp_stab_glasser.r MR160-088-0182-01
+Rscript temp_stab_glasser.r MR160-088-0195-01
+Rscript temp_stab_glasser.r MR160-088-0208-01
+Rscript temp_stab_glasser.r MR160-088-0215-01
+Rscript temp_stab_glasser.r MR160-088-0221-01
+Rscript temp_stab_glasser.r MR160-088-0229-01
+Rscript temp_stab_glasser.r MR160-088-0250-01
+Rscript temp_stab_glasser.r MR160-088-0253-01
+Rscript temp_stab_glasser.r MR160-088-0254-01
+Rscript temp_stab_glasser.r MR160-088-0255-01
+Rscript temp_stab_glasser.r MR160-088-0258-01
+Rscript temp_stab_glasser.r MR160-088-0265-01
+Rscript temp_stab_glasser.r MR160-088-0276-01
+Rscript temp_stab_glasser.r MR160-088-0276-02
+Rscript temp_stab_glasser.r MR160-088-0279-01
+Rscript temp_stab_glasser.r MR160-088-0284-01
+Rscript temp_stab_glasser.r MR160-088-0291-01
+Rscript temp_stab_glasser.r MR160-088-0293-01
+Rscript temp_stab_glasser.r MR160-088-0303-01
+Rscript temp_stab_glasser.r MR160-088-0304-01
+Rscript temp_stab_glasser.r MR160-088-0325-02
+Rscript temp_stab_glasser.r MR160-088-0328-01
+Rscript temp_stab_glasser.r MR160-088-0338-01
+
+TASKS
