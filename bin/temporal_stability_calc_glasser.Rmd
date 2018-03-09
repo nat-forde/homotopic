@@ -245,7 +245,7 @@ tStab_pond <- calc_all_stability(subids, tsdir, ts_pattern, g.df, window_size)
 #write.csv(tStab_pond60, "temporal_stability_aparc_pond_window60_20161130.csv", row.names = F)
 
 ```
-### plot Stability with QC
+## plot Stability with QC
 ```{r, fig.width = 12}
 
 #PONDdemZs <- merge(tStab_pond, pond_demographics,by="subid") %>%
@@ -302,7 +302,7 @@ ggplot(simplified_pond, aes(x=sex, y=QC.resid , color = NDD)) +
   geom_boxplot() + 
   facet_wrap(~FCtype)
 ```
-#### statistics STABILITY
+## statistics STABILITY
 ```{r, fig.width=12}
 
 # fctype x dx

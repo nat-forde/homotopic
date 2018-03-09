@@ -33,8 +33,15 @@ vignettes/*.pdf
 *.knit.md
 
 # Data directory
-/POND/*/*/*
-/POND/
+POND/
 
 # output htmls
-/bin/*.html
+/**/*.html
+
+# logs
+bin/logs/
+
+bin/.scripts
+bin/.jobscript
+
+

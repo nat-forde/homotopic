@@ -24,7 +24,7 @@ qap_functional_temporal <- read.csv("/mnt/tigrlab/projects/edickie/analysis/POND
 tsdir <- "/scratch/nforde/homotopic/POND/hcp/glasser_meants"
 ts_pattern <- "RST_pond42fix"
 ```
-#### define functions
+## define functions
 ```{r}
 
 ## for normalising data
@@ -181,10 +181,8 @@ calc_all_strengths <- function(subids, tsdir, ts_pattern, g.df) {
 }
 
 ```
-### Run POND
+## Run POND
 ```{r}
-### run pond
-
 pond_demographics$subid <- paste0("MR160-",pond_demographics$DTI.CT.codes)
 pond_demographics <- merge(pond_demographics, qap_functional_temporal, by.x = "subid", by.y = "subject")
 pond_demographics <- filter(pond_demographics, perc_fd < 5)
@@ -271,17 +269,28 @@ ggplot(simplified_pond, aes(x=sex, y=QC.resid , color = NDD)) +
   facet_wrap(~FCtype)
 
 ```
-### statistics STRENGTH
+## statistics STRENGTH
 ```{r, fig.width=12}
 # fctype x dx
 print(paste("Anova Table for fctype X NDD"))
 a1 <- aov(Z ~ FCtype*NDD + Age + sex + Comp.1 + Comp.2, 
-               data = filter(simplified_pond))
+               data = simplified_pond)
 print(summary(a1))
 print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
 
 # plot fctype X dx
 ggplot(simplified_pond, aes(x=FCtype, y=Z, color = NDD)) + 
+  geom_boxplot() 
+
+# fctype x dx (male only)
+print(paste("Anova Table for fctype X NDD, male only"))
+a1 <- aov(Z ~ FCtype*NDD + Age + Comp.1 + Comp.2, 
+               data = filter(simplified_pond, sex == "Male"))
+print(summary(a1))
+print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
+
+# plot fctype X dx (male only)
+ggplot(filter(simplified_pond, sex == "Male"), aes(x=FCtype, y=Z, color = NDD)) + 
   geom_boxplot() 
 
 # dx per fctype
