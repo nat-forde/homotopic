@@ -53,7 +53,7 @@ if [[ ! -f "gmwmi.nii.gz" ]]; then
 	#register T1 to diffusion space first
 	fslroi $dMRI b0 0 1
 	flirt -dof 6 -in $T1 -ref b0.nii.gz -omat xformT1_to_diff.mat -out T1_diff
-	5ttgen fsl T1_diff.nii.gz -premasked 5TT.nii.gz -nocrop -force #-t2 <T2 image optional>
+	5ttgen fsl T1_diff.nii.gz -premasked 5TT.nii.gz -force #-t2 <T2 image optional>
 	5tt2gmwmi 5TT.nii.gz gmwmi.nii.gz #-force
 fi
 
@@ -61,7 +61,7 @@ fi
 if [[ ! -f "det.tck" ]]; then
 	#generate tracks 100million should be doable on the cluster # Check computing required and storage space
 	sh2peaks FOD.nii.gz peaks.nii.gz
-	tckgen -algorithm FACT peaks.nii.gz det.tck -act 5TT.nii.gz -seed_gmwmi gmwmi.nii.gz -step 0.5 -angle 30 -minlength 10 -select 100000000
+	tckgen -algorithm FACT peaks.nii.gz det.tck -act 5TT.nii.gz -seed_gmwmi gmwmi.nii.gz -step 0.5 -angle 30 -minlength 20 -select 100000000
 fi
 #if [[ ! -f "prob.tck" ]]; then
 #	tckgen FOD.nii.gz prob.tck -act 5TT.nii.gz -seed_gmwmi gmwmi.nii.gz -step 0.5 -angle 30 -minlength 20 -select 100000000 #probabilistic is default
@@ -95,11 +95,9 @@ fi
 if [[ ! -f "det_connectome.csv" ]]; then
 	# make connectome (weighted by number of stremlines normalised by ROI voxel count and streamline length)
 	tck2connectome det.tck glasser.nii.gz det_connectome.csv -scale_invlength -zero_diagonal -symmetric -tck_weights_in det_weights.txt
-	tck2connectome det.tck glasser.nii.gz det_length_connectome.csv -scale_length -stat_edge mean
 fi
 #if [[ ! -f "prob_connectome.csv" ]]; then
 #	tck2connectome prob.tck glasser.nii.gz prob_connectome.csv -scale_invlength -zero_diagonal -tck_weights_in prob_weights.txt
-#	tck2connectome prob.tck glasser.nii.gz prob_length_connectome.csv -scale_length -stat_edge mean
 #fi
 # scaling by inverse of node volume -scale_invlength is odd when anatomically constrained, would make more sense to scale by # of gmwmi voxels
 # scale by number of voxels in gmwmi in second step
@@ -113,6 +111,3 @@ fi
 #if [[ -f "prob_connectome.csv" ]]; then
 #	rm prob.tck
 #fi
-
-fslmaths gmwmi.nii.gz -bin gmwmi_bin.nii.gz
-fslstats -K glasser.nii.gz gmwmi_bin.nii.gz -V > voxel_count.txt
