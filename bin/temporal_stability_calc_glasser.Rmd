@@ -25,6 +25,18 @@ qap_functional_temporal <- read.csv("/mnt/tigrlab/projects/edickie/analysis/POND
 tsdir <- "/scratch/nforde/homotopic/POND/hcp/glasser_meants"
 ts_pattern <- "RST_pond42fix"
 
+pond_extra <- read.csv("/scratch/nforde/homotopic/POND/pond_demog.csv")
+
+
+for (i in 1:nrow(pond_extra)) {
+  if (startsWith(as.character(pond_extra$subject[i]), "88")) {
+    pond_extra$subject[i] <- paste0("0", pond_extra$subject[i])
+  }
+}
+z <-  strsplit(as.character(pond_demographics$DTI.CT.codes),"-")
+pond_demographics$subject <- sapply(z,FUN=function(x){paste0(x[1],x[2])})
+demogs <- merge(pond_demographics, pond_extra[c(1,2,7:10,12)], by.x="subject", by.y="subject", all.x=TRUE)
+
 ```
 ## define functions
 ```{r} 
@@ -214,12 +226,12 @@ calc_all_stability <- function(subids, tsdir, ts_pattern, g.df, window_size) {
 ### 
 
 #### Running POND
-pond_demographics$subid <- paste0("MR160-",pond_demographics$DTI.CT.codes)
-pond_demographics <- merge(pond_demographics, qap_functional_temporal, by.x = "subid", by.y = "subject")
-pond_demographics <- filter(pond_demographics, perc_fd < 5)
+demogs$subid <- paste0("MR160-",demogs$DTI.CT.codes)
+demogs <- merge(demogs, qap_functional_temporal, by.x = "subid", by.y = "subject")
+demogs <- filter(demogs, perc_fd < 5)
 
 ## transform QC measures to normality
-pond_demographics <- pond_demographics %>%
+demogs <- demogs %>%
   mutate("dvars_pT"  = transform_to_normal(dvars),
          "m_tsnr_pT"  = transform_to_normal(m_tsnr),
          "mean_fd_pT"  = transform_to_normal(mean_fd),
@@ -229,13 +241,13 @@ pond_demographics <- pond_demographics %>%
 # Pricipal Components Analysis
 # entering raw data and extracting PCs
 # from the correlation matrix
-fit <- princomp(select(pond_demographics, dvars_pT, m_tsnr_pT, mean_fd_pT, quality_pT) , cor=TRUE)
+fit <- princomp(select(demogs, dvars_pT, m_tsnr_pT, mean_fd_pT, quality_pT) , cor=TRUE)
 summary(fit) # print variance accounted for
 loadings(fit) # pc loadings
 plot(fit,type="lines") # scree plot
 ## write the top 5 principal components to the speadsheet
-pond_demographics <- cbind(pond_demographics,fit$scores[ ,1:2]) # the principal components
-subids <- pond_demographics$subid
+demogs <- cbind(demogs,fit$scores[ ,1:2]) # the principal components
+subids <- demogs$subid
 
 g.df <- make_g_template(subids[1], tsdir, ts_pattern)
 
@@ -248,11 +260,11 @@ tStab_pond <- calc_all_stability(subids, tsdir, ts_pattern, g.df, window_size)
 ## plot Stability with QC
 ```{r, fig.width = 12}
 
-#PONDdemZs <- merge(tStab_pond, pond_demographics,by="subid") %>%
+#PONDdemZs <- merge(tStab_pond, demogs,by="subid") %>%
 #  gather(FCtype, Z, HO, HE, I, starts_with("CC")) %>%
 #  filter(NDD != "", !is.na(Z))
 
-PONDdemZs <- merge(tStab_pond, pond_demographics,by="subid") %>%
+PONDdemZs <- merge(tStab_pond, demogs,by="subid") %>%
   gather(FCtype, Z, HO, HE, I) %>%
   filter(NDD != "", !is.na(Z))
 
@@ -302,38 +314,60 @@ ggplot(simplified_pond, aes(x=sex, y=QC.resid , color = NDD)) +
   geom_boxplot() + 
   facet_wrap(~FCtype)
 ```
-## statistics STABILITY
+## statistics STABILITY - groupwise
 ```{r, fig.width=12}
+
+#using Anova (type 2 F tests [unique variance]) instead of aov (type 1 F test [sequential])
 
 # fctype x dx
 print(paste("Anova Table for fctype X NDD"))
-a1 <- aov(Z ~ FCtype*NDD + Age + sex + Comp.1 + Comp.2, 
-               data = filter(simplified_pond))
-print(summary(a1))
-print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
+F2 <- Anova(lm(Z ~ FCtype*NDD + Age + sex + Comp.1 + Comp.2, 
+               data = simplified_pond))
+print(F2)
+F1 <-aov(Z ~ FCtype*NDD + Age + sex + Comp.1 + Comp.2, 
+               data = simplified_pond)
+print(TukeyHSD(x=F1, 'NDD', conf.level=0.95))
+print(TukeyHSD(x=F1, 'FCtype', conf.level=0.95))
 
 # plot fctype X dx
 ggplot(simplified_pond, aes(x=FCtype, y=Z, color = NDD)) + 
   geom_boxplot() 
 
+# fctype x dx (male only)
+print(paste("Anova Table for fctype X NDD, male only"))
+F2 <- Anova(lm(Z ~ FCtype*NDD + Age + Comp.1 + Comp.2, 
+               data = filter(simplified_pond, sex == "Male")))
+print(F2)
+F1 <- aov(Z ~ FCtype*NDD + Age + Comp.1 + Comp.2, 
+               data = filter(simplified_pond, sex == "Male"))
+print(TukeyHSD(x=F1, 'NDD', conf.level=0.95))
+print(TukeyHSD(x=F1, 'FCtype', conf.level=0.95))
+
+# plot fctype X dx (male only)
+ggplot(filter(simplified_pond, sex == "Male"), aes(x=FCtype, y=Z, color = NDD)) + 
+  geom_boxplot() 
+
 # dx per fctype
 for (fctype in c('HE','HO','I')) {
   print(paste("Anova Table for",fctype))
-  a1 <- aov(Z ~ NDD + Age + sex + Comp.1 + Comp.2, 
+  F2 <- Anova(lm(Z ~ NDD + Age + sex + Comp.1 + Comp.2, 
+                 data = filter(simplified_pond, FCtype == fctype)))
+  print(F2)
+  F1 <- aov(Z ~ NDD + Age + sex + Comp.1 + Comp.2, 
                  data = filter(simplified_pond, FCtype == fctype))
-  print(summary(a1))
-  print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
+  print(TukeyHSD(x=F1, 'NDD', conf.level=0.95))
 }
 
 #male only dx per fctype
 for (fctype in c('HE','HO','I')) {
   print(paste("Anova Table for",fctype))
-  a1 <- aov(Z ~ NDD + Age + Comp.1 + Comp.2, 
+  F2 <- Anova(lm(Z ~ NDD + Age + Comp.1 + Comp.2, 
+                 data = filter(simplified_pond, sex == "Male", FCtype == fctype)))
+  print(F2)
+  F1 <- aov(Z ~ NDD + Age + Comp.1 + Comp.2, 
                  data = filter(simplified_pond, sex == "Male", FCtype == fctype))
-  print(summary(a1))
-  print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
+  print(TukeyHSD(x=F1, 'NDD', conf.level=0.95))
 }
-
 
 #for (fctype in c("CC01","CC02","CC03","CC04", "CC05","CC06","CC07","CC08","CC09", "CC10")) {
 #  print(paste("Anova Table for",fctype))
@@ -346,5 +380,23 @@ for (fctype in c('HE','HO','I')) {
 #ggplot(filter(simplified_pond, FCtype %in% c("CC01","CC02","CC03","CC04", "CC05","CC06","CC07","CC08","CC09", "CC10")), 
 #       aes(x=as.numeric(factor(FCtype)), y=Z , color = NDD)) + 
 #  geom_jitter(width = 0.5) + geom_smooth(span = 0.5) 
+
+```
+## statistics STABILITY - continuous
+```{r, fig.width=12}
+
+# ABAS_GC + SCQ + TOCS +FSIQ.x + AttnCBCLR
+
+# fctype x general adaptive functioning
+print(paste("Anova Table for fctype X NDD"))
+a1 <- aov(Z ~ FCtype:NDD + FCtype:ABAS_GC +NDD:ABAS_GC +FCtype +NDD + ABAS_GC + Age + sex + Comp.1 + Comp.2, 
+               data = simplified_pond)
+print(summary(a1))
+print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
+print(TukeyHSD(x=a1, 'FCtype', conf.level=0.95))
+
+ggplot(simplified_pond, aes(x=ABAS_GC, y=Z, color = NDD)) + 
+  geom_point() + geom_smooth(method = "lm") +
+  facet_wrap(~FCtype)
 
 ```
