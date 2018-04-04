@@ -61,7 +61,7 @@ fi
 if [[ ! -f "det.tck" ]]; then
 	#generate tracks 100million should be doable on the cluster # Check computing required and storage space
 	sh2peaks FOD.nii.gz peaks.nii.gz
-	tckgen -algorithm FACT peaks.nii.gz det.tck -act 5TT.nii.gz -seed_gmwmi gmwmi.nii.gz -step 0.5 -angle 30 -minlength 10 -select 100000000
+	tckgen -algorithm FACT peaks.nii.gz det.tck -act 5TT.nii.gz -seed_gmwmi gmwmi.nii.gz -step 0.5 -angle 30 -minlength 10 -select 50000000
 fi
 #if [[ ! -f "prob.tck" ]]; then
 #	tckgen FOD.nii.gz prob.tck -act 5TT.nii.gz -seed_gmwmi gmwmi.nii.gz -step 0.5 -angle 30 -minlength 20 -select 100000000 #probabilistic is default

@@ -21,9 +21,9 @@ for subj in $SUBJECTS; do
   echo bash CSD_scc.sh $subj
 done > CSD_qbatch.txt
 
-qbatch --walltime '24:00:00' -b pbs --ppj 1 -c 1 -j 1 --nodes 16 --mem 5G CSD_qbatch.txt
+#qbatch  --walltime '48:00:00' -b pbs --ppj 1 -c 1 -j 1 --nodes 1 -o "-l feature=bigmem"  CSD_qbatch.txt
 
-
+qbatch --walltime '08:00:00' -b pbs --ppj 20 -c 1 -j 1 --nodes 1 -o "-l mem=130g" CSD_qbatch.txt
 ##-------------------------------------------------------------------------------
 ## Probabilistic
 # cd /scratch/nforde/homotopic/POND/CSD/
@@ -34,4 +34,4 @@ qbatch --walltime '24:00:00' -b pbs --ppj 1 -c 1 -j 1 --nodes 16 --mem 5G CSD_qb
 #   echo bash CSD_scc_prob.sh $subj
 # done > CSD_prob_batch.txt
 #
-# qbatch --walltime '23:59:00' -b pbs --ppj 1 -c 1 -j 1 --nodes 16 --mem 5G CSD_prob_batch.txt
+# qbatch --walltime '08:00:00' -b pbs --ppj 20 -c 1 -j 1 --nodes 1 -o "-l mem=130g" CSD_prob_batch.txt
