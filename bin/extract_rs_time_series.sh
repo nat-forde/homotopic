@@ -5,20 +5,41 @@
 module load python/3.6_ciftify_01
 module load connectome-workbench/1.2.3
 
-#calc time series per region
-HCP_DIR=/projects/edickie/analysis/POND_RST/hcp
-cd $HCP_DIR
-SUBJECTS=`ls -1d MR160*`
 
-TSOUTDIR=/scratch/nforde/homotopic/POND/hcp/glasser_meants
+##---------------------POND-----------------------------------------------------
+# #calc time series per region
+# HCP_DIR=/projects/edickie/analysis/POND_RST/hcp
+# cd $HCP_DIR
+# SUBJECTS=`ls -1d MR160*`
+#
+# TSOUTDIR=/scratch/nforde/homotopic/POND/hcp/glasser_meants
+# #mkdir $TSOUTDIR
+#
+# for SUBJECT in $SUBJECTS; do
+#   echo $SUBJECT
+#   ciftify_meants \
+#         --outputcsv ${TSOUTDIR}/${SUBJECT}_RST_pond42fix_glasser_meants.csv \
+#         --outputlabels ${TSOUTDIR}/${SUBJECT}_RST_pond42fix_glasser_roiids.csv \
+#         ${SUBJECT}/MNINonLinear/Results/RST_pond42fix/RST_pond42fix_Atlas_s8.dtseries.nii \
+#         /scratch/nforde/homotopic/atlases/HCP_Glasser_210_CorticalAreas.32k_fs_LR.dlabel.nii
+#
+# done
+
+##---------------------ABIDE----------------------------------------------------
+#calc time series per region
+HCP_DIR=/projects/edickie/analysis/ABIDEI/hcp/NYU
+cd $HCP_DIR
+SUBJECTS=`ls -1d NYU*`
+
+TSOUTDIR=/scratch/nforde/homotopic/ABIDE/hcp/glasser_meants
 #mkdir $TSOUTDIR
 
 for SUBJECT in $SUBJECTS; do
   echo $SUBJECT
   ciftify_meants \
-        --outputcsv ${TSOUTDIR}/${SUBJECT}_RST_pond42fix_glasser_meants.csv \
-        --outputlabels ${TSOUTDIR}/${SUBJECT}_RST_pond42fix_glasser_roiids.csv \
-        ${SUBJECT}/MNINonLinear/Results/RST_pond42fix/RST_pond42fix_Atlas_s8.dtseries.nii \
+        --outputcsv ${TSOUTDIR}/${SUBJECT}_rest_abide25fix_glasser_meants.csv \
+        --outputlabels ${TSOUTDIR}/${SUBJECT}_rest_abide25fix_glasser_roiids.csv \
+        ${SUBJECT}/MNINonLinear/Results/rest_abide25fix/rest_abide25fix_Atlas_s8.dtseries.nii \
         /scratch/nforde/homotopic/atlases/HCP_Glasser_210_CorticalAreas.32k_fs_LR.dlabel.nii
 
 done
