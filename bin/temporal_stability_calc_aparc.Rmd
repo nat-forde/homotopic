@@ -13,6 +13,8 @@ library(knitr)
 library(car)
 library(zoo)
 library(forecast)
+library(lme4)
+library(multcomp)
 
 window_size = 15
 
@@ -229,7 +231,7 @@ pond_demographics <- pond_demographics %>%
 # Pricipal Components Analysis
 # entering raw data and extracting PCs
 # from the correlation matrix
-fit <- princomp(select(pond_demographics, dvars_pT, m_tsnr_pT, mean_fd_pT, quality_pT) , cor=TRUE)
+fit <- princomp(dplyr::select(pond_demographics, dvars_pT, m_tsnr_pT, mean_fd_pT, quality_pT) , cor=TRUE)
 summary(fit) # print variance accounted for
 loadings(fit) # pc loadings
 plot(fit,type="lines") # scree plot
@@ -274,7 +276,7 @@ ggplot(PONDdemZs, aes(x=Comp.2, y=Z , color = NDD)) +
 
 
 resids <- PONDdemZs %>%
-  group_by(FCtype) %>%
+  #group_by(FCtype) %>%
   do(augment(lm(Z ~ Comp.1 + Comp.2, data = .)))
 names(resids) <- paste0('QC',names(resids))
 
@@ -289,7 +291,7 @@ ggplot(PONDdemZs1, aes(x=Age, y=QC.resid , color = NDD)) +
   facet_wrap(~FCtype)
 
 simplified_pond <- PONDdemZs1 %>%
-  filter(Age > 6, Age < 18, NDD != "HC")
+  filter(Age > 6, Age < 18)
 
 ggplot(simplified_pond, aes(x=Age, y=QC.resid , color = NDD)) + 
   geom_point() + geom_smooth(method = "lm") +
@@ -311,22 +313,49 @@ ggplot(simplified_pond, aes(x=sex, y=QC.resid , color = NDD)) +
 ```{r, fig.width=12}
 #### statistics
 
+#using Anova (type 2 F tests [unique variance]) instead of aov (type 1 F test [sequential])
+
+# fctype x dx
+print(paste("Anova Table for fctype X NDD"))
+F2 <- lmer(Z ~ FCtype*NDD + Age + sex + Comp.1 + Comp.2 + (1|subid), 
+               data = simplified_pond)
+print(Anova(F2))
+summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
+
+# plot fctype X dx
+ggplot(simplified_pond, aes(x=FCtype, y=Z, color = NDD)) + 
+  geom_boxplot() 
+
+# fctype x dx (male only)
+print(paste("Anova Table for fctype X NDD, male only"))
+F2 <- lmer(Z ~ FCtype*NDD + Age + Comp.1 + Comp.2 + (1|subid), 
+               data = filter(simplified_pond, sex == "Male"))
+print(Anova(F2))
+summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
+         
+# plot fctype X dx (male only)
+ggplot(filter(simplified_pond, sex == "Male"), aes(x=FCtype, y=Z, color = NDD)) + 
+  geom_boxplot() 
+
+# dx per fctype
 for (fctype in c('HE','HO','I')) {
   print(paste("Anova Table for",fctype))
-  a1 <- aov(Z ~ NDD + Age + Comp.1 + Comp.2, 
-            data = filter(simplified_pond, sex == "Male", FCtype == fctype))
-  print(summary(a1))
-  print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
+  F2 <- lm(Z ~ NDD + Age + sex + Comp.1 + Comp.2, 
+                 data = filter(simplified_pond, FCtype == fctype))
+  print(Anova(F2))
+  summary(glht(F2, linfct=mcp(NDD ="Tukey")))
 }
 
-for (fctype in c("CC01","CC02","CC03","CC04", "CC05","CC06","CC07","CC08","CC09", "CC10")) {
+#male only dx per fctype
+for (fctype in c('HE','HO','I')) {
   print(paste("Anova Table for",fctype))
-  a1 <- aov(Z ~ NDD + Age + Comp.1 + Comp.2, 
-            data = filter(simplified_pond, sex == "Male", FCtype == fctype))
-  print(summary(a1))
-  print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
+  F2 <- lm(Z ~ NDD + Age + Comp.1 + Comp.2,
+                 data = filter(simplified_pond, sex == "Male", FCtype == fctype))
+  print(Anova(F2))
+  summary(glht(F2, linfct=mcp(NDD ="Tukey")))
 }
-
 ggplot(filter(simplified_pond, FCtype %in% c("CC01","CC02","CC03","CC04", "CC05","CC06","CC07","CC08","CC09", "CC10")), 
        aes(x=as.numeric(factor(FCtype)), y=Z , color = NDD)) + 
   geom_jitter(width = 0.5) + geom_smooth(span = 0.5) 

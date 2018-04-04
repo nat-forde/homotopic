@@ -196,7 +196,7 @@ pond_demographics <- pond_demographics %>%
 # Pricipal Components Analysis
 # entering raw data and extracting PCs
 # from the correlation matrix
-fit <- princomp(select(pond_demographics, dvars_pT, m_tsnr_pT, mean_fd_pT, quality_pT) , cor=TRUE)
+fit <- princomp(dplyr::select(pond_demographics, dvars_pT, m_tsnr_pT, mean_fd_pT, quality_pT) , cor=TRUE)
 summary(fit) # print variance accounted for
 loadings(fit) # pc loadings
 plot(fit,type="lines") # scree plot
@@ -231,7 +231,7 @@ ggplot(PONDdemZs, aes(x=Comp.2, y=Z , color = NDD)) +
   facet_wrap(~FCtype)
 
 resids <- PONDdemZs %>%
-  group_by(FCtype) %>%
+  #group_by(FCtype) %>%
   do(augment(lm(Z ~ Comp.1 + Comp.2, data = .)))
 names(resids) <- paste0('QC',names(resids))
 
