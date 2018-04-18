@@ -23,7 +23,7 @@ function cleanup_ramdisk {
 
 #trap the termination signal, and call the function 'trap_term' when
 # that happens, so results may be saved.
-trap cleanup_ramdisk EXIT
+trap cleanup_ramdisk EXIT SIGTERM
 
 cd $tmpdir
 # cp input file

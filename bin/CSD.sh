@@ -47,6 +47,8 @@ fi	#shview response.txt
 if [[ ! -f "FOD.nii.gz" ]]; then
 	dwi2fod csd $dMRI response.txt FOD.nii.gz -mask $brain_mask -fslgrad $bvec $bval #-force # to overwrite
 fi #mrview $dMRI -odf.load_sh FOD.nii.gz
+# to make DEC map for nice vizualisation:
+#fod2dec FOD.nii.gz DEC.nii.gz
 
 #anatomically constrained tractography (ACT) use 5ttgen script
 if [[ ! -f "gmwmi.nii.gz" ]]; then
