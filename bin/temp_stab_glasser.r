@@ -21,13 +21,10 @@ tsdir <- "/scratch/nforde/homotopic/POND/hcp/glasser_meants"
 ts_pattern <- "RST_pond42fix"
 g.df <- read.csv("g.df.csv", header=TRUE)
 
-meants.file <- file.path(tsdir,
-                         paste(subid, ts_pattern, "glasser_meants.csv", sep="_"))
+meants.file <- file.path(tsdir, paste(subid, ts_pattern, "glasser_meants.csv", sep="_"))
 meants <- read.csv(meants.file, header = F)
 
-roiids <- read.csv(file.path(tsdir,
-                             paste(subid, ts_pattern, "glasser_roiids.csv", sep="_")),
-                   header=TRUE) 
+roiids <- read.csv(file.path(tsdir, paste(subid, ts_pattern, "glasser_roiids.csv", sep="_")), header=TRUE) 
 
 rois <- as.character(roiids$labelname)
 meants_t <- as.data.frame(t(meants))
