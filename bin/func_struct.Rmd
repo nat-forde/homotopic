@@ -133,6 +133,7 @@ calc_everything <- function(subids, tsdir, ts_pattern, g.df, window_size, diffdi
                       "HO" = numeric(length(subids)),
                       "HE" = numeric(length(subids)),
                       "I" = numeric(length(subids)),
+                      "lenNA" = numeric(length(subids)),
                       "len1" = numeric(length(subids)),
                       "len2" = numeric(length(subids)),
                       "len3" = numeric(length(subids)),
@@ -153,6 +154,7 @@ calc_everything <- function(subids, tsdir, ts_pattern, g.df, window_size, diffdi
                       "len18" = numeric(length(subids)),
                       "len19" = numeric(length(subids)),
                       "len20" = numeric(length(subids)),
+                      "dwNA" = numeric(length(subids)),
                       "dw1" = numeric(length(subids)),
                       "dw2" = numeric(length(subids)),
                       "dw3" = numeric(length(subids)),
@@ -285,6 +287,7 @@ calc_everything <- function(subids, tsdir, ts_pattern, g.df, window_size, diffdi
         theZs$HO[i] <- mean(filter(edges.all, FCtype == "Homotopic")$theseZ)
         theZs$HE[i] <- mean(filter(edges.all, FCtype == "Heterotopic")$theseZ)
         theZs$I[i] <- mean(filter(edges.all, FCtype == "Intrahemispheric")$theseZ)
+        theZs$lenNA[i] <- mean(filter(edges.all, is.na(len_quant))$theseZ)
         theZs$len1[i] <- mean(filter(edges.all, len_quant == "1")$theseZ)
         theZs$len2[i] <- mean(filter(edges.all, len_quant == "2")$theseZ)
         theZs$len3[i] <- mean(filter(edges.all, len_quant == "3")$theseZ)
@@ -305,6 +308,7 @@ calc_everything <- function(subids, tsdir, ts_pattern, g.df, window_size, diffdi
         theZs$len18[i] <- mean(filter(edges.all, len_quant == "18")$theseZ)
         theZs$len19[i] <- mean(filter(edges.all, len_quant == "19")$theseZ)
         theZs$len20[i] <- mean(filter(edges.all, len_quant == "20")$theseZ) 
+        theZs$dwNA[i] <- mean(filter(edges.all, is.na(dw_quant))$theseZ)
         theZs$dw1[i] <- mean(filter(edges.all, dw_quant == "1")$theseZ)
         theZs$dw2[i] <- mean(filter(edges.all, dw_quant == "2")$theseZ)
         theZs$dw3[i] <- mean(filter(edges.all, dw_quant == "3")$theseZ)
@@ -329,6 +333,7 @@ calc_everything <- function(subids, tsdir, ts_pattern, g.df, window_size, diffdi
         theTS$HO[i] <- mean(filter(edges.all, FCtype == "Homotopic")$Stability)
         theTS$HE[i] <- mean(filter(edges.all, FCtype == "Heterotopic")$Stability)
         theTS$I[i] <- mean(filter(edges.all, FCtype == "Intrahemispheric")$Stability)
+        theTS$lenNA[i] <- mean(filter(edges.all, is.na(len_quant))$Stability)
         theTS$len1[i] <- mean(filter(edges.all, len_quant == "1")$Stability)
         theTS$len2[i] <- mean(filter(edges.all, len_quant == "2")$Stability)
         theTS$len3[i] <- mean(filter(edges.all, len_quant == "3")$Stability)
@@ -349,6 +354,7 @@ calc_everything <- function(subids, tsdir, ts_pattern, g.df, window_size, diffdi
         theTS$len18[i] <- mean(filter(edges.all, len_quant == "18")$Stability)
         theTS$len19[i] <- mean(filter(edges.all, len_quant == "19")$Stability)
         theTS$len20[i] <- mean(filter(edges.all, len_quant == "20")$Stability) 
+        theTS$dwNA[i] <- mean(filter(edges.all, is.na(dw_quant))$Stability)
         theTS$dw1[i] <- mean(filter(edges.all, dw_quant == "1")$Stability)
         theTS$dw2[i] <- mean(filter(edges.all, dw_quant == "2")$Stability)
         theTS$dw3[i] <- mean(filter(edges.all, dw_quant == "3")$Stability)
@@ -373,6 +379,7 @@ calc_everything <- function(subids, tsdir, ts_pattern, g.df, window_size, diffdi
         theDW$HO[i] <- mean(filter(edges.all, FCtype == "Homotopic")$weight)
         theDW$HE[i] <- mean(filter(edges.all, FCtype == "Heterotopic")$weight)
         theDW$I[i] <- mean(filter(edges.all, FCtype == "Intrahemispheric")$weight)
+        theDW$lenNA[i] <- mean(filter(edges.all, is.na(len_quant))$weight)
         theDW$len1[i] <- mean(filter(edges.all, len_quant == "1")$weight)
         theDW$len2[i] <- mean(filter(edges.all, len_quant == "2")$weight)
         theDW$len3[i] <- mean(filter(edges.all, len_quant == "3")$weight)
@@ -393,6 +400,7 @@ calc_everything <- function(subids, tsdir, ts_pattern, g.df, window_size, diffdi
         theDW$len18[i] <- mean(filter(edges.all, len_quant == "18")$weight)
         theDW$len19[i] <- mean(filter(edges.all, len_quant == "19")$weight)
         theDW$len20[i] <- mean(filter(edges.all, len_quant == "20")$weight) 
+        theDW$dwNA[i] <- mean(filter(edges.all, is.na(dw_quant))$weight)
         theDW$dw1[i] <- mean(filter(edges.all, dw_quant == "1")$weight)
         theDW$dw2[i] <- mean(filter(edges.all, dw_quant == "2")$weight)
         theDW$dw3[i] <- mean(filter(edges.all, dw_quant == "3")$weight)
@@ -468,10 +476,10 @@ typeTS <- merge(theTS,demogs,by="subid") %>%
  
 typeDW <- merge(theDW,demogs,by="subid") %>%
    gather(FCtype, DW, HO, HE, I) %>%
-   filter(NDD != "", !is.na(DW))
+   filter(NDD != "")
   
-type_ <- merge(typeZ[c(1,44:48,160:165,177,178)], typeTS[c(1,177,178)], by=c("subid","FCtype"))  #index numbers may change if QC added
-type <- merge(type_, typeDW[c(1,177,178)], by=c("subid","FCtype")) #%>%
+type_ <- merge(typeZ[c(1,46:50,162:167,179,180)], typeTS[c(1,179,180)], by=c("subid","FCtype"))  #index numbers may change if QC added
+type <- merge(type_, typeDW[c(1,179,180)], by=c("subid","FCtype")) #%>%
   #filter(NDD != "")
 
 lenQZ <- merge(theZs,demogs,by="subid") %>%
@@ -484,10 +492,10 @@ lenQTS <- merge(theTS,demogs,by="subid") %>%
  
 lenQDW <- merge(theDW,demogs,by="subid") %>%
    gather(lenQ, DW, starts_with("len")) %>%
-   filter(NDD != "", !is.na(DW))
+   filter(NDD != "")
 
-lenQ_ <- merge(lenQZ[c(1,27:31,143:148,160,161)], lenQTS[c(1,160,161)], by=c("subid","lenQ"))  #index numbers may change if QC added
-lenQ  <- merge(lenQ_, lenQDW[c(1,160,161)], by=c("subid","lenQ")) #%>%
+lenQ_ <- merge(lenQZ[c(1,28:32,144:149,161,162)], lenQTS[c(1,161,162)], by=c("subid","lenQ"))  #index numbers may change if QC added
+lenQ  <- merge(lenQ_, lenQDW[c(1,161,162)], by=c("subid","lenQ")) #%>%
   #filter(NDD != "")
  
 dwQZ <- merge(theZs,demogs,by="subid") %>%
@@ -500,10 +508,10 @@ dwQTS <- merge(theTS,demogs,by="subid") %>%
  
 dwQDW <- merge(theDW,demogs,by="subid") %>%
    gather(dwQ, DW, starts_with("dw")) %>%
-   filter(NDD != "", !is.na(DW))
+   filter(NDD != "")
 
-dwQ_ <- merge(dwQZ[c(1,27:31,143:148,160,161)], dwQTS[c(1,160,161)], by=c("subid","dwQ"))  #index numbers may change if QC added
-dwQ  <- merge(dwQ_, dwQDW[c(1,160,161)], by=c("subid","dwQ"))# %>%
+dwQ_ <- merge(dwQZ[c(1,28:32,144:149,161,162)], dwQTS[c(1,161,162)], by=c("subid","dwQ"))  #index numbers may change if QC added
+dwQ  <- merge(dwQ_, dwQDW[c(1,161,162)], by=c("subid","dwQ"))# %>%
   #filter(NDD != "")
 
 ```
@@ -595,7 +603,7 @@ ggplot(filter(type, sex == "Male"), aes(x=FCtype, y=DW, color = NDD)) +
 ```{r, fig.width=12}
 
 lenQ$lenQordered <- factor(lenQ$lenQ, c('len1','len2','len3','len4','len5','len6','len7','len8','len9','len10','len11','len12','len13','len14','len15','len16','len17','len18','len19','len20'))
-
+lenQ$lenQorderedNA <- factor(lenQ$lenQ, c('lenNA','len1','len2','len3','len4','len5','len6','len7','len8','len9','len10','len11','len12','len13','len14','len15','len16','len17','len18','len19','len20'))
 
 ################### Does tract length predict FC strength? ##################################
 # length x dx
@@ -607,7 +615,7 @@ summary(glht(F2, linfct=mcp(NDD ="Tukey")))
 #summary(glht(F2, linfct=mcp(lenQ ="Tukey")))
 
 # plot lenQ X dx 
-ggplot(lenQ, aes(x=lenQordered, y=Z, color = NDD)) + 
+ggplot(lenQ, aes(x=lenQorderedNA, y=Z, color = NDD)) + 
   geom_boxplot() 
 
 ggplot(lenQ,aes(x=as.numeric(factor(lenQordered)), y=Z , color = NDD)) + 
@@ -622,7 +630,7 @@ summary(glht(F2, linfct=mcp(NDD ="Tukey")))
 #summary(glht(F2, linfct=mcp(lenQ ="Tukey")))
          
 # plot lenQ X dx (male only)
-ggplot(filter(lenQ, sex == "Male"), aes(x=lenQordered, y=Z, color = NDD)) + 
+ggplot(filter(lenQ, sex == "Male"), aes(x=lenQorderedNA, y=Z, color = NDD)) + 
   geom_boxplot() 
 
 ggplot(filter(lenQ, sex == "Male"),aes(x=as.numeric(factor(lenQordered)), y=Z , color = NDD)) + 
@@ -638,7 +646,7 @@ summary(glht(F2, linfct=mcp(NDD ="Tukey")))
 #summary(glht(F2, linfct=mcp(lenQ ="Tukey")))
 
 # plot lenQ X dx 
-ggplot(lenQ, aes(x=lenQordered, y=TS, color = NDD)) + 
+ggplot(lenQ, aes(x=lenQorderedNA, y=TS, color = NDD)) + 
   geom_boxplot() 
 
 ggplot(lenQ,aes(x=as.numeric(factor(lenQordered)), y=TS , color = NDD)) + 
@@ -653,7 +661,7 @@ summary(glht(F2, linfct=mcp(NDD ="Tukey")))
 #summary(glht(F2, linfct=mcp(lenQ ="Tukey")))
          
 # plot lenQ X dx (male only)
-ggplot(filter(lenQ, sex == "Male"), aes(x=lenQordered, y=TS, color = NDD)) + 
+ggplot(filter(lenQ, sex == "Male"), aes(x=lenQorderedNA, y=TS, color = NDD)) + 
   geom_boxplot() 
 
 ggplot(filter(lenQ, sex == "Male"),aes(x=as.numeric(factor(lenQordered)), y=TS , color = NDD)) + 
@@ -669,7 +677,7 @@ summary(glht(F2, linfct=mcp(NDD ="Tukey")))
 #summary(glht(F2, linfct=mcp(lenQ ="Tukey")))
 
 # plot lenQ X dx 
-ggplot(lenQ, aes(x=lenQordered, y=DW, color = NDD)) + 
+ggplot(lenQ, aes(x=lenQorderedNA, y=DW, color = NDD)) + 
   geom_boxplot() 
 
 ggplot(lenQ,aes(x=as.numeric(factor(lenQordered)), y=DW , color = NDD)) + 
@@ -684,7 +692,7 @@ summary(glht(F2, linfct=mcp(NDD ="Tukey")))
 #summary(glht(F2, linfct=mcp(lenQ ="Tukey")))
          
 # plot lenQ X dx (male only)
-ggplot(filter(lenQ, sex == "Male"), aes(x=lenQordered, y=DW, color = NDD)) + 
+ggplot(filter(lenQ, sex == "Male"), aes(x=lenQorderedNA, y=DW, color = NDD)) + 
   geom_boxplot() 
 
 ggplot(filter(lenQ, sex == "Male"),aes(x=as.numeric(factor(lenQordered)), y=DW , color = NDD)) + 
@@ -697,6 +705,7 @@ ggplot(filter(lenQ, sex == "Male"),aes(x=as.numeric(factor(lenQordered)), y=DW ,
 
 dwQ$dwQordered <- factor(dwQ$dwQ, c('dw1','dw2','dw3','dw4','dw5','dw6','dw7','dw8','dw9','dw10','dw11','dw12','dw13','dw14','dw15','dw16','dw17','dw18','dw19','dw20'))
 
+dwQ$dwQorderedNA <- factor(dwQ$dwQ, c('dwNA','dw1','dw2','dw3','dw4','dw5','dw6','dw7','dw8','dw9','dw10','dw11','dw12','dw13','dw14','dw15','dw16','dw17','dw18','dw19','dw20'))
 
 ################### Does tract weight predict FC strength? ##################################
 # weight x dx
@@ -708,7 +717,7 @@ summary(glht(F2, linfct=mcp(NDD ="Tukey")))
 #summary(glht(F2, linfct=mcp(dwQ ="Tukey")))
 
 # plot dwQ X dx 
-ggplot(dwQ, aes(x=dwQordered, y=Z, color = NDD)) + 
+ggplot(dwQ, aes(x=dwQorderedNA, y=Z, color = NDD)) + 
   geom_boxplot() 
 
 ggplot(dwQ,aes(x=as.numeric(factor(dwQordered)), y=Z , color = NDD)) + 
@@ -723,7 +732,7 @@ summary(glht(F2, linfct=mcp(NDD ="Tukey")))
 #summary(glht(F2, linfct=mcp(dwQ ="Tukey")))
          
 # plot dwQ X dx (male only)
-ggplot(filter(dwQ, sex == "Male"), aes(x=dwQordered, y=Z, color = NDD)) + 
+ggplot(filter(dwQ, sex == "Male"), aes(x=dwQorderedNA, y=Z, color = NDD)) + 
   geom_boxplot() 
 
 ggplot(filter(dwQ, sex == "Male"),aes(x=as.numeric(factor(dwQordered)), y=Z , color = NDD)) + 
@@ -739,7 +748,7 @@ summary(glht(F2, linfct=mcp(NDD ="Tukey")))
 #summary(glht(F2, linfct=mcp(dwQ ="Tukey")))
 
 # plot dwQ X dx 
-ggplot(dwQ, aes(x=dwQordered, y=TS, color = NDD)) + 
+ggplot(dwQ, aes(x=dwQorderedNA, y=TS, color = NDD)) + 
   geom_boxplot() 
 
 ggplot(dwQ,aes(x=as.numeric(factor(dwQordered)), y=TS , color = NDD)) + 
@@ -754,7 +763,7 @@ summary(glht(F2, linfct=mcp(NDD ="Tukey")))
 #summary(glht(F2, linfct=mcp(dwQ ="Tukey")))
          
 # plot dwQ X dx (male only)
-ggplot(filter(dwQ, sex == "Male"), aes(x=dwQordered, y=TS, color = NDD)) + 
+ggplot(filter(dwQ, sex == "Male"), aes(x=dwQorderedNA, y=TS, color = NDD)) + 
   geom_boxplot() 
 
 ggplot(filter(dwQ, sex == "Male"),aes(x=as.numeric(factor(dwQordered)), y=TS , color = NDD)) + 
