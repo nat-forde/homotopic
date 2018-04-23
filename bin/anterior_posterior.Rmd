@@ -1,0 +1,293 @@
+---
+title: "anterior_to_posterior"
+author: "nforde"
+date: "April 20, 2018"
+output: html_document
+---
+## get libraries/set paths
+```{r}
+library(igraph)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(broom)
+library(knitr)
+library(car)
+library(multcomp)
+
+## set all the paths
+## set all the paths
+pond_demographics <- read.csv("/projects/stephanie/DataFiles_CT.DTI.Beh.POND/GlimExtIN_CTROIUF.csv")
+qap_functional_temporal <- read.csv("/mnt/tigrlab/projects/edickie/analysis/POND_RST/qap/qap_functional_temporal.csv")
+edgedir <- "/scratch/nforde/homotopic/POND/edge_metrics"
+
+pond_extra <- read.csv("/scratch/nforde/homotopic/POND/pond_demog.csv")
+
+for (i in 1:nrow(pond_extra)) {
+  if (startsWith(as.character(pond_extra$subject[i]), "88")) {
+    pond_extra$subject[i] <- paste0("0", pond_extra$subject[i])
+  }
+}
+z <-  strsplit(as.character(pond_demographics$DTI.CT.codes),"-")
+pond_demographics$subject <- sapply(z,FUN=function(x){paste0(x[1],x[2])})
+demogs <- merge(pond_demographics, pond_extra[c(1,2,7:10,12)], by.x="subject", by.y="subject", all.x=TRUE)
+demogs <- demogs[!duplicated(demogs$subject),]
+
+
+```
+
+```{r}
+anterior_posterior <- function(subids, edgedir) {
+  AP <- data.frame("subid" = subids, 
+                      "AP1" = numeric(length(subids)),
+                      "AP2" = numeric(length(subids)),
+                      "AP3" = numeric(length(subids)),
+                      "AP4" = numeric(length(subids)),
+                      "AP5" = numeric(length(subids)),
+                      "AP6" = numeric(length(subids)),
+                      "AP7" = numeric(length(subids)),
+                      "AP8" = numeric(length(subids)),
+                      "AP9" = numeric(length(subids)),
+                      "AP10" = numeric(length(subids)))
+                   # ,
+                      # "AP11" = numeric(length(subids)),
+                      # "AP12" = numeric(length(subids)),
+                      # "AP13" = numeric(length(subids)),
+                      # "AP14" = numeric(length(subids)),
+                      # "AP15" = numeric(length(subids)),
+                      # "AP16" = numeric(length(subids)),
+                      # "AP17" = numeric(length(subids)),
+                      # "AP18" = numeric(length(subids)),
+                      # "AP19" = numeric(length(subids)),
+                      # "AP20" = numeric(length(subids)))
+                      
+  AP[ ,2:ncol(AP)] <- numeric(nrow(AP)*(ncol(AP)-1))
+  
+  Z_AP <- AP
+  TS_AP <- AP
+  DW_AP <- AP
+  
+  for (i in 1:length(subids)) {
+    subid <- AP$subid[i]
+    edge.file <- file.path(edgedir, paste(subid, "edge_metrics.csv", sep="_"))
+      
+    if (file.exists(edge.file)) {
+      edges <- read.csv(edge.file, header =TRUE)
+      edgesHO <- filter(edges, FCtype == "Homotopic")
+      edgesHO$y_mean <- (edgesHO$V1y + edgesHO$V2y)/2 
+      
+      edgesHOnonzero <- subset(edgesHO, length > 0)
+      #edgesHO <- within(edgesHO, AP_quant <- as.integer(cut(y_mean, quantile(y_mean, probs=0:20/20), include.lowest=TRUE)))
+      edgesHO <- within(edgesHO, AP_quant <- as.integer(cut(y_mean, quantile(y_mean, probs=0:10/10), include.lowest=TRUE)))
+      
+      
+      Z_AP$AP1[i] <- mean(filter(edgesHO, AP_quant == "1")$theseZ)
+      Z_AP$AP2[i] <- mean(filter(edgesHO, AP_quant == "2")$theseZ)
+      Z_AP$AP3[i] <- mean(filter(edgesHO, AP_quant == "3")$theseZ)
+      Z_AP$AP4[i] <- mean(filter(edgesHO, AP_quant == "4")$theseZ)
+      Z_AP$AP5[i] <- mean(filter(edgesHO, AP_quant == "5")$theseZ)
+      Z_AP$AP6[i] <- mean(filter(edgesHO, AP_quant == "6")$theseZ)
+      Z_AP$AP7[i] <- mean(filter(edgesHO, AP_quant == "7")$theseZ)
+      Z_AP$AP8[i] <- mean(filter(edgesHO, AP_quant == "8")$theseZ)
+      Z_AP$AP9[i] <- mean(filter(edgesHO, AP_quant == "9")$theseZ)
+      Z_AP$AP10[i] <- mean(filter(edgesHO, AP_quant == "10")$theseZ)
+      # Z_AP$AP11[i] <- mean(filter(edgesHO, AP_quant == "11")$theseZ)
+      # Z_AP$AP12[i] <- mean(filter(edgesHO, AP_quant == "12")$theseZ)
+      # Z_AP$AP13[i] <- mean(filter(edgesHO, AP_quant == "13")$theseZ)
+      # Z_AP$AP14[i] <- mean(filter(edgesHO, AP_quant == "14")$theseZ)
+      # Z_AP$AP15[i] <- mean(filter(edgesHO, AP_quant == "15")$theseZ)
+      # Z_AP$AP16[i] <- mean(filter(edgesHO, AP_quant == "16")$theseZ)
+      # Z_AP$AP17[i] <- mean(filter(edgesHO, AP_quant == "17")$theseZ)
+      # Z_AP$AP18[i] <- mean(filter(edgesHO, AP_quant == "18")$theseZ)
+      # Z_AP$AP19[i] <- mean(filter(edgesHO, AP_quant == "19")$theseZ)
+      # Z_AP$AP20[i] <- mean(filter(edgesHO, AP_quant == "20")$theseZ)
+      
+      TS_AP$AP1[i] <- mean(filter(edgesHO, AP_quant == "1")$Stability)
+      TS_AP$AP2[i] <- mean(filter(edgesHO, AP_quant == "2")$Stability)
+      TS_AP$AP3[i] <- mean(filter(edgesHO, AP_quant == "3")$Stability)
+      TS_AP$AP4[i] <- mean(filter(edgesHO, AP_quant == "4")$Stability)
+      TS_AP$AP5[i] <- mean(filter(edgesHO, AP_quant == "5")$Stability)
+      TS_AP$AP6[i] <- mean(filter(edgesHO, AP_quant == "6")$Stability)
+      TS_AP$AP7[i] <- mean(filter(edgesHO, AP_quant == "7")$Stability)
+      TS_AP$AP8[i] <- mean(filter(edgesHO, AP_quant == "8")$Stability)
+      TS_AP$AP9[i] <- mean(filter(edgesHO, AP_quant == "9")$Stability)
+      TS_AP$AP10[i] <- mean(filter(edgesHO, AP_quant == "10")$Stability)
+      # TS_AP$AP11[i] <- mean(filter(edgesHO, AP_quant == "11")$Stability)
+      # TS_AP$AP12[i] <- mean(filter(edgesHO, AP_quant == "12")$Stability)
+      # TS_AP$AP13[i] <- mean(filter(edgesHO, AP_quant == "13")$Stability)
+      # TS_AP$AP14[i] <- mean(filter(edgesHO, AP_quant == "14")$Stability)
+      # TS_AP$AP15[i] <- mean(filter(edgesHO, AP_quant == "15")$Stability)
+      # TS_AP$AP16[i] <- mean(filter(edgesHO, AP_quant == "16")$Stability)
+      # TS_AP$AP17[i] <- mean(filter(edgesHO, AP_quant == "17")$Stability)
+      # TS_AP$AP18[i] <- mean(filter(edgesHO, AP_quant == "18")$Stability)
+      # TS_AP$AP19[i] <- mean(filter(edgesHO, AP_quant == "19")$Stability)
+      # TS_AP$AP20[i] <- mean(filter(edgesHO, AP_quant == "20")$Stability)
+ 
+      DW_AP$AP1[i] <- mean(filter(edgesHO, AP_quant == "1")$weight)
+      DW_AP$AP2[i] <- mean(filter(edgesHO, AP_quant == "2")$weight)
+      DW_AP$AP3[i] <- mean(filter(edgesHO, AP_quant == "3")$weight)
+      DW_AP$AP4[i] <- mean(filter(edgesHO, AP_quant == "4")$weight)
+      DW_AP$AP5[i] <- mean(filter(edgesHO, AP_quant == "5")$weight)
+      DW_AP$AP6[i] <- mean(filter(edgesHO, AP_quant == "6")$weight)
+      DW_AP$AP7[i] <- mean(filter(edgesHO, AP_quant == "7")$weight)
+      DW_AP$AP8[i] <- mean(filter(edgesHO, AP_quant == "8")$weight)
+      DW_AP$AP9[i] <- mean(filter(edgesHO, AP_quant == "9")$weight)
+      DW_AP$AP10[i] <- mean(filter(edgesHO, AP_quant == "10")$weight)
+      # DW_AP$AP11[i] <- mean(filter(edgesHO, AP_quant == "11")$weight)
+      # DW_AP$AP12[i] <- mean(filter(edgesHO, AP_quant == "12")$weight)
+      # DW_AP$AP13[i] <- mean(filter(edgesHO, AP_quant == "13")$weight)
+      # DW_AP$AP14[i] <- mean(filter(edgesHO, AP_quant == "14")$weight)
+      # DW_AP$AP15[i] <- mean(filter(edgesHO, AP_quant == "15")$weight)
+      # DW_AP$AP16[i] <- mean(filter(edgesHO, AP_quant == "16")$weight)
+      # DW_AP$AP17[i] <- mean(filter(edgesHO, AP_quant == "17")$weight)
+      # DW_AP$AP18[i] <- mean(filter(edgesHO, AP_quant == "18")$weight)
+      # DW_AP$AP19[i] <- mean(filter(edgesHO, AP_quant == "19")$weight)
+      # DW_AP$AP20[i] <- mean(filter(edgesHO, AP_quant == "20")$weight)
+      
+    } else {
+      print(paste(edge.file, "does not exist"))
+      Z_AP[i,2:ncol(Z_AP)] <- NA
+      TS_AP[i,2:ncol(TS_AP)] <- NA
+      DW_AP[i,2:ncol(DW_AP)] <- NA
+    }
+  }
+  return(list("Z_AP"=Z_AP,"TS_AP"=TS_AP,"DW_AP"=DW_AP))
+}
+      
+```
+## Run 
+```{r}
+demogs$subid <- paste0("MR160-",demogs$DTI.CT.codes)
+demogs <- merge(demogs, qap_functional_temporal, by.x = "subid", by.y = "subject")
+demogs <- demogs[!duplicated(demogs$subject),]
+demogs <- filter(demogs, perc_fd < 5)
+
+subids <- demogs$subid
+
+AP <- anterior_posterior(subids, edgedir)
+
+theZs <- AP$Z_AP
+theTS <- AP$TS_AP
+theDW <- AP$DW_AP ####not very many homotopic pairs have structural connections
+
+```
+
+
+```{r}
+
+apQZ <- merge(theZs,demogs,by="subid") %>%
+   gather(apQ, Z, starts_with("AP")) %>%
+   filter(NDD != "", !is.na(Z))
+  
+apQTS <- merge(theTS,demogs,by="subid") %>%
+   gather(apQ, TS, starts_with("AP")) %>%
+   filter(NDD != "", !is.na(TS))
+ 
+apQDW <- merge(theDW,demogs,by="subid") %>%
+   gather(apQ, DW, starts_with("AP")) %>%
+   filter(NDD != "")
+
+APQ_ <- merge(apQZ[c(1,4,5,7, 120:125,137,138)], apQTS[c(1,137,138)], by=c("subid","apQ"))  #index numbers may change if QC added
+APQ  <- merge(APQ_, apQDW[c(1,137,138)], by=c("subid","apQ")) #%>%
+  #filter(NDD != "")
+
+```
+
+```{r, fig.width=12}
+
+APQ$apQordered <- factor(APQ$apQ, c('AP1','AP2','AP3','AP4','AP5','AP6','AP7','AP8','AP9','AP10'))
+
+############ Does anterior-posterior position influence strength? ###############
+# AP x dx
+print(paste("Anova - Does anterior-posterior position influence strength?"))
+F2 <- lmer(Z ~ apQ*NDD + Age + sex + (1|subid), 
+               data = APQ)
+print(Anova(F2))
+summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+#summary(glht(F2, linfct=mcp(lenQ ="Tukey")))
+
+# plot APQ X dx 
+ggplot(APQ, aes(x=apQordered, y=Z, color = NDD)) + 
+  geom_boxplot() 
+
+ggplot(APQ,aes(x=as.numeric(factor(apQordered)), y=Z , color = NDD)) + 
+  geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
+
+# APQ x dx (male only)
+print(paste("Anova Table for APQ X NDD, male only"))
+F2 <- lmer(Z ~ apQ*NDD + Age + (1|subid), 
+               data = filter(APQ, sex == "Male"))
+print(Anova(F2))
+summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+#summary(glht(F2, linfct=mcp(APQ ="Tukey")))
+         
+# plot APQ X dx (male only)
+ggplot(filter(APQ, sex == "Male"), aes(x=apQordered, y=Z, color = NDD)) + 
+  geom_boxplot() 
+
+ggplot(filter(APQ, sex == "Male"),aes(x=as.numeric(factor(apQordered)), y=Z , color = NDD)) + 
+  geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
+
+################### Does anterior-posterior position influence stability? ##################################
+# length x dx
+print(paste("Anova - Does anterior-posterior position influence stability?"))
+F2 <- lmer(TS ~ apQ*NDD + Age + sex + (1|subid), 
+               data = APQ)
+print(Anova(F2))
+summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+#summary(glht(F2, linfct=mcp(APQ ="Tukey")))
+
+# plot APQ X dx 
+ggplot(APQ, aes(x=apQordered, y=TS, color = NDD)) + 
+  geom_boxplot() 
+
+ggplot(APQ,aes(x=as.numeric(factor(apQordered)), y=TS , color = NDD)) + 
+  geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
+
+# APQ x dx (male only)
+print(paste("Anova Table for APQ X NDD, male only"))
+F2 <- lmer(TS ~ apQ*NDD + Age + (1|subid), 
+               data = filter(APQ, sex == "Male"))
+print(Anova(F2))
+summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+#summary(glht(F2, linfct=mcp(APQ ="Tukey")))
+         
+# plot APQ X dx (male only)
+ggplot(filter(APQ, sex == "Male"), aes(x=apQordered, y=TS, color = NDD)) + 
+  geom_boxplot() 
+
+ggplot(filter(APQ, sex == "Male"),aes(x=as.numeric(factor(apQordered)), y=TS , color = NDD)) + 
+  geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
+
+################### Does anterior-posterior position influence structural weight? ##################################
+# length x dx
+print(paste("Anova - Does anterior-posterior position influence structural weight?"))
+F2 <- lmer(DW ~ apQ*NDD + Age + sex + (1|subid), 
+               data = APQ)
+print(Anova(F2))
+summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+#summary(glht(F2, linfct=mcp(APQ ="Tukey")))
+
+# plot APQ X dx 
+ggplot(APQ, aes(x=apQordered, y=DW, color = NDD)) + 
+  geom_boxplot() 
+
+ggplot(APQ,aes(x=as.numeric(factor(apQordered)), y=DW , color = NDD)) + 
+  geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
+
+# APQ x dx (male only)
+print(paste("Anova Table for APQ X NDD, male only"))
+F2 <- lmer(DW ~ apQ*NDD + Age + (1|subid), 
+               data = filter(APQ, sex == "Male"))
+print(Anova(F2))
+summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+#summary(glht(F2, linfct=mcp(APQ ="Tukey")))
+         
+# plot APQ X dx (male only)
+ggplot(filter(APQ, sex == "Male"), aes(x=apQordered, y=DW, color = NDD)) + 
+  geom_boxplot() 
+
+ggplot(filter(APQ, sex == "Male"),aes(x=as.numeric(factor(apQordered)), y=DW , color = NDD)) + 
+  geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
+
+```
