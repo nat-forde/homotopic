@@ -40,8 +40,9 @@ POND/
 
 # logs
 bin/logs/
+bin/logs
 
 bin/.scripts
 bin/.jobscript
-
-
+bin/.qbatch
+bin/Rplots.pdf
