@@ -6,7 +6,7 @@ if (length(args)==0) {
   stop("At least one argument must be supplied (subj_ID).n", call.=FALSE)
 } else if (length(args)==1) {
   # default window size is 30
-  args[2] = 30
+  args[2] = 26
 }
 
 subid = args[1]
