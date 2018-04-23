@@ -33,6 +33,7 @@ ts_pattern <- "RST_pond42fix"
 pond_extra <- read.csv("/scratch/nforde/homotopic/POND/pond_demog.csv")
 diffdir <- "/scratch/nforde/homotopic/POND/CSD"
 outdir <- "/scratch/nforde/homotopic/POND/edge_metrics"
+xyz <- read.csv("/scratch/nforde/homotopic/atlases/xyz.csv")
 
 for (i in 1:nrow(pond_extra)) {
   if (startsWith(as.character(pond_extra$subject[i]), "88")) {
@@ -95,6 +96,16 @@ make_g_template <- function(subid, tsdir, ts_pattern) {
   g.df$FCtype[g.df$V1.roi==g.df$V2.roi & g.df$V1.hemi!=g.df$V2.hemi] <- "Homotopic"
   g.df$FCtype[g.df$V1.roi!=g.df$V2.roi & g.df$V1.hemi!=g.df$V2.hemi] <- "Heterotopic"
   g.df$FCtype[g.df$V1.roi!=g.df$V2.roi & g.df$V1.hemi==g.df$V2.hemi] <- "Intrahemispheric"
+  
+  V1xyz <- xyz
+  V1names <- c("V1x", "V1y", "V1z", "V1roi")
+  colnames(V1xyz) <- V1names
+  V2xyz <- xyz
+  V2names <- c("V2x", "V2y", "V2z", "V2roi")
+  colnames(V2xyz) <- V2names
+  
+  tmpV1 <- merge(g.df, V1xyz, by.x="V1", by.y="V1roi")
+  g.df <- merge(tmpV1, V2xyz, by.x="V2", by.y="V2roi")
   
   return(g.df)
   
@@ -265,7 +276,7 @@ calc_everything <- function(subids, tsdir, ts_pattern, g.df, window_size, diffdi
         lenplus1 <- E(len_g)$weight
         length <- lenplus1 -1
         len.df <- cbind(g.df, length)
-        edges.dw_norm <- merge(edges.dw_w, len.df[c(1,2,8)], by=c('V1', 'V2'))
+        edges.dw_norm <- merge(edges.dw_w, len.df[c(1,2,14)], by=c('V1', 'V2'))
         
         #select nonzero length connections and bin 
         edges.dw_nonzero <- subset(edges.dw_norm, length > 0)
@@ -273,10 +284,10 @@ calc_everything <- function(subids, tsdir, ts_pattern, g.df, window_size, diffdi
         edges.dw_nonzero <- within(edges.dw_nonzero, dw_quant <- as.integer(cut(weight, quantile(weight, probs=0:20/20), include.lowest=TRUE)))
         
        #can merge to get full edge list again
-        edges.dw_all <- merge(edges.dw_norm, edges.dw_nonzero[c(1,2,12,13)], by=c('V1', 'V2'), all.x=TRUE)
+        edges.dw_all <- merge(edges.dw_norm, edges.dw_nonzero[c(1,2,18,19)], by=c('V1', 'V2'), all.x=TRUE)
         
-        edges.ZTS <- merge(edges.Z, edges.TS, by=c('V1', 'V2', 'V1.hemi', 'V1.roi', 'V2.hemi', 'V2.roi', 'FCtype'), all.x=TRUE)
-        edges.all <- merge(edges.ZTS, edges.dw_all, by=c('V1', 'V2', 'V1.hemi', 'V1.roi', 'V2.hemi', 'V2.roi', 'FCtype'), all.x=TRUE)
+        edges.ZTS <- merge(edges.Z, edges.TS, by=c('V1', 'V2', 'V1.hemi', 'V1.roi', 'V2.hemi', 'V2.roi', 'FCtype', 'V1x', 'V1y', 'V1z', 'V2x', 'V2y', 'V2z'), all.x=TRUE)
+        edges.all <- merge(edges.ZTS, edges.dw_all, by=c('V1', 'V2', 'V1.hemi', 'V1.roi', 'V2.hemi', 'V2.roi', 'FCtype', 'V1x', 'V1y', 'V1z', 'V2x', 'V2y', 'V2z'), all.x=TRUE)
        
         #threshold by connection weight to remove spurious connections .....%
         #edges_thresh <- subset(edges_wlq, weight > quantile(weight, prob = 1 - percent_threshold/100))

@@ -26,9 +26,7 @@ qap_functional_temporal <- read.csv("/mnt/tigrlab/projects/edickie/analysis/POND
 tsdir <- "/scratch/nforde/homotopic/POND/hcp/glasser_meants"
 diffdir <- "/scratch/nforde/homotopic/POND/CSD"
 ts_pattern <- "RST_pond42fix"
-
 pond_extra <- read.csv("/scratch/nforde/homotopic/POND/pond_demog.csv")
-
 
 for (i in 1:nrow(pond_extra)) {
   if (startsWith(as.character(pond_extra$subject[i]), "88")) {
@@ -176,7 +174,7 @@ calc_diff <- function(subids, diffdir, g.df, percent_threshold) {
       lenplus1 <- E(len_g)$weight
       length <- lenplus1 -1
       len.df <- cbind(g.df, length)
-      edges_w_l <- merge(edges_w, len.df[c(1,2,8)], by=c('V1', 'V2'))
+      edges_w_l <- merge(edges_w, len.df[c(1,2,14)], by=c('V1', 'V2'))
       
       #select nonzero length connections and bin 
       edges_wl_nonzero <- subset(edges_w_l, length > 0)
@@ -226,6 +224,7 @@ calc_diff <- function(subids, diffdir, g.df, percent_threshold) {
 ```{r}
 demogs$subid <- paste0("MR160-",demogs$DTI.CT.codes)
 demogs <- merge(demogs, qap_functional_temporal, by.x = "subid", by.y = "subject")
+demogs <- demogs[!duplicated(demogs$subject),]
 demogs <- filter(demogs, perc_fd < 5)
 
 ## transform QC measures to normality
