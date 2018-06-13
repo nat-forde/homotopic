@@ -463,6 +463,24 @@ demogs$subid <- paste0("MR160-",demogs$DTI.CT.codes)
 demogs <- merge(demogs, qap_functional_temporal, by.x = "subid", by.y = "subject")
 demogs <- filter(demogs, perc_fd < 5)
 
+## transform QC measures to normality
+demogs <- demogs %>%
+  mutate("dvars_pT"  = transform_to_normal(dvars),
+         "m_tsnr_pT"  = transform_to_normal(m_tsnr),
+         "mean_fd_pT"  = transform_to_normal(mean_fd),
+         "quality_pT" = transform_to_normal(quality))
+
+## Now lets do a PCA on the QAP numbers...
+# Pricipal Components Analysis
+# entering raw data and extracting PCs
+# from the correlation matrix
+fit <- princomp(dplyr::select(demogs, dvars_pT, m_tsnr_pT, mean_fd_pT, quality_pT) , cor=TRUE)
+summary(fit) # print variance accounted for
+loadings(fit) # pc loadings
+plot(fit,type="lines") # scree plot
+## write the top 5 principal components to the speadsheet
+demogs <- cbind(demogs,fit$scores[ ,1:2]) # the principal components
+
 subids <- demogs$subid
 
 g.df <- make_g_template(subids[1], tsdir, ts_pattern)
@@ -489,9 +507,9 @@ typeDW <- merge(theDW,demogs,by="subid") %>%
    gather(FCtype, DW, HO, HE, I) %>%
    filter(NDD != "")
   
-type_ <- merge(typeZ[c(1,46:50,162:167,179,180)], typeTS[c(1,179,180)], by=c("subid","FCtype"))  #index numbers may change if QC added
-type <- merge(type_, typeDW[c(1,179,180)], by=c("subid","FCtype")) #%>%
-  #filter(NDD != "")
+type_ <- merge(typeZ[c(1,46:50,162:167,179:186)], typeTS[c(1,185,186)], by=c("subid","FCtype"))  #index numbers may change if QC added
+type <- merge(type_, typeDW[c(1,185,186)], by=c("subid","FCtype"), all.x =TRUE) %>%
+  filter(Age > 6, Age < 18, NDD != "HC")
 
 lenQZ <- merge(theZs,demogs,by="subid") %>%
    gather(lenQ, Z, starts_with("len")) %>%
@@ -505,9 +523,9 @@ lenQDW <- merge(theDW,demogs,by="subid") %>%
    gather(lenQ, DW, starts_with("len")) %>%
    filter(NDD != "")
 
-lenQ_ <- merge(lenQZ[c(1,28:32,144:149,161,162)], lenQTS[c(1,161,162)], by=c("subid","lenQ"))  #index numbers may change if QC added
-lenQ  <- merge(lenQ_, lenQDW[c(1,161,162)], by=c("subid","lenQ")) #%>%
-  #filter(NDD != "")
+lenQ_ <- merge(lenQZ[c(1,28:32,144:149,161:168)], lenQTS[c(1,167,168)], by=c("subid","lenQ"))  #index numbers may change if QC added
+lenQ  <- merge(lenQ_, lenQDW[c(1,167,168)], by=c("subid","lenQ"), all.x =TRUE) %>%
+  filter(Age > 6, Age < 18, NDD != "HC")
  
 dwQZ <- merge(theZs,demogs,by="subid") %>%
    gather(dwQ, Z, starts_with("dw")) %>%
@@ -521,9 +539,9 @@ dwQDW <- merge(theDW,demogs,by="subid") %>%
    gather(dwQ, DW, starts_with("dw")) %>%
    filter(NDD != "")
 
-dwQ_ <- merge(dwQZ[c(1,28:32,144:149,161,162)], dwQTS[c(1,161,162)], by=c("subid","dwQ"))  #index numbers may change if QC added
-dwQ  <- merge(dwQ_, dwQDW[c(1,161,162)], by=c("subid","dwQ"))# %>%
-  #filter(NDD != "")
+dwQ_ <- merge(dwQZ[c(1,28:32,144:149,161:168)], dwQTS[c(1,167,168)], by=c("subid","dwQ"))  #index numbers may change if QC added
+dwQ  <- merge(dwQ_, dwQDW[c(1,167,168)], by=c("subid","dwQ"), all.x =TRUE) %>%
+  filter(Age > 6, Age < 18, NDD != "HC")
 
 ```
 
@@ -534,7 +552,7 @@ dwQ  <- merge(dwQ_, dwQDW[c(1,161,162)], by=c("subid","dwQ"))# %>%
 ################### Does tract type predict FC strength? ##################################
 # type x dx
 print(paste("Anova - Does tract type predict FC strength?"))
-F2 <- lmer(Z ~ FCtype*NDD + Age + sex + (1|subid), 
+F2 <- lmer(Z ~ FCtype*NDD + Age + sex + Comp.1 + Comp.2 + (1|subid), 
                data = type)
 print(Anova(F2))
 summary(glht(F2, linfct=mcp(NDD ="Tukey")))
@@ -546,7 +564,7 @@ ggplot(type, aes(x=FCtype, y=Z, color = NDD)) +
 
 # type x dx (male only)
 print(paste("Anova Table for type X NDD, male only"))
-F2 <- lmer(Z ~ FCtype*NDD + Age + (1|subid), 
+F2 <- lmer(Z ~ FCtype*NDD + Age + Comp.1 + Comp.2 + (1|subid), 
                data = filter(type, sex == "Male"))
 print(Anova(F2))
 summary(glht(F2, linfct=mcp(NDD ="Tukey")))
@@ -560,7 +578,7 @@ ggplot(filter(type, sex == "Male"), aes(x=FCtype, y=Z, color = NDD)) +
 ##################### Does tract type predict FC stability? ############################################
 # type x dx
 print(paste("Anova - Does tract type predict FC stability?"))
-F2 <- lmer(TS ~ FCtype*NDD + Age + sex + (1|subid), 
+F2 <- lmer(TS ~ FCtype*NDD + Age + sex + Comp.1 + Comp.2 + (1|subid), 
                data = type)
 print(Anova(F2))
 summary(glht(F2, linfct=mcp(NDD ="Tukey")))
@@ -572,7 +590,7 @@ ggplot(type, aes(x=FCtype, y=TS, color = NDD)) +
 
 # type x dx (male only)
 print(paste("Anova Table for type X NDD, male only"))
-F2 <- lmer(TS ~ FCtype*NDD + Age + (1|subid), 
+F2 <- lmer(TS ~ FCtype*NDD + Age + Comp.1 + Comp.2 + (1|subid), 
                data = filter(type, sex == "Male"))
 print(Anova(F2))
 summary(glht(F2, linfct=mcp(NDD ="Tukey")))
@@ -619,7 +637,7 @@ lenQ$lenQorderedNA <- factor(lenQ$lenQ, c('lenNA','len1','len2','len3','len4','l
 ################### Does tract length predict FC strength? ##################################
 # length x dx
 print(paste("Anova - Does tract length predict FC strength?"))
-F2 <- lmer(Z ~ lenQ*NDD + Age + sex + (1|subid), 
+F2 <- lmer(Z ~ lenQ*NDD + Age + sex + Comp.1 + Comp.2 + (1|subid), 
                data = lenQ)
 print(Anova(F2))
 summary(glht(F2, linfct=mcp(NDD ="Tukey")))
@@ -634,7 +652,7 @@ ggplot(lenQ,aes(x=as.numeric(factor(lenQordered)), y=Z , color = NDD)) +
 
 # lenQ x dx (male only)
 print(paste("Anova Table for lenQ X NDD, male only"))
-F2 <- lmer(Z ~ lenQ*NDD + Age + (1|subid), 
+F2 <- lmer(Z ~ lenQ*NDD + Age + Comp.1 + Comp.2 + (1|subid), 
                data = filter(lenQ, sex == "Male"))
 print(Anova(F2))
 summary(glht(F2, linfct=mcp(NDD ="Tukey")))
@@ -650,7 +668,7 @@ ggplot(filter(lenQ, sex == "Male"),aes(x=as.numeric(factor(lenQordered)), y=Z , 
 ################### Does tract length predict FC stability? ##################################
 # length x dx
 print(paste("Anova - Does tract length predict FC stability?"))
-F2 <- lmer(TS ~ lenQ*NDD + Age + sex + (1|subid), 
+F2 <- lmer(TS ~ lenQ*NDD + Age + sex + Comp.1 + Comp.2 + (1|subid), 
                data = lenQ)
 print(Anova(F2))
 summary(glht(F2, linfct=mcp(NDD ="Tukey")))
@@ -665,7 +683,7 @@ ggplot(lenQ,aes(x=as.numeric(factor(lenQordered)), y=TS , color = NDD)) +
 
 # lenQ x dx (male only)
 print(paste("Anova Table for lenQ X NDD, male only"))
-F2 <- lmer(TS ~ lenQ*NDD + Age + (1|subid), 
+F2 <- lmer(TS ~ lenQ*NDD + Age + Comp.1 + Comp.2 + (1|subid), 
                data = filter(lenQ, sex == "Male"))
 print(Anova(F2))
 summary(glht(F2, linfct=mcp(NDD ="Tukey")))
@@ -721,7 +739,7 @@ dwQ$dwQorderedNA <- factor(dwQ$dwQ, c('dwNA','dw1','dw2','dw3','dw4','dw5','dw6'
 ################### Does tract weight predict FC strength? ##################################
 # weight x dx
 print(paste("Anova - Does tract weight predict FC strength?"))
-F2 <- lmer(Z ~ dwQ*NDD + Age + sex + (1|subid), 
+F2 <- lmer(Z ~ dwQ*NDD + Age + sex + Comp.1 + Comp.2 + (1|subid), 
                data = dwQ)
 print(Anova(F2))
 summary(glht(F2, linfct=mcp(NDD ="Tukey")))
@@ -736,7 +754,7 @@ ggplot(dwQ,aes(x=as.numeric(factor(dwQordered)), y=Z , color = NDD)) +
 
 # dwQ x dx (male only)
 print(paste("Anova Table for dwQ X NDD, male only"))
-F2 <- lmer(Z ~ dwQ*NDD + Age + (1|subid), 
+F2 <- lmer(Z ~ dwQ*NDD + Age + Comp.1 + Comp.2 + (1|subid), 
                data = filter(dwQ, sex == "Male"))
 print(Anova(F2))
 summary(glht(F2, linfct=mcp(NDD ="Tukey")))
@@ -752,7 +770,7 @@ ggplot(filter(dwQ, sex == "Male"),aes(x=as.numeric(factor(dwQordered)), y=Z , co
 ################### Does tract weight predict FC stability? ##################################
 # weight x dx
 print(paste("Anova - Does tract weight predict FC stability?"))
-F2 <- lmer(TS ~ dwQ*NDD + Age + sex + (1|subid), 
+F2 <- lmer(TS ~ dwQ*NDD + Age + sex + Comp.1 + Comp.2 + (1|subid), 
                data = dwQ)
 print(Anova(F2))
 summary(glht(F2, linfct=mcp(NDD ="Tukey")))
@@ -767,7 +785,7 @@ ggplot(dwQ,aes(x=as.numeric(factor(dwQordered)), y=TS , color = NDD)) +
 
 # dwQ x dx (male only)
 print(paste("Anova Table for dwQ X NDD, male only"))
-F2 <- lmer(TS ~ dwQ*NDD + Age + (1|subid), 
+F2 <- lmer(TS ~ dwQ*NDD + Age + Comp.1 + Comp.2 + (1|subid), 
                data = filter(dwQ, sex == "Male"))
 print(Anova(F2))
 summary(glht(F2, linfct=mcp(NDD ="Tukey")))

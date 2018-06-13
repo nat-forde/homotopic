@@ -270,10 +270,10 @@ ggplot(PONDdemZs1, aes(x=Age, y=QC.resid , color = NDD)) +
   geom_point() + geom_smooth(method = "lm") +
   facet_wrap(~FCtype)
 
-#simplified_pond <- PONDdemZs1 %>%
-#  filter(Age > 6, Age < 18, NDD != "HC")
 simplified_pond <- PONDdemZs1 %>%
-  filter(Age > 6, Age < 18)
+  filter(Age > 6, Age < 18, NDD != "HC")
+#simplified_pond <- PONDdemZs1 %>%
+  #filter(Age > 6, Age < 18)
 
 ggplot(simplified_pond, aes(x=Age, y=QC.resid , color = NDD)) + 
   geom_point() + geom_smooth(method = "lm") +
@@ -533,13 +533,13 @@ tmp2$study <- "ABIDE NYU"
 combined <- rbind(dplyr::select(tmp, subid, study, AGE_AT_SCAN, DX, SEX, FCtype, Z, QC.resid, Comp.1, Comp.2),
                   dplyr::select(tmp2, subid, study, AGE_AT_SCAN, DX, SEX, FCtype, Z, QC.resid, Comp.1, Comp.2))
 
- ggplot(filter(combined, SEX == "Male",  FCtype %in% c('HE','HO','I')),
+ggplot(filter(combined, SEX == "Male",  FCtype %in% c('HE','HO','I')),
         aes(y=QC.resid, x=study, color = DX)) +
    geom_boxplot() +
    facet_wrap(~FCtype)
  
- ggplot(filter(combined, SEX == "Male", FCtype %in% c('HE','HO','I')),
-        aes(y=Z, x=study, color = DX)) +
+ggplot(filter(combined, SEX == "Male", FCtype %in% c('HE','HO','I')),
+       aes(y=Z, x=study, color = DX)) +
    geom_boxplot() +
    facet_wrap(~FCtype)
  
