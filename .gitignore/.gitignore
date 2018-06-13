@@ -34,6 +34,7 @@ vignettes/*.pdf
 
 # Data directory
 POND/
+oldPOND/
 
 # output htmls
 /**/*.html
@@ -41,6 +42,8 @@ POND/
 # logs
 bin/logs/
 bin/logs
+bin/Eddylogs/
+bin/Eddylogs
 
 bin/.scripts
 bin/.jobscript
