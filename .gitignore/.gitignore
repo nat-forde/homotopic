@@ -40,7 +40,8 @@ oldPOND/
 /**/*.html
 
 # logs
-
+bin/logs/
+bin/logs
 bin/Eddylogs/
 bin/Eddylogs
 
