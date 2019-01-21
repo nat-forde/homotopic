@@ -1,21 +1,16 @@
-#!/bin/bash
+#!/bin/bash -l
 #mk list of commands and submit to queue using qbatch
 
-module load python/
+module load python/3.6_ciftify_01
 module load R/3.4.3
 module load rstudio/1.1.414
 
-inPath=/projects/edickie/analysis/POND_RST/hcp
-cd $inPath
-subjs=`ls -1d MR160*`
+cd /scratch/nforde/homotopic/bin
+for subj in $(<RS_trio.txt); do
+  echo Rscript temp_stab_ColeAnti.r ${subj}
+done > RSstab_batch.txt
 
-for subj in $subjs; do
-  echo Rscript temp_stab_glasser.r ${subj}
-done > /scratch/nforde/homotopic/bin/R_qbatch.txt
-
-cd /scratch/nforde/homotopic/bin/
-
-qbatch --walltime '10:00:00' -b sge --ppj 1 -c 20 -j 20 R_qbatch.txt
+qbatch --walltime '10:00:00' -b sge --ppj 1 -c 15 -j 15 RSstab_batch.txt
 
 #inPath=/projects/edickie/analysis/ABIDEI/hcp/NYU
 #cd $inPath
