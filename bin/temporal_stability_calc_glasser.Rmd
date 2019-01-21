@@ -18,25 +18,56 @@ library(forecast)
 library(rmarkdown)
 library(lme4)
 library(multcomp)
+library(haven)
 
 window_size = 30
 
 ## set all the paths
-pond_demographics <- read.csv("/mnt/tigrlab/projects/stephanie/DataFiles_CT.DTI.Beh.POND/GlimExtIN_CTROIUF.csv")
+pond_demographics <- read_sas("/scratch/nforde/homotopic/POND/clinical/pond_extract_06jun2018.sas7bdat")
 qap_functional_temporal <- read.csv("/mnt/tigrlab/projects/edickie/analysis/POND_RST/qap/qap_functional_temporal.csv")
-tsdir <- "/scratch/nforde/homotopic/POND/hcp/glasser_meants"
-ts_pattern <- "RST_pond42fix"
-pond_extra <- read.csv("/scratch/nforde/homotopic/POND/pond_demog.csv")
+hand <- read.csv("/scratch/nforde/homotopic/POND/clinical/POND_Handedness.csv")
+SCQ <- read.csv("/scratch/nforde/homotopic/POND/clinical/SCQ_Data_23_July_2018.csv")
 
-for (i in 1:nrow(pond_extra)) {
-  if (startsWith(as.character(pond_extra$subject[i]), "88")) {
-    pond_extra$subject[i] <- paste0("0", pond_extra$subject[i])
+tsdir <- "/scratch/nforde/homotopic/oldPOND/hcp/glasser_meants"
+ts_pattern <- "RST_pond42fix"
+
+for (i in 1:nrow(pond_demographics)) {
+  if (startsWith(as.character(pond_demographics$SUBJECT[i]), "88")) {
+    pond_demographics$SUBJECT[i] <- paste0("0", pond_demographics$SUBJECT[i])
   }
 }
-z <-  strsplit(as.character(pond_demographics$DTI.CT.codes),"-")
-pond_demographics$subject <- sapply(z,FUN=function(x){paste0(x[1],x[2])})
-demogs <- merge(pond_demographics, pond_extra[c(1,2,7:10,12)], by.x="subject", by.y="subject", all.x=TRUE)
-demogs <- demogs[!duplicated(demogs$subject),]
+
+for (i in 1:nrow(hand)) {
+  if (startsWith(as.character(hand$ID[i]), "88")) {
+    hand$ID[i] <- paste0("0", hand$ID[i])
+  }
+}
+
+for (i in 1:nrow(SCQ)) {
+  if (startsWith(as.character(SCQ$Subject[i]), "88")) {
+    SCQ$Subject[i] <- paste0("0", SCQ$Subject[i])
+  }
+}
+
+z <-  strsplit(as.character(qap_functional_temporal$subject),"-")
+qap_functional_temporal$subject <- sapply(z,FUN=function(x){paste0(x[2],x[3])})
+M1 <- merge(pond_demographics, hand, by.x="SUBJECT", by.y="ID")
+demogs <- merge(M1, SCQ[c(1,3)], by.x="SUBJECT", by.y="Subject")
+demogs <- merge(demogs, qap_functional_temporal, by.x="SUBJECT", by.y="subject", all.x=TRUE)
+
+#demogs <- demogs[!duplicated(demogs$subject),]
+demogs$Age <- (demogs$POND_DATE - demogs$DOB) / 365.25
+demogs$subid <- demogs$SUBJECT
+demogs$sex <- demogs$GENDER
+demogs$dx <- NA
+demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="1"] <- 'ASD'
+demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="2" | demogs$RESEARCH_CONFIRM_DIAG_STD=="6"] <- 'ADHD'
+demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="3"] <- 'OCD'
+demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="10"] <- 'HC'
+demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="15"] <- 'GAD'
+IQ <- data.frame(demogs$WASI_FSIQ_2, demogs$WASI_II_FSIQ_2, demogs$WASI_FSIQ_4, demogs$WASI_II_FSIQ_4, demogs$WISC_IV_FSIQ, demogs$WISC_V_FSIQ)
+demogs$FSIQ_any <- apply(IQ, 1, mean, na.rm=TRUE)
+demogs$FSIQ_any[demogs$FSIQ_any == "NaN"] <- NA
 
 #ABIDE
 NYU_tsdir <- "/scratch/nforde/homotopic/ABIDE/hcp/glasser_meants"
@@ -233,8 +264,8 @@ calc_all_stability <- function(subids, tsdir, ts_pattern, g.df, window_size) {
 ### 
 
 #### Running POND
-demogs$subid <- paste0("MR160-",demogs$DTI.CT.codes)
-demogs <- merge(demogs, qap_functional_temporal, by.x = "subid", by.y = "subject")
+#demogs$subid <- paste0("MR160-",demogs$DTI.CT.codes)
+#demogs <- merge(demogs, qap_functional_temporal, by.x = "subid", by.y = "subject")
 demogs <- filter(demogs, perc_fd < 5)
 
 ## transform QC measures to normality
@@ -277,17 +308,17 @@ tStab_NYU <- calc_all_stability(NYU_subids, NYU_tsdir, NYU_ts_pattern, g.df, win
 
 #PONDdemZs <- merge(tStab_pond, demogs,by="subid") %>%
 #  gather(FCtype, TS, HO, HE, I, starts_with("CC")) %>%
-#  filter(NDD != "", !is.na(TS))
+#  filter(dx != "", !is.na(TS))
 
 PONDdemZs <- merge(tStab_pond, demogs,by="subid") %>%
   gather(FCtype, TS, HO, HE, I) %>%
-  filter(NDD != "", !is.na(TS))
+  filter(dx != "", !is.na(TS))
 
-ggplot(PONDdemZs, aes(x=Comp.1, y=TS , color = NDD)) + 
+ggplot(PONDdemZs, aes(x=Comp.1, y=TS , color = dx)) + 
   geom_point() + geom_smooth(method = "lm") +
   facet_wrap(~FCtype)
 
-ggplot(PONDdemZs, aes(x=Comp.2, y=TS , color = NDD)) + 
+ggplot(PONDdemZs, aes(x=Comp.2, y=TS , color = dx)) + 
   geom_point() + geom_smooth(method = "lm") +
   facet_wrap(~FCtype)
 
@@ -299,33 +330,33 @@ names(resids) <- paste0('QC',names(resids))
 
 PONDdemZs1 <- cbind(PONDdemZs, as.data.frame(resids))  #as.data.frame is required, otherwise it makes a matrix
 
-ggplot(PONDdemZs1, aes(x=Age, y=QC.resid , color = NDD)) + 
+ggplot(PONDdemZs1, aes(x=Age, y=QC.resid , color = dx)) + 
   geom_point() + geom_smooth(method = "lm") +
-  facet_grid(NDD~FCtype)
+  facet_grid(dx~FCtype)
 
-ggplot(PONDdemZs1, aes(x=Age, y=QC.resid , color = NDD)) + 
+ggplot(PONDdemZs1, aes(x=Age, y=QC.resid , color = dx)) + 
   geom_point() + geom_smooth(method = "lm") +
   facet_wrap(~FCtype)
 
 simplified_pond <- PONDdemZs1 %>%
-  filter(Age > 6, Age < 18, NDD != "HC")
+  filter(Age > 6, Age < 18, dx != "HC")
 
 #simplified_pond <- PONDdemZs1 %>%
 #  filter(Age > 6, Age < 18)
 
-ggplot(simplified_pond, aes(x=Age, y=QC.resid , color = NDD)) + 
+ggplot(simplified_pond, aes(x=Age, y=QC.resid , color = dx)) + 
   geom_point() + geom_smooth(method = "lm") +
   facet_wrap(~FCtype)
 
-ggplot(simplified_pond, aes(x=NDD, y=QC.resid, color = NDD)) +
+ggplot(simplified_pond, aes(x=dx, y=QC.resid, color = dx)) +
   geom_boxplot() + geom_jitter() +
   facet_wrap(~FCtype)
 
-ggplot(simplified_pond, aes(x=Age, y=QC.resid , color = NDD)) + 
+ggplot(simplified_pond, aes(x=Age, y=QC.resid , color = dx)) + 
   geom_point() + geom_smooth(method = "lm") +
   facet_grid(sex~FCtype)
 
-ggplot(simplified_pond, aes(x=sex, y=QC.resid , color = NDD)) + 
+ggplot(simplified_pond, aes(x=sex, y=QC.resid , color = dx)) + 
   geom_boxplot() + 
   facet_wrap(~FCtype)
 ```
@@ -360,7 +391,7 @@ ggplot(NYUdemZs1, aes(x=AGE_AT_SCAN, y=QC.resid , color = DX_GROUP)) +
   facet_wrap(~FCtype)
 
 #simplified_NYU <- NYUdemZs1 %>%
-#  filter(Age > 6, Age < 18, NDD != "HC")
+#  filter(Age > 6, Age < 18, dx != "HC")
 simplified_NYU <- NYUdemZs1 %>%
   filter(AGE_AT_SCAN > 6, AGE_AT_SCAN < 18)
 
@@ -388,58 +419,61 @@ ggplot(simplified_NYU, aes(x=SEX, y=QC.resid , color = DX_GROUP)) +
 #using Anova (type 2 F tests [unique variance]) instead of aov (type 1 F test [sequential])
 
 # fctype x dx
-print(paste("Anova Table for fctype X NDD"))
-F2 <- lmer(TS ~ FCtype*NDD + Age + sex + Comp.1 + Comp.2 + (1|subid), 
+print(paste("Anova Table for fctype X dx"))
+F2 <- lmer(TS ~ FCtype*dx + Age + sex + Comp.1 + Comp.2 + (1|subid), 
                data = simplified_pond)
+summary(F2)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+summary(glht(F2, linfct=mcp(dx ="Tukey")))
 summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
 
 # plot fctype X dx
-ggplot(simplified_pond, aes(x=FCtype, y=TS, color = NDD)) + 
+ggplot(simplified_pond, aes(x=FCtype, y=TS, color = dx)) + 
   geom_boxplot() 
 
 # fctype x dx (male only)
-print(paste("Anova Table for fctype X NDD, male only"))
-F2 <- lmer(TS ~ FCtype*NDD + Age + Comp.1 + Comp.2 + (1|subid), 
+print(paste("Anova Table for fctype X dx, male only"))
+F2 <- lmer(TS ~ FCtype*dx + Age + Comp.1 + Comp.2 + (1|subid), 
                data = filter(simplified_pond, sex == "Male"))
+summary(F2)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+summary(glht(F2, linfct=mcp(dx ="Tukey")))
 summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
          
 # plot fctype X dx (male only)
-ggplot(filter(simplified_pond, sex == "Male"), aes(x=FCtype, y=TS, color = NDD)) + 
+ggplot(filter(simplified_pond, sex == "Male"), aes(x=FCtype, y=TS, color = dx)) + 
   geom_boxplot() 
 
 # dx per fctype
 for (fctype in c('HE','HO','I')) {
   print(paste("Anova Table for",fctype))
-  F2 <- lm(TS ~ NDD + Age + sex + Comp.1 + Comp.2, 
+  F2 <- lm(TS ~ dx + Age + sex + Comp.1 + Comp.2, 
                  data = filter(simplified_pond, FCtype == fctype))
   print(Anova(F2))
-  summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+  summary(glht(F2, linfct=mcp(dx ="Tukey")))
 }
 
 #male only dx per fctype
 for (fctype in c('HE','HO','I')) {
   print(paste("Anova Table for",fctype))
-  F2 <- lm(TS ~ NDD + Age + Comp.1 + Comp.2,
+  F2 <- lm(TS ~ dx + Age + Comp.1 + Comp.2,
                  data = filter(simplified_pond, sex == "Male", FCtype == fctype))
+  summary(F2)
   print(Anova(F2))
-  summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+  summary(glht(F2, linfct=mcp(dx ="Tukey")))
 }
 
 
 #for (fctype in c("CC01","CC02","CC03","CC04", "CC05","CC06","CC07","CC08","CC09", "CC10")) {
 #  print(paste("Anova Table for",fctype))
-#  a1 <- aov(TS ~ NDD + Age + Comp.1 + Comp.2, 
+#  a1 <- aov(TS ~ dx + Age + Comp.1 + Comp.2, 
 #            data = filter(simplified_pond, sex == "Male", FCtype == fctype))
 #  print(summary(a1))
-#  print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
+#  print(TukeyHSD(x=a1, 'dx', conf.level=0.95))
 #}
 
 #ggplot(filter(simplified_pond, FCtype %in% c("CC01","CC02","CC03","CC04", "CC05","CC06","CC07","CC08","CC09", "CC10")), 
-#       aes(x=as.numeric(factor(FCtype)), y=TS , color = NDD)) + 
+#       aes(x=as.numeric(factor(FCtype)), y=TS , color = dx)) + 
 #  geom_jitter(width = 0.5) + geom_smooth(span = 0.5) 
 
 ```
@@ -455,27 +489,27 @@ print(Anova(F2))
 summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
 
 # plot adaptive func by type and xx
-ggplot(simplified_pond, aes(x=ABAS_GC, y=TS, color = NDD)) + 
+ggplot(simplified_pond, aes(x=ABAS_GC, y=TS, color = dx)) + 
   geom_point() + geom_smooth(method = "lm") +
   facet_wrap(~FCtype)
 
 # plot SCQ by type and xx
-ggplot(simplified_pond, aes(x=SCQ, y=TS, color = NDD)) + 
+ggplot(simplified_pond, aes(x=SCQ, y=TS, color = dx)) + 
   geom_point() + geom_smooth(method = "lm") +
   facet_wrap(~FCtype)
 
 # plot TOCS by type and xx
-ggplot(simplified_pond, aes(x=TOCS, y=TS, color = NDD)) + 
+ggplot(simplified_pond, aes(x=TOCS, y=TS, color = dx)) + 
   geom_point() + geom_smooth(method = "lm") +
   facet_wrap(~FCtype)
 
 # plot AttnCBCLR by type and xx
-ggplot(simplified_pond, aes(x=AttnCBCLR, y=TS, color = NDD)) + 
+ggplot(simplified_pond, aes(x=AttnCBCLR, y=TS, color = dx)) + 
   geom_point() + geom_smooth(method = "lm") +
   facet_wrap(~FCtype)
 
 # plot FSIQ by type and xx
-ggplot(simplified_pond, aes(x=FSIQ, y=TS, color = NDD)) + 
+ggplot(simplified_pond, aes(x=FSIQ, y=TS, color = dx)) + 
   geom_point() + geom_smooth(method = "lm") +
   facet_wrap(~FCtype)
 
@@ -483,19 +517,19 @@ ggplot(simplified_pond, aes(x=FSIQ, y=TS, color = NDD)) +
 # # dx per fctype
 # for (fctype in c('HE','HO','I')) {
 #   print(paste("Anova Table for",fctype))
-#   a1 <- aov(TS ~ NDD + Age + sex + Comp.1 + Comp.2, 
+#   a1 <- aov(TS ~ dx + Age + sex + Comp.1 + Comp.2, 
 #                  data = filter(simplified_pond, FCtype == fctype))
 #   print(summary(a1))
-#   print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
+#   print(TukeyHSD(x=a1, 'dx', conf.level=0.95))
 # }
 # 
 # #male only dx per fctype
 # for (fctype in c('HE','HO','I')) {
 #   print(paste("Anova Table for",fctype))
-#   a1 <- aov(TS ~ NDD + Age + Comp.1 + Comp.2, 
+#   a1 <- aov(TS ~ dx + Age + Comp.1 + Comp.2, 
 #                  data = filter(simplified_pond, sex == "Male", FCtype == fctype))
 #   print(summary(a1))
-#   print(TukeyHSD(x=a1, 'NDD', conf.level=0.95))
+#   print(TukeyHSD(x=a1, 'dx', conf.level=0.95))
 # }
 ```
 
@@ -506,6 +540,7 @@ ggplot(simplified_pond, aes(x=FSIQ, y=TS, color = NDD)) +
 print(paste("Anova Table for fctype X DX_GROUP"))
 F2 <- lmer(TS ~ FCtype*DX_GROUP + AGE_AT_SCAN + SEX + Comp.1 + Comp.2 + (1|subid), 
                data = simplified_NYU)
+summary(F2)
 print(Anova(F2))
 summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
 
@@ -517,6 +552,7 @@ ggplot(simplified_NYU, aes(x=FCtype, y=TS, color = DX_GROUP)) +
 print(paste("Anova Table for fctype X DX_GROUP, male only"))
 F2 <- lmer(TS ~ FCtype*DX_GROUP + AGE_AT_SCAN + Comp.1 + Comp.2 + (1|subid), 
                data = filter(simplified_NYU, SEX == "Male"))
+summary(F2)
 print(Anova(F2))
 summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
          
@@ -529,6 +565,7 @@ for (fctype in c('HE','HO','I')) {
   print(paste("Anova Table for",fctype))
   F2 <- lm(TS ~ DX_GROUP + AGE_AT_SCAN + SEX + Comp.1 + Comp.2, 
                  data = filter(simplified_NYU, FCtype == fctype))
+  summary(F2)
   print(Anova(F2))
 }
 
@@ -537,6 +574,7 @@ for (fctype in c('HE','HO','I')) {
   print(paste("Anova Table for",fctype))
   F2 <- lm(TS ~ DX_GROUP + AGE_AT_SCAN + Comp.1 + Comp.2,
                  data = filter(simplified_NYU, SEX == "Male", FCtype == fctype))
+  summary(F2)
   print(Anova(F2))
 }
 
@@ -547,7 +585,7 @@ for (fctype in c('HE','HO','I')) {
 ```{r, fig.width = 12}
 
 tmp <- simplified_pond
-tmp$DX <- as.character(tmp$NDD)
+tmp$DX <- as.character(tmp$dx)
 tmp$SEX <- tmp$sex
 tmp$study <- "POND"
 tmp$AGE_AT_SCAN <- tmp$Age

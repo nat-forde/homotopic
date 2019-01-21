@@ -11,12 +11,14 @@ library(igraph)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(cowplot)
 library(broom)
 library(knitr)
 library(car)
 library(rmarkdown)
 library(lme4)
 library(multcomp)
+library(haven)
 
 #FC temporal stability
 window_size = 30
@@ -24,32 +26,86 @@ window_size = 30
 #diffusion threshold
 threshold = 5 #percent threshold value, keeps this percent of connections
 
-## set all the paths
-#POND
-pond_demographics <- read.csv("/projects/stephanie/DataFiles_CT.DTI.Beh.POND/GlimExtIN_CTROIUF.csv")
-qap_functional_temporal <- read.csv("/mnt/tigrlab/projects/edickie/analysis/POND_RST/qap/qap_functional_temporal.csv")
-tsdir <- "/scratch/nforde/homotopic/POND/hcp/glasser_meants"
-ts_pattern <- "RST_pond42fix"
-pond_extra <- read.csv("/scratch/nforde/homotopic/POND/pond_demog.csv")
-diffdir <- "/scratch/nforde/homotopic/POND/CSD"
-outdir <- "/scratch/nforde/homotopic/POND/edge_metrics"
-xyz <- read.csv("/scratch/nforde/homotopic/atlases/xyz.csv")
+#atlas options: glasser, ColeAnti, DK
+atlas <- "glasser"
 
-for (i in 1:nrow(pond_extra)) {
-  if (startsWith(as.character(pond_extra$subject[i]), "88")) {
-    pond_extra$subject[i] <- paste0("0", pond_extra$subject[i])
+##                            ##
+##      Glasser               ##
+##      1-180 Right           ##
+##      181-360 Left          ##
+##                            ##
+##      ColeAnti              ##
+##      1-180 Left            ##
+##      181-360 Right         ##
+##      SubCort alternates    ##
+##                            ##
+
+## set all the paths/directories & read in data
+#POND
+pond_demographics <- read.csv("/projects/nforde/POND/clinical/POND_06JUN2018_pp.csv")
+QCfunc <- read.csv("/external/pond/pipelines/mriqc/out/bold.csv")
+QCdwi <- read.csv("/projects/nforde/POND/dtifit/qc.csv")
+hand <- read.csv("/projects/nforde/POND/clinical/handedness.csv")
+SCQ <- read.csv("/projects/nforde/POND/clinical/SCQ_Data_23_July_2018.csv")
+WISCV <- read.csv("/projects/nforde/POND/clinical/WISC_5_Data_24_July_2018.csv")
+xyz <- read.csv("/projects/nforde/atlases/xyz.csv")
+
+tsdir <- "/projects/nforde/POND/rsMRI"
+diffdir <- "/projects/nforde/POND/CSD"
+edgedir <- "/projects/nforde/POND/edges"
+
+#merge diff sources of demog and QC data
+demogs <- pond_demographics %>% 
+  merge(WISCV[c("Subject","WISC_V_FSIQ")], by.x="SUBJECT", by.y="Subject", all.x=TRUE)
+
+#do some organising and renaming
+demogs$Age <- (demogs$POND_DATE - demogs$DOB) / 365.25
+demogs$sex <- demogs$GENDER
+demogs$dx <- NA
+demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="1"] <- 'ASD'
+demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="2" | demogs$RESEARCH_CONFIRM_DIAG_STD=="6"] <- 'ADHD'
+demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="3"] <- 'OCD'
+demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="10"] <- 'HC'
+demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="15"] <- 'GAD'
+IQ <- data.frame(demogs$WASI_FSIQ_2, demogs$WASI_II_FSIQ_2, demogs$WASI_FSIQ_4, demogs$WASI_II_FSIQ_4, demogs$WISC_IV_FSIQ, demogs$WISC_V_FSIQ)
+demogs$FSIQ_any <- apply(IQ, 1, mean, na.rm=TRUE)
+demogs$FSIQ_any[demogs$FSIQ_any == "NaN"] <- NA
+
+### reduce the demographic data and merge if other sources
+demogs <- demogs[c("SUBJECT","dx", "Age", "sex", "FSIQ_any", "AB21GCCS", "RBSCPT",
+                        "VAB2CP", "OB_SUB", "COM_SUB", "ADHD_I_SUB", "ADHD_HI_SUB", "CB68VITS", "TPOCS_TOT")] %>%
+  merge(SCQ[c("Subject","SCQTOT")], by.x="SUBJECT", by.y="Subject", all.x=TRUE) %>%
+  merge(hand[c("ID","Handed")], by.x="SUBJECT", by.y="ID", all.x=TRUE) %>%
+  merge(QCfunc, by.x="SUBJECT", by.y="subject_id") 
+demogs$scanner <-NA
+demogs$scanner[demogs$spacing_tr!="1.5"] <- 'trio'
+demogs$scanner[demogs$spacing_tr=="1.5"] <- 'prisma'
+
+
+#add 0 infront of 88 subjects
+for (i in 1:nrow(demogs)) {
+  if (startsWith(as.character(demogs$SUBJECT[i]), "88")) {
+    demogs$SUBJECT[i] <- paste0("0", demogs$SUBJECT[i])
   }
 }
-z <-  strsplit(as.character(pond_demographics$DTI.CT.codes),"-")
-pond_demographics$subject <- sapply(z,FUN=function(x){paste0(x[1],x[2])})
-demogs <- merge(pond_demographics, pond_extra[c(1,2,7:10,12)], by.x="subject", by.y="subject", all.x=TRUE)
-demogs <- demogs[!duplicated(demogs$subject),]
+#add prefix to sub name
+demogs$subid <- paste0("sub-",demogs$SUBJECT)
+
+demogs <- merge(demogs, QCdwi[c("subject", "shell", "in.ex")], by.x= "subid", by.y = "subject", all.x=TRUE)
 
 #ABIDE
-NYU_tsdir <- "/scratch/nforde/homotopic/ABIDE/hcp/glasser_meants"
-NYU_ts_pattern <- "rest_abide25fix"
-ABIDE_demogs <- read.csv("/mnt/tigrlab/projects/edickie/analysis/abide_PINT/scripts/ABIDEI_Pheno_QCed_20161010.csv")
-NYU_demogs <- filter(ABIDE_demogs, SITE_ID == "NYU")
+# NYU_tsdir <- "/scratch/nforde/homotopic/ABIDE/hcp/glasser_meants"
+# NYU_ts_pattern <- "rest_abide25fix"
+# ABIDE_demogs <- read.csv("/mnt/tigrlab/projects/edickie/analysis/abide_PINT/scripts/ABIDEI_Pheno_QCed_20161010.csv")
+# NYU_demogs <- filter(ABIDE_demogs, SITE_ID == "NYU")
+# 
+# 
+# 
+# levelsLls <- apply(ColeL, 2, function(x) levels(as.factor(x)))
+# levelsL <- unlist(levelsLls) %>% unique()
+# 
+# levelsRls <- apply(ColeR, 2, function(x) levels(as.factor(x)))
+# levelsR <- unlist(levelsRls) %>% unique()
 
 ```
 ## define functions
@@ -65,61 +121,88 @@ transform_to_normal <- function(X) {
 }
 
 ## to make dataframe that labels connection as I, HE and HO
-make_g_template <- function(subid, tsdir, ts_pattern) {
-  meants <- read.csv(file.path(tsdir,
-                               paste(subid, ts_pattern, "glasser_meants.csv", sep="_")),
-                     header=FALSE)  
+# make_g_template <- function(subid, tsdir, ts_pattern) {
+make_g_template <- function(subid, tsdir) {
+  meants <- read.csv(file.path(tsdir, subid, paste(atlas, "meants.csv", sep="_")), header=FALSE)  
 
-  roiids <- read.csv(file.path(tsdir,
-                               paste(subid, ts_pattern, "glasser_roiids.csv", sep="_")),
-                     header=TRUE)  
+  roiids <- read.csv(file.path(tsdir, subid, paste(atlas, "roiids.csv", sep="_")), header=TRUE)  
   
-  rois <- as.character(roiids$labelname)
-  meants_t <- t(meants)
-  colnames(meants_t) <- rois
+  if (atlas == "glasser") {
+    rois <- as.character(roiids$labelname)
+    meants_t <- t(meants)
+    colnames(meants_t) <- rois
   
-  cormat <- cor(meants_t)
-  g<-graph_from_adjacency_matrix(cormat,mode="upper", 
+    cormat <- cor(meants_t)
+    g<-graph_from_adjacency_matrix(cormat,mode="upper", 
                                  weighted=T, diag=F, 
                                  add.rownames = "code")
-  g.df <- as.data.frame(get.edgelist(g), names=T)
-
-  #split ROI names into hemi and name  
-  for (i in 1:nrow(g.df)) {
-    g.df$V1.hemi[i] = strsplit(as.character(g.df$V1[i]),"_")[[1]][1]
-    g.df$V1.roi[i] = strsplit(as.character(g.df$V1[i]),"_")[[1]][2]
-    g.df$V2.hemi[i] = strsplit(as.character(g.df$V2[i]),"_")[[1]][1]
-    g.df$V2.roi[i] = strsplit(as.character(g.df$V2[i]),"_")[[1]][2]
-  }
+    g.df <- as.data.frame(get.edgelist(g), names=T)
   
-  g.df$FCtype <- NA
-  g.df$FCtype[g.df$V1.roi==g.df$V2.roi & g.df$V1.hemi!=g.df$V2.hemi] <- "Homotopic"
-  g.df$FCtype[g.df$V1.roi!=g.df$V2.roi & g.df$V1.hemi!=g.df$V2.hemi] <- "Heterotopic"
-  g.df$FCtype[g.df$V1.roi!=g.df$V2.roi & g.df$V1.hemi==g.df$V2.hemi] <- "Intrahemispheric"
+    for (i in 1:nrow(g.df)) {
+      g.df$V1.hemi[i] = strsplit(as.character(g.df$V1[i]),"_")[[1]][1]
+      g.df$V1.roi[i] = strsplit(as.character(g.df$V1[i]),"_")[[1]][2]
+      g.df$V2.hemi[i] = strsplit(as.character(g.df$V2[i]),"_")[[1]][1]
+      g.df$V2.roi[i] = strsplit(as.character(g.df$V2[i]),"_")[[1]][2]
+    } 
+    g.df$FCtype <- NA
+    g.df$FCtype[g.df$V1.roi==g.df$V2.roi & g.df$V1.hemi!=g.df$V2.hemi] <- "Homotopic"
+    g.df$FCtype[g.df$V1.roi!=g.df$V2.roi & g.df$V1.hemi!=g.df$V2.hemi] <- "Heterotopic"
+    g.df$FCtype[g.df$V1.roi!=g.df$V2.roi & g.df$V1.hemi==g.df$V2.hemi] <- "Intrahemispheric"
   
-  V1xyz <- xyz
-  V1names <- c("V1x", "V1y", "V1z", "V1roi")
-  colnames(V1xyz) <- V1names
-  V2xyz <- xyz
-  V2names <- c("V2x", "V2y", "V2z", "V2roi")
-  colnames(V2xyz) <- V2names
+    V1xyz <- xyz
+    V1names <- c("V1x", "V1y", "V1z", "V1roi")
+    colnames(V1xyz) <- V1names
+    V2xyz <- xyz
+    V2names <- c("V2x", "V2y", "V2z", "V2roi")
+    colnames(V2xyz) <- V2names
   
-  tmpV1 <- merge(g.df, V1xyz, by.x="V1", by.y="V1roi")
-  g.df <- merge(tmpV1, V2xyz, by.x="V2", by.y="V2roi")
+    tmpV1 <- merge(g.df, V1xyz, by.x="V1", by.y="V1roi")
+    g.df <- merge(tmpV1, V2xyz, by.x="V2", by.y="V2roi")
   
+  } else if (atlas == "ColeAnti") {
+    roiids$int_value[roiids$int_value<=180] <- paste0("L_",roiids$int_value) 
+    roiids$int_value[roiids$int_value>=180 & roiids$int_value<=360] <- paste0("R_",roiids$int_value)
+    ROInum
+    
+    ########## need to figure out the subcortical left-right indices and homotopic connections.... ######### 
+    rois <- as.character(roiids$int_value)
+    meants_t <- t(meants)
+    colnames(meants_t) <- rois
+  
+    cormat <- cor(meants_t)
+    g<-graph_from_adjacency_matrix(cormat,mode="upper", 
+                                 weighted=T, diag=F, 
+                                 add.rownames = "code")
+    g.df <- as.data.frame(get.edgelist(g), names=T)
+    
+    for (i in 1:nrow(g.df)) {
+      g.df$V1.hemi[i] = strsplit(as.character(g.df$V1[i]),"_")[[1]][1]
+      g.df$V1.roi[i] = strsplit(as.character(g.df$V1[i]),"_")[[1]][2]
+      g.df$V2.hemi[i] = strsplit(as.character(g.df$V2[i]),"_")[[1]][1]
+      g.df$V2.roi[i] = strsplit(as.character(g.df$V2[i]),"_")[[1]][2]
+      
+      
+    }
+    g.df$FCtype <- NA
+    g.df$FCtype[g.df$V1.roi==g.df$V2.roi & g.df$V1.hemi!=g.df$V2.hemi] <- "Homotopic"
+    g.df$FCtype[g.df$V1.roi!=g.df$V2.roi & g.df$V1.hemi!=g.df$V2.hemi] <- "Heterotopic"
+    g.df$FCtype[g.df$V1.roi!=g.df$V2.roi & g.df$V1.hemi==g.df$V2.hemi] <- "Intrahemispheric"
+  
+  } else if (atlas == "DK")  {
+    ####### number of labels != to number of entries in meants for DK atlas - somethings wrong! ####################################
+    FStable <- read.table("/scratch/nforde/homotopic/bin/FreeSurferColorLUT.txt", header=TRUE) 
+    roiids <- merge(roiids, FStable, by.x= "X2.000000000000000000e.00", by.y = "Index")
+    rois <- as.character(roiids$labelname)
+  } 
   return(g.df)
-  
 }
 
 ## to calculate temporal stability between pairs of ROIs (gets called by calc_all_stability)
-calc_subject_stability <- function(subid, tsdir, ts_pattern, g.df, window_size) {
-  meants.file <- file.path(tsdir,
-                           paste(subid, ts_pattern, "glasser_meants.csv", sep="_"))
+calc_subject_stability <- function(subid, tsdir, g.df, window_size) {
+  meants.file <- file.path(tsdir, subid, paste(atlas, "meants.csv", sep="_"))
   meants <- read.csv(meants.file, header = F)
  
-  roiids <- read.csv(file.path(tsdir,
-                               paste(subid, ts_pattern, "glasser_roiids.csv", sep="_")),
-                     header=TRUE) 
+  roiids <- read.csv(file.path(tsdir, subid, paste(atlas, "roiids.csv", sep="_")), header=TRUE) 
   
   rois <- as.character(roiids$labelname)
   meants_t <- as.data.frame(t(meants))
@@ -138,7 +221,7 @@ calc_subject_stability <- function(subid, tsdir, ts_pattern, g.df, window_size) 
 
 
 ## to calculate FC strength (Z-scores), temmp stabiulity and structural connection weight
-calc_everything <- function(subids, tsdir, ts_pattern, g.df, window_size, diffdir, threshold) {
+calc_everything <- function(subids, tsdir , g.df, window_size, diffdir, threshold) {
   ###########  set up empty dataframes ##################
   theZs <- data.frame("subid" = subids, 
                       "HO" = numeric(length(subids)),
@@ -196,59 +279,65 @@ calc_everything <- function(subids, tsdir, ts_pattern, g.df, window_size, diffdi
     ################ FC strength ###########################
     ## get the subid from the dataframe and read in the meants
     subid <- theZs$subid[i]
-    meants.file <- file.path(tsdir,
-                             paste(subid, ts_pattern, "glasser_meants.csv", sep="_"))
+    meants.file <- file.path(tsdir, subid, paste(atlas, "meants.csv", sep="_"))
      
     if (file.exists(meants.file)) {
       meants <- read.csv(meants.file,header=FALSE)  
-      roiids <- read.csv(file.path(tsdir,
-                             paste(subid, ts_pattern, "glasser_roiids.csv", sep="_")), header=TRUE)
+      roiids <- read.csv(file.path(tsdir, subid, paste(atlas, "roiids.csv", sep="_")), header=TRUE)
+      rois <- as.character(roiids$labelname)
+      
       names(meants) <- paste0("TR_",1:ncol(meants))
       ## correlate and graph
       cormat <- cor(t(dplyr::select(meants,starts_with("TR_"))))
-      g<-graph_from_adjacency_matrix(cormat,mode="upper", 
-                                     weighted=T, diag=F)
+      g<-graph_from_adjacency_matrix(cormat,mode="upper", weighted=T, diag=F)
+      V(g)$name <- rois
       # take the egde list as a vector
       thecorrs <- E(g)$weight
+      edge.namesZ <- as.data.frame(as_edgelist(g, names=TRUE))
       
       # apply the Z transform (so we can do stats)
       theseZ <- atanh(thecorrs)
-      edges.Z <- cbind(g.df, theseZ)
+      edge.namesZ$theseZ <- theseZ
+      edges.Z <- merge(g.df, edge.namesZ, by=c("V1","V2"))
       
       ################ FC temporal stability ###########################
       ## look and see if a stability output exists
-      stab.file <- file.path(tsdir,
-                             paste(subid, ts_pattern, "glasser", window_size, "tempstab.csv", sep="_"))
+      stab.file <- file.path(tsdir, subid,
+                             paste0(atlas, "_", window_size, "sec_tempstab.csv"))
       if (file.exists(stab.file)) {
         ts.df <- read.csv(stab.file) 
       } else {
-        ts.df <- calc_subject_stability(subid, tsdir, ts_pattern, g.df, window_size)
+        ts.df <- calc_subject_stability(subid, tsdir, g.df, window_size)
         write.csv(ts.df, stab.file, row.names = F)
       }
       ## merge the ts.df with g.df
       edges.TS <- merge(g.df, ts.df, by=c("V1", "V2"))
       
       ################ DWI connectivity ###########################                    
-      diff.file <- file.path(diffdir, subid, "det_connectome.csv")
-      len.file <- file.path(diffdir, subid, "det_length_connectome.csv")
-      vox.file <- file.path(diffdir, subid, "voxel_count.txt")                    
+      diff.file <- file.path(diffdir, subid, paste0("prob_", atlas, ".csv"))
+      len.file <- file.path(diffdir, subid, paste0("prob_length_", atlas, ".csv"))
+      vox.file <- file.path(diffdir, subid, paste0("voxel_count_", atlas,".txt"))                    
       if (file.exists(diff.file)) {
-        diff <- read.csv(diff.file, sep="", header=FALSE) 
+       diff <- read.csv(diff.file, sep="", header=FALSE) 
         
-        rois <- as.character(roiids$labelname)
         colnames(diff) <- rois
         rownames(diff) <- rois
-      
+        
         #can't have 0's for igraph : +1, make graph merge and then -1
         diffplus1 <-diff +1
         diff_g<-graph_from_adjacency_matrix(as.matrix(diffplus1),mode="upper", 
-                                      weighted=T, diag=F, add.colnames=T) 
-      # take the egde list as a vector
+                                            weighted=T, diag=F, add.colnames=T) 
+        V(diff_g)$name <- rois
+        # take the egde list as a vector
         rawplus1 <- E(diff_g)$weight
         raw <- rawplus1 -1
-        edges.dw <- cbind(g.df, raw)
-      
-        #normalise for number of voxels 
+        
+        edge.namesDW <- as.data.frame(as_edgelist(diff_g, names=TRUE))
+        
+        edge.namesDW$raw <- raw
+        edges.dw <- merge(g.df, edge.namesDW, by=c("V1","V2"))
+        
+       #normalise for number of voxels 
         vox <- read.table(vox.file, sep="", header=FALSE)
         oddvals <- seq(1, ncol(vox), by=2)
         vox_count <- vox[,oddvals] #select voxel number and exclude volume
@@ -266,35 +355,34 @@ calc_everything <- function(subids, tsdir, ts_pattern, g.df, window_size, diffdi
         
         #length connectome
         len <- read.csv(len.file, sep="", header=FALSE)
-        colnames(len) <- rois
-        rownames(len) <- rois
         #can't have 0's for igraph : +1, make graph merge and then -1
         lenplus1 <-len +1
         len_g<-graph_from_adjacency_matrix(as.matrix(lenplus1),mode="upper", 
-                                      weighted=T, diag=F, add.colnames=T) 
+                                           weighted=T, diag=F, add.colnames=T) 
+        V(len_g)$name <- rois
         #take the egde list as a vector
         lenplus1 <- E(len_g)$weight
         length <- lenplus1 -1
-        len.df <- cbind(g.df, length)
-        edges.dw_norm <- merge(edges.dw_w, len.df[c(1,2,14)], by=c('V1', 'V2'))
+        len.df <- as.data.frame(as_edgelist(len_g, names=TRUE))
+        len.df$length <- length
+        edges.dw_norm <- merge(edges.dw_w, len.df, by=c('V1', 'V2'), all.x=TRUE)
         
-        #select nonzero length connections and bin 
+        #select nonzero length connections and bin by i) length and ii) edge weight 
         edges.dw_nonzero <- subset(edges.dw_norm, length > 0)
         edges.dw_nonzero <- within(edges.dw_nonzero, len_quant <- as.integer(cut(length, quantile(length, probs=0:20/20), include.lowest=TRUE)))
         edges.dw_nonzero <- within(edges.dw_nonzero, dw_quant <- as.integer(cut(weight, quantile(weight, probs=0:20/20), include.lowest=TRUE)))
         
-       #can merge to get full edge list again
+        #can merge to get full edge list again
         edges.dw_all <- merge(edges.dw_norm, edges.dw_nonzero[c(1,2,18,19)], by=c('V1', 'V2'), all.x=TRUE)
-        
-        edges.ZTS <- merge(edges.Z, edges.TS, by=c('V1', 'V2', 'V1.hemi', 'V1.roi', 'V2.hemi', 'V2.roi', 'FCtype', 'V1x', 'V1y', 'V1z', 'V2x', 'V2y', 'V2z'), all.x=TRUE)
-        edges.all <- merge(edges.ZTS, edges.dw_all, by=c('V1', 'V2', 'V1.hemi', 'V1.roi', 'V2.hemi', 'V2.roi', 'FCtype', 'V1x', 'V1y', 'V1z', 'V2x', 'V2y', 'V2z'), all.x=TRUE)
-       
+        edges.ZTS <- merge(edges.Z, edges.TS, by=c('V1', 'V2', 'V1.hemi', 'V1.roi', 'V2.hemi', 'V2.roi', 
+                                                   'FCtype', 'V1x', 'V1y', 'V1z', 'V2x', 'V2y', 'V2z'), all=TRUE)
+        edges.all <- merge(edges.ZTS, edges.dw_all, by=c('V1', 'V2', 'V1.hemi', 'V1.roi', 'V2.hemi', 'V2.roi', 
+                                                         'FCtype', 'V1x', 'V1y', 'V1z', 'V2x', 'V2y', 'V2z'), all=TRUE)
         #threshold by connection weight to remove spurious connections .....%
         #edges_thresh <- subset(edges_wlq, weight > quantile(weight, prob = 1 - percent_threshold/100))
-        out.file <- file.path(outdir, paste(subid, "edge_metrics.csv", sep="_"))
+        out.file <- file.path(edgedir, paste(subid, atlas, window_size, "edge_metrics.csv", sep="_"))
         write.csv(edges.all, out.file, row.names = F)
       
-        
         theZs$HO[i] <- mean(filter(edges.all, FCtype == "Homotopic")$theseZ)
         theZs$HE[i] <- mean(filter(edges.all, FCtype == "Heterotopic")$theseZ)
         theZs$I[i] <- mean(filter(edges.all, FCtype == "Intrahemispheric")$theseZ)
@@ -387,52 +475,52 @@ calc_everything <- function(subids, tsdir, ts_pattern, g.df, window_size, diffdi
         theTS$dw19[i] <- mean(filter(edges.all, dw_quant == "19")$Stability)
         theTS$dw20[i] <- mean(filter(edges.all, dw_quant == "20")$Stability) 
         
-        theDW$HO[i] <- mean(filter(edges.all, FCtype == "Homotopic")$weight)
-        theDW$HE[i] <- mean(filter(edges.all, FCtype == "Heterotopic")$weight)
-        theDW$I[i] <- mean(filter(edges.all, FCtype == "Intrahemispheric")$weight)
-        theDW$lenNA[i] <- mean(filter(edges.all, is.na(len_quant))$weight)
-        theDW$len1[i] <- mean(filter(edges.all, len_quant == "1")$weight)
-        theDW$len2[i] <- mean(filter(edges.all, len_quant == "2")$weight)
-        theDW$len3[i] <- mean(filter(edges.all, len_quant == "3")$weight)
-        theDW$len4[i] <- mean(filter(edges.all, len_quant == "4")$weight)
-        theDW$len5[i] <- mean(filter(edges.all, len_quant == "5")$weight)
-        theDW$len6[i] <- mean(filter(edges.all, len_quant == "6")$weight)
-        theDW$len7[i] <- mean(filter(edges.all, len_quant == "7")$weight)
-        theDW$len8[i] <- mean(filter(edges.all, len_quant == "8")$weight)
-        theDW$len9[i] <- mean(filter(edges.all, len_quant == "9")$weight)
-        theDW$len10[i] <- mean(filter(edges.all, len_quant == "10")$weight)
-        theDW$len11[i] <- mean(filter(edges.all, len_quant == "11")$weight)
-        theDW$len12[i] <- mean(filter(edges.all, len_quant == "12")$weight)
-        theDW$len13[i] <- mean(filter(edges.all, len_quant == "13")$weight)
-        theDW$len14[i] <- mean(filter(edges.all, len_quant == "14")$weight)
-        theDW$len15[i] <- mean(filter(edges.all, len_quant == "15")$weight)
-        theDW$len16[i] <- mean(filter(edges.all, len_quant == "16")$weight)
-        theDW$len17[i] <- mean(filter(edges.all, len_quant == "17")$weight)
-        theDW$len18[i] <- mean(filter(edges.all, len_quant == "18")$weight)
-        theDW$len19[i] <- mean(filter(edges.all, len_quant == "19")$weight)
-        theDW$len20[i] <- mean(filter(edges.all, len_quant == "20")$weight) 
-        theDW$dwNA[i] <- mean(filter(edges.all, is.na(dw_quant))$weight)
-        theDW$dw1[i] <- mean(filter(edges.all, dw_quant == "1")$weight)
-        theDW$dw2[i] <- mean(filter(edges.all, dw_quant == "2")$weight)
-        theDW$dw3[i] <- mean(filter(edges.all, dw_quant == "3")$weight)
-        theDW$dw4[i] <- mean(filter(edges.all, dw_quant == "4")$weight)
-        theDW$dw5[i] <- mean(filter(edges.all, dw_quant == "5")$weight)
-        theDW$dw6[i] <- mean(filter(edges.all, dw_quant == "6")$weight)
-        theDW$dw7[i] <- mean(filter(edges.all, dw_quant == "7")$weight)
-        theDW$dw8[i] <- mean(filter(edges.all, dw_quant == "8")$weight)
-        theDW$dw9[i] <- mean(filter(edges.all, dw_quant == "9")$weight)
-        theDW$dw10[i] <- mean(filter(edges.all, dw_quant == "10")$weight)
-        theDW$dw11[i] <- mean(filter(edges.all, dw_quant == "11")$weight)
-        theDW$dw12[i] <- mean(filter(edges.all, dw_quant == "12")$weight)
-        theDW$dw13[i] <- mean(filter(edges.all, dw_quant == "13")$weight)
-        theDW$dw14[i] <- mean(filter(edges.all, dw_quant == "14")$weight)
-        theDW$dw15[i] <- mean(filter(edges.all, dw_quant == "15")$weight)
-        theDW$dw16[i] <- mean(filter(edges.all, dw_quant == "16")$weight)
-        theDW$dw17[i] <- mean(filter(edges.all, dw_quant == "17")$weight)
-        theDW$dw18[i] <- mean(filter(edges.all, dw_quant == "18")$weight)
-        theDW$dw19[i] <- mean(filter(edges.all, dw_quant == "19")$weight)
-        theDW$dw20[i] <- mean(filter(edges.all, dw_quant == "20")$weight) 
-        
+        theDW$HO[i] <- mean(filter(edges.dw_nonzero, FCtype == "Homotopic")$weight)  ######### get very low numbers if edges.all used
+        theDW$HE[i] <- mean(filter(edges.dw_nonzero, FCtype == "Heterotopic")$weight)
+        theDW$I[i] <- mean(filter(edges.dw_nonzero, FCtype == "Intrahemispheric")$weight)
+        theDW$lenNA[i] <- mean(filter(edges.dw_nonzero, is.na(len_quant))$weight)
+        theDW$len1[i] <- mean(filter(edges.dw_nonzero, len_quant == "1")$weight)
+        theDW$len2[i] <- mean(filter(edges.dw_nonzero, len_quant == "2")$weight)
+        theDW$len3[i] <- mean(filter(edges.dw_nonzero, len_quant == "3")$weight)
+        theDW$len4[i] <- mean(filter(edges.dw_nonzero, len_quant == "4")$weight)
+        theDW$len5[i] <- mean(filter(edges.dw_nonzero, len_quant == "5")$weight)
+        theDW$len6[i] <- mean(filter(edges.dw_nonzero, len_quant == "6")$weight)
+        theDW$len7[i] <- mean(filter(edges.dw_nonzero, len_quant == "7")$weight)
+        theDW$len8[i] <- mean(filter(edges.dw_nonzero, len_quant == "8")$weight)
+        theDW$len9[i] <- mean(filter(edges.dw_nonzero, len_quant == "9")$weight)
+        theDW$len10[i] <- mean(filter(edges.dw_nonzero, len_quant == "10")$weight)
+        theDW$len11[i] <- mean(filter(edges.dw_nonzero, len_quant == "11")$weight)
+        theDW$len12[i] <- mean(filter(edges.dw_nonzero, len_quant == "12")$weight)
+        theDW$len13[i] <- mean(filter(edges.dw_nonzero, len_quant == "13")$weight)
+        theDW$len14[i] <- mean(filter(edges.dw_nonzero, len_quant == "14")$weight)
+        theDW$len15[i] <- mean(filter(edges.dw_nonzero, len_quant == "15")$weight)
+        theDW$len16[i] <- mean(filter(edges.dw_nonzero, len_quant == "16")$weight)
+        theDW$len17[i] <- mean(filter(edges.dw_nonzero, len_quant == "17")$weight)
+        theDW$len18[i] <- mean(filter(edges.dw_nonzero, len_quant == "18")$weight)
+        theDW$len19[i] <- mean(filter(edges.dw_nonzero, len_quant == "19")$weight)
+        theDW$len20[i] <- mean(filter(edges.dw_nonzero, len_quant == "20")$weight) 
+        theDW$dwNA[i] <- mean(filter(edges.dw_nonzero, is.na(dw_quant))$weight)
+        theDW$dw1[i] <- mean(filter(edges.dw_nonzero, dw_quant == "1")$weight)
+        theDW$dw2[i] <- mean(filter(edges.dw_nonzero, dw_quant == "2")$weight)
+        theDW$dw3[i] <- mean(filter(edges.dw_nonzero, dw_quant == "3")$weight)
+        theDW$dw4[i] <- mean(filter(edges.dw_nonzero, dw_quant == "4")$weight)
+        theDW$dw5[i] <- mean(filter(edges.dw_nonzero, dw_quant == "5")$weight)
+        theDW$dw6[i] <- mean(filter(edges.dw_nonzero, dw_quant == "6")$weight)
+        theDW$dw7[i] <- mean(filter(edges.dw_nonzero, dw_quant == "7")$weight)
+        theDW$dw8[i] <- mean(filter(edges.dw_nonzero, dw_quant == "8")$weight)
+        theDW$dw9[i] <- mean(filter(edges.dw_nonzero, dw_quant == "9")$weight)
+        theDW$dw10[i] <- mean(filter(edges.dw_nonzero, dw_quant == "10")$weight)
+        theDW$dw11[i] <- mean(filter(edges.dw_nonzero, dw_quant == "11")$weight)
+        theDW$dw12[i] <- mean(filter(edges.dw_nonzero, dw_quant == "12")$weight)
+        theDW$dw13[i] <- mean(filter(edges.dw_nonzero, dw_quant == "13")$weight)
+        theDW$dw14[i] <- mean(filter(edges.dw_nonzero, dw_quant == "14")$weight)
+        theDW$dw15[i] <- mean(filter(edges.dw_nonzero, dw_quant == "15")$weight)
+        theDW$dw16[i] <- mean(filter(edges.dw_nonzero, dw_quant == "16")$weight)
+        theDW$dw17[i] <- mean(filter(edges.dw_nonzero, dw_quant == "17")$weight)
+        theDW$dw18[i] <- mean(filter(edges.dw_nonzero, dw_quant == "18")$weight)
+        theDW$dw19[i] <- mean(filter(edges.dw_nonzero, dw_quant == "19")$weight)
+        theDW$dw20[i] <- mean(filter(edges.dw_nonzero, dw_quant == "20")$weight) 
+      
       } else {
         print(paste(diff.file, "does not exist"))
         theZs[i,5:ncol(theZs)] <- NA
@@ -459,173 +547,259 @@ calc_everything <- function(subids, tsdir, ts_pattern, g.df, window_size, diffdi
 ```
 ## Run POND
 ```{r}
-demogs$subid <- paste0("MR160-",demogs$DTI.CT.codes)
-demogs <- merge(demogs, qap_functional_temporal, by.x = "subid", by.y = "subject")
-demogs <- filter(demogs, perc_fd < 5)
-
-## transform QC measures to normality
-demogs <- demogs %>%
-  mutate("dvars_pT"  = transform_to_normal(dvars),
-         "m_tsnr_pT"  = transform_to_normal(m_tsnr),
-         "mean_fd_pT"  = transform_to_normal(mean_fd),
-         "quality_pT" = transform_to_normal(quality))
-
-## Now lets do a PCA on the QAP numbers...
-# Pricipal Components Analysis
-# entering raw data and extracting PCs
-# from the correlation matrix
-fit <- princomp(dplyr::select(demogs, dvars_pT, m_tsnr_pT, mean_fd_pT, quality_pT) , cor=TRUE)
-summary(fit) # print variance accounted for
-loadings(fit) # pc loadings
-plot(fit,type="lines") # scree plot
-## write the top 5 principal components to the speadsheet
-demogs <- cbind(demogs,fit$scores[ ,1:2]) # the principal components
+# filter to get rid of bad QC
+demogs <- demogs %>% filter(fd_mean < 0.5) %>% filter(size_t > 100)
 
 subids <- demogs$subid
 
-g.df <- make_g_template(subids[1], tsdir, ts_pattern)
+g.df <- make_g_template(subids[1], tsdir)
 
-pond_metrics <- calc_everything(subids, tsdir, ts_pattern, g.df, window_size, diffdir, threshold)
+pond_metrics <- calc_everything(subids, tsdir, g.df, window_size, diffdir, threshold)
 
 theZs <- pond_metrics$theZs
 theTS <- pond_metrics$theTS
 theDW <- pond_metrics$theDW
+
 ```
 
 ## Sort data POND
 ```{r, fig.width=12}
 
-typeZ <- merge(theZs,demogs,by="subid") %>%
+typeZ <- theZs %>%
    gather(FCtype, Z, HO, HE, I) %>%
-   filter(NDD != "", !is.na(Z))
+   filter(!is.na(Z))
   
-typeTS <- merge(theTS,demogs,by="subid") %>%
+typeTS <-theTS %>%
    gather(FCtype, TS, HO, HE, I) %>%
-   filter(NDD != "", !is.na(TS))
+   filter(!is.na(TS))
  
-typeDW <- merge(theDW,demogs,by="subid") %>%
-   gather(FCtype, DW, HO, HE, I) %>%
-   filter(NDD != "")
-  
-type_ <- merge(typeZ[c(1,46:50,162:167,179:186)], typeTS[c(1,185,186)], by=c("subid","FCtype"))  #index numbers may change if QC added
-type <- merge(type_, typeDW[c(1,185,186)], by=c("subid","FCtype"), all.x =TRUE) %>%
-  filter(Age > 6, Age < 18, NDD != "HC")
+typeDW <- theDW %>%
+   gather(FCtype, DW, HO, HE, I)
 
-lenQZ <- merge(theZs,demogs,by="subid") %>%
-   gather(lenQ, Z, starts_with("len")) %>%
-   filter(NDD != "", !is.na(Z))
+type <- demogs %>%
+  merge(typeZ[c("subid","FCtype","Z")], by="subid") %>%
+  merge(typeTS[c("subid","FCtype","TS")], by=c("subid","FCtype")) %>% 
+  merge(typeDW[c("subid","FCtype","DW")], by=c("subid","FCtype"), all.x =TRUE) %>%
+  filter(Age > 6, dx != "GAD", !is.na(dx))
+
+type_trio <- subset(type, scanner =="trio")
+type_prisma <- subset(type, scanner =="prisma")
+
+lenQZ <- theZs %>% 
+  gather(lenQ, Z, starts_with("len")) %>%
+  filter(!is.na(Z))
   
-lenQTS <- merge(theTS,demogs,by="subid") %>%
+lenQTS <-theTS %>%
    gather(lenQ, TS, starts_with("len")) %>%
-   filter(NDD != "", !is.na(TS))
+   filter(!is.na(TS))
  
-lenQDW <- merge(theDW,demogs,by="subid") %>%
-   gather(lenQ, DW, starts_with("len")) %>%
-   filter(NDD != "")
+lenQDW <- theDW %>%
+   gather(lenQ, DW, starts_with("len")) 
 
-lenQ_ <- merge(lenQZ[c(1,28:32,144:149,161:168)], lenQTS[c(1,167,168)], by=c("subid","lenQ"))  #index numbers may change if QC added
-lenQ  <- merge(lenQ_, lenQDW[c(1,167,168)], by=c("subid","lenQ"), all.x =TRUE) %>%
-  filter(Age > 6, Age < 18, NDD != "HC")
- 
-dwQZ <- merge(theZs,demogs,by="subid") %>%
+lenQ <- demogs %>%
+  merge(lenQZ[c("subid","lenQ","Z")], by="subid") %>%
+  merge(lenQTS[c("subid","lenQ","TS")], by=c("subid","lenQ")) %>% 
+  merge(lenQDW[c("subid","lenQ","DW")], by=c("subid","lenQ"), all.x =TRUE) %>%
+  filter(Age > 6, dx != "GAD", !is.na(dx))
+
+lenQ_trio <- subset(lenQ, scanner =="trio")
+lenQ_prisma <- subset(lenQ, scanner =="prisma")
+
+dwQZ <- theZs %>%
    gather(dwQ, Z, starts_with("dw")) %>%
-   filter(NDD != "", !is.na(Z))
+   filter(!is.na(Z))
   
-dwQTS <- merge(theTS,demogs,by="subid") %>%
+dwQTS <- theTS %>%
    gather(dwQ, TS, starts_with("dw")) %>%
-   filter(NDD != "", !is.na(TS))
+   filter(!is.na(TS))
  
-dwQDW <- merge(theDW,demogs,by="subid") %>%
-   gather(dwQ, DW, starts_with("dw")) %>%
-   filter(NDD != "")
+dwQDW <- theDW %>%
+   gather(dwQ, DW, starts_with("dw"))
 
-dwQ_ <- merge(dwQZ[c(1,28:32,144:149,161:168)], dwQTS[c(1,167,168)], by=c("subid","dwQ"))  #index numbers may change if QC added
-dwQ  <- merge(dwQ_, dwQDW[c(1,167,168)], by=c("subid","dwQ"), all.x =TRUE) %>%
-  filter(Age > 6, Age < 18, NDD != "HC")
+dwQ <- demogs %>%
+  merge(dwQZ[c("subid","dwQ","Z")], by="subid") %>%
+  merge(dwQTS[c("subid","dwQ","TS")], by=c("subid","dwQ")) %>% 
+  merge(dwQDW[c("subid","dwQ","DW")], by=c("subid","dwQ"), all.x =TRUE) %>%
+  filter(Age > 6, dx != "GAD", !is.na(dx))
+
+dwQ_trio <- subset(dwQ, scanner =="trio")
+dwQ_prisma <- subset(dwQ, scanner =="prisma")
+
+
+## transform QC measures to normality ## this should be done separately for trio and prisma
+trio <- subset(demogs, scanner=="trio") %>%
+  mutate("dvars_pT"  = transform_to_normal(dvars_nstd),
+         "tsnr_pT"  = transform_to_normal(tsnr),
+         "fd_pT"  = transform_to_normal(fd_mean))
+
+# Pricipal Components Analysis
+# entering raw data and extracting PCs
+# from the correlation matrix
+fit_trio <- princomp(dplyr::select(trio, dvars_pT, tsnr_pT, fd_pT) , cor=TRUE)
+summary(fit_trio) # print variance accounted for
+loadings(fit_trio) # pc loadings
+plot(fit_trio,type="lines") # scree plot
+## write the top 5 principal components to the speadsheet
+trio <- cbind(trio ,fit_trio$scores[ ,1:2]) # the principal components
+
+prisma <- subset(demogs, scanner=="prisma") %>%
+  mutate("dvars_pT"  = transform_to_normal(dvars_nstd),
+         "tsnr_pT"  = transform_to_normal(tsnr),
+         "fd_pT"  = transform_to_normal(fd_mean))
+
+fit_prisma <- princomp(dplyr::select(prisma, dvars_pT, tsnr_pT, fd_pT) , cor=TRUE)
+summary(fit_prisma) # print variance accounted for
+loadings(fit_prisma) # pc loadings
+plot(fit_prisma,type="lines") # scree plot
+## write the top 5 principal components to the speadsheet
+prisma <- cbind(prisma ,fit_prisma$scores[ ,1:2]) # the principal components
+
+## add Func QC PCs to dfs
+type_trio <- type_trio %>% merge(trio[c("subid","Comp.1", "Comp.2")], by="subid")
+type_prisma <- type_prisma %>% merge(prisma[c("subid","Comp.1", "Comp.2")], by="subid")
+lenQ_trio <- lenQ_trio %>% merge(trio[c("subid","Comp.1", "Comp.2")], by="subid")
+lenQ_prisma <- lenQ_prisma %>% merge(prisma[c("subid","Comp.1", "Comp.2")], by="subid")
+dwQ_trio <- dwQ_trio %>% merge(trio[c("subid","Comp.1", "Comp.2")], by="subid")
+dwQ_prisma <- dwQ_prisma %>% merge(prisma[c("subid","Comp.1", "Comp.2")], by="subid")
 
 ```
-
 
 ## statistics! Does tract type predict connectivity?
 ```{r, fig.width=12}
 
 ################### Does tract type predict FC strength? ##################################
 # type x dx
-print(paste("Anova - Does tract type predict FC strength?"))
-F2 <- lmer(Z ~ FCtype*NDD + Age + sex + Comp.1 + Comp.2 + (1|subid), 
-               data = type)
+print(paste("Anova - Does tract type predict FC strength?- trio"))
+F2 <- lmer(Z ~ FCtype*dx + Age + sex + Comp.1 + Comp.2 + (1|subid), 
+               data = type_trio)
+summary(F2)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
-summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
+# summary(glht(F2, linfct=mcp(dx ="Tukey")))
+# summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
+
+print(paste("Anova - Does tract type predict FC strength? - prisma"))
+F2 <- lmer(Z ~ FCtype*dx + Age + sex + Comp.1 + Comp.2 + (1|subid), 
+               data = type_prisma)
+summary(F2)
+print(Anova(F2))
+# summary(glht(F2, linfct=mcp(dx ="Tukey")))
+# summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
 
 # plot type X dx 
-ggplot(type, aes(x=FCtype, y=Z, color = NDD)) + 
+pltTtrioZ <- ggplot(type_trio, aes(x=FCtype, y=Z, color = dx)) + 
+  geom_boxplot() +theme(legend.position="none")
+pltTprismaZ <- ggplot(type_prisma, aes(x=FCtype, y=Z, color = dx)) + 
   geom_boxplot() 
 
+plot_grid(pltTtrioZ, pltTprismaZ, align="hv", ncol = 2)
+# save plot
+# pltTZ <- plot_grid(pltTtrioZ, pltTprismaZ, align="hv", ncol = 2)
+# pltTfileZ <- paste(outdir, "dxXtypeZ.png", sep="/")
+# ggsave(pltTfileZ, pltTZ, dpi=300, width = 21, height = 14, units = "cm") #####
+
+
 # type x dx (male only)
-print(paste("Anova Table for type X NDD, male only"))
-F2 <- lmer(Z ~ FCtype*NDD + Age + Comp.1 + Comp.2 + (1|subid), 
-               data = filter(type, sex == "Male"))
-print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
-summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
-         
-# plot type X dx (male only)
-ggplot(filter(type, sex == "Male"), aes(x=FCtype, y=Z, color = NDD)) + 
-  geom_boxplot() 
+# print(paste("Anova Table for type X dx, male only"))
+# F2 <- lmer(Z ~ FCtype*dx + Age + Comp.1 + Comp.2 + (1|subid), 
+#                data = filter(type, sex == "Male"))
+# summary(F2)
+# print(Anova(F2))
+# summary(glht(F2, linfct=mcp(dx ="Tukey")))
+# summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
+#          
+# # plot type X dx (male only)
+# ggplot(filter(type, sex == "Male"), aes(x=FCtype, y=Z, color = dx)) + 
+#   geom_boxplot() 
 
 
 ##################### Does tract type predict FC stability? ############################################
 # type x dx
-print(paste("Anova - Does tract type predict FC stability?"))
-F2 <- lmer(TS ~ FCtype*NDD + Age + sex + Comp.1 + Comp.2 + (1|subid), 
-               data = type)
+print(paste("Anova - Does tract type predict FC stability? - trio"))
+F2 <- lmer(TS ~ FCtype*dx + Age + sex + Comp.1 + Comp.2 + (1|subid), 
+               data = type_trio)
+summary(F2)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
-summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
+# summary(glht(F2, linfct=mcp(dx ="Tukey")))
+# summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
+
+print(paste("Anova - Does tract type predict FC stability? - prisma"))
+F2 <- lmer(TS ~ FCtype*dx + Age + sex + Comp.1 + Comp.2 + (1|subid), 
+               data = type_prisma)
+summary(F2)
+print(Anova(F2))
+# summary(glht(F2, linfct=mcp(dx ="Tukey")))
+# summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
 
 # plot type X dx 
-ggplot(type, aes(x=FCtype, y=TS, color = NDD)) + 
+pltTtrioTS <- ggplot(type_trio, aes(x=FCtype, y=TS, color = dx)) + 
+  geom_boxplot() +theme(legend.position="none")
+pltTprismaTS <- ggplot(type_prisma, aes(x=FCtype, y=TS, color = dx)) + 
   geom_boxplot() 
 
+plot_grid(pltTtrioTS, pltTprismaTS, align="hv", ncol = 2)
+# save plot
+# pltTTS <- plot_grid(pltTtrioTS, pltTprismaTS, align="hv", ncol = 2)
+# pltTfileTS <- paste(outdir, "dxXtypeTS.png", sep="/")
+# ggsave(pltTfileTS, pltTTS, dpi=300, width = 21, height = 14, units = "cm") #####
+
 # type x dx (male only)
-print(paste("Anova Table for type X NDD, male only"))
-F2 <- lmer(TS ~ FCtype*NDD + Age + Comp.1 + Comp.2 + (1|subid), 
-               data = filter(type, sex == "Male"))
-print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
-summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
-         
-# plot type X dx (male only)
-ggplot(filter(type, sex == "Male"), aes(x=FCtype, y=TS, color = NDD)) + 
-  geom_boxplot() 
+# print(paste("Anova Table for type X dx, male only"))
+# F2 <- lmer(TS ~ FCtype*dx + Age + Comp.1 + Comp.2 + (1|subid), 
+#                data = filter(type, sex == "Male"))
+# summary(F2)
+# print(Anova(F2))
+# summary(glht(F2, linfct=mcp(dx ="Tukey")))
+# summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
+#          
+# # plot type X dx (male only)
+# ggplot(filter(type, sex == "Male"), aes(x=FCtype, y=TS, color = dx)) + 
+#   geom_boxplot() 
 
 
 ##################### Does tract type predict structure? ############################################
 # type x dx
-print(paste("Anova - Does tract type predict structure?"))
-F2 <- lmer(DW ~ FCtype*NDD + Age + sex + (1|subid), 
-               data = type)
+print(paste("Anova - Does tract type predict structure? - trio"))
+F2 <- lmer(DW ~ FCtype*dx + Age + sex + (1|subid), 
+               data = type_trio)
+summary(F2)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
-summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
+# summary(glht(F2, linfct=mcp(dx ="Tukey")))
+# summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
+
+print(paste("Anova - Does tract type predict structure? - prisma"))
+F2 <- lmer(DW ~ FCtype*dx + Age + sex + (1|subid), 
+               data = type_prisma)
+summary(F2)
+print(Anova(F2))
+# summary(glht(F2, linfct=mcp(dx ="Tukey")))
+# summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
 
 # plot type X dx 
-ggplot(type, aes(x=FCtype, y=DW, color = NDD)) + 
+pltTtrioDW <- ggplot(type_trio, aes(x=FCtype, y=DW, color = dx)) + 
+  geom_boxplot() +theme(legend.position="none")
+pltTprismaDW <- ggplot(type_prisma, aes(x=FCtype, y=DW, color = dx)) + 
   geom_boxplot() 
+
+plot_grid(pltTtrioDW, pltTprismaDW, align="hv", ncol = 2)
+# save plot
+# pltTDW <- plot_grid(pltTtrioDW, pltTprismaDW, align="hv", ncol = 2)
+# pltTfileDW <- paste(outdir, "dxXtypeDW.png", sep="/")
+# ggsave(pltTfileDW, pltTDW, dpi=300, width = 21, height = 14, units = "cm") #####
+
 
 # type x dx (male only)
-print(paste("Anova Table for type X NDD, male only"))
-F2 <- lmer(DW ~ FCtype*NDD + Age + (1|subid), 
-               data = filter(type, sex == "Male"))
-print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
-summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
-         
-# plot type X dx (male only)
-ggplot(filter(type, sex == "Male"), aes(x=FCtype, y=DW, color = NDD)) + 
-  geom_boxplot() 
-
+# print(paste("Anova Table for type X dx, male only"))
+# F2 <- lmer(DW ~ FCtype*dx + Age + (1|subid), 
+#                data = filter(type, sex == "Male"))
+# summary(F2)
+# print(Anova(F2))
+# summary(glht(F2, linfct=mcp(dx ="Tukey")))
+# summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
+#          
+# # plot type X dx (male only)
+# ggplot(filter(type, sex == "Male"), aes(x=FCtype, y=DW, color = dx)) + 
+#   geom_boxplot() 
+# 
 
 ```
 ## statistics! Does tract length predict connectivity?
@@ -637,94 +811,100 @@ lenQ$lenQorderedNA <- factor(lenQ$lenQ, c('lenNA','len1','len2','len3','len4','l
 ################### Does tract length predict FC strength? ##################################
 # length x dx
 print(paste("Anova - Does tract length predict FC strength?"))
-F2 <- lmer(Z ~ lenQ*NDD + Age + sex + Comp.1 + Comp.2 + (1|subid), 
+F2 <- lmer(Z ~ lenQ*dx + Age + sex + Comp.1 + Comp.2 + (1|subid), 
                data = lenQ)
+summary(F2)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+summary(glht(F2, linfct=mcp(dx ="Tukey")))
 #summary(glht(F2, linfct=mcp(lenQ ="Tukey")))
 
 # plot lenQ X dx 
-ggplot(lenQ, aes(x=lenQorderedNA, y=Z, color = NDD)) + 
+ggplot(lenQ, aes(x=lenQorderedNA, y=Z, color = dx)) + 
   geom_boxplot() 
 
-ggplot(lenQ,aes(x=as.numeric(factor(lenQordered)), y=Z , color = NDD)) + 
+ggplot(lenQ,aes(x=as.numeric(factor(lenQordered)), y=Z , color = dx)) + 
   geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
 
 # lenQ x dx (male only)
-print(paste("Anova Table for lenQ X NDD, male only"))
-F2 <- lmer(Z ~ lenQ*NDD + Age + Comp.1 + Comp.2 + (1|subid), 
+print(paste("Anova Table for lenQ X dx, male only"))
+F2 <- lmer(Z ~ lenQ*dx + Age + Comp.1 + Comp.2 + (1|subid), 
                data = filter(lenQ, sex == "Male"))
+summary(F2)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+summary(glht(F2, linfct=mcp(dx ="Tukey")))
 #summary(glht(F2, linfct=mcp(lenQ ="Tukey")))
          
 # plot lenQ X dx (male only)
-ggplot(filter(lenQ, sex == "Male"), aes(x=lenQorderedNA, y=Z, color = NDD)) + 
+ggplot(filter(lenQ, sex == "Male"), aes(x=lenQorderedNA, y=Z, color = dx)) + 
   geom_boxplot() 
 
-ggplot(filter(lenQ, sex == "Male"),aes(x=as.numeric(factor(lenQordered)), y=Z , color = NDD)) + 
+ggplot(filter(lenQ, sex == "Male"),aes(x=as.numeric(factor(lenQordered)), y=Z , color = dx)) + 
   geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
 
 ################### Does tract length predict FC stability? ##################################
 # length x dx
 print(paste("Anova - Does tract length predict FC stability?"))
-F2 <- lmer(TS ~ lenQ*NDD + Age + sex + Comp.1 + Comp.2 + (1|subid), 
+F2 <- lmer(TS ~ lenQ*dx + Age + sex + Comp.1 + Comp.2 + (1|subid), 
                data = lenQ)
+summary(F2)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+summary(glht(F2, linfct=mcp(dx ="Tukey")))
 #summary(glht(F2, linfct=mcp(lenQ ="Tukey")))
 
 # plot lenQ X dx 
-ggplot(lenQ, aes(x=lenQorderedNA, y=TS, color = NDD)) + 
+ggplot(lenQ, aes(x=lenQorderedNA, y=TS, color = dx)) + 
   geom_boxplot() 
 
-ggplot(lenQ,aes(x=as.numeric(factor(lenQordered)), y=TS , color = NDD)) + 
+ggplot(lenQ,aes(x=as.numeric(factor(lenQordered)), y=TS , color = dx)) + 
   geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
 
 # lenQ x dx (male only)
-print(paste("Anova Table for lenQ X NDD, male only"))
-F2 <- lmer(TS ~ lenQ*NDD + Age + Comp.1 + Comp.2 + (1|subid), 
+print(paste("Anova Table for lenQ X dx, male only"))
+F2 <- lmer(TS ~ lenQ*dx + Age + Comp.1 + Comp.2 + (1|subid), 
                data = filter(lenQ, sex == "Male"))
+summary(F2)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+summary(glht(F2, linfct=mcp(dx ="Tukey")))
 #summary(glht(F2, linfct=mcp(lenQ ="Tukey")))
          
 # plot lenQ X dx (male only)
-ggplot(filter(lenQ, sex == "Male"), aes(x=lenQorderedNA, y=TS, color = NDD)) + 
+ggplot(filter(lenQ, sex == "Male"), aes(x=lenQorderedNA, y=TS, color = dx)) + 
   geom_boxplot() 
 
-ggplot(filter(lenQ, sex == "Male"),aes(x=as.numeric(factor(lenQordered)), y=TS , color = NDD)) + 
+ggplot(filter(lenQ, sex == "Male"),aes(x=as.numeric(factor(lenQordered)), y=TS , color = dx)) + 
   geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
 
 ################### Does tract length predict structural weight? ##################################
 # length x dx
 print(paste("Anova - Does tract length predict FC stability?"))
-F2 <- lmer(DW ~ lenQ*NDD + Age + sex + (1|subid), 
+F2 <- lmer(DW ~ lenQ*dx + Age + sex + (1|subid), 
                data = lenQ)
+summary(F2)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+summary(glht(F2, linfct=mcp(dx ="Tukey")))
 #summary(glht(F2, linfct=mcp(lenQ ="Tukey")))
 
 # plot lenQ X dx 
-ggplot(lenQ, aes(x=lenQorderedNA, y=DW, color = NDD)) + 
+ggplot(lenQ, aes(x=lenQorderedNA, y=DW, color = dx)) + 
   geom_boxplot() 
 
-ggplot(lenQ,aes(x=as.numeric(factor(lenQordered)), y=DW , color = NDD)) + 
+ggplot(lenQ,aes(x=as.numeric(factor(lenQordered)), y=DW , color = dx)) + 
   geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
 
 # lenQ x dx (male only)
-print(paste("Anova Table for lenQ X NDD, male only"))
-F2 <- lmer(DW ~ lenQ*NDD + Age + (1|subid), 
+print(paste("Anova Table for lenQ X dx, male only"))
+F2 <- lmer(DW ~ lenQ*dx + Age + (1|subid), 
                data = filter(lenQ, sex == "Male"))
+summary(F2)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+summary(glht(F2, linfct=mcp(dx ="Tukey")))
 #summary(glht(F2, linfct=mcp(lenQ ="Tukey")))
          
 # plot lenQ X dx (male only)
-ggplot(filter(lenQ, sex == "Male"), aes(x=lenQorderedNA, y=DW, color = NDD)) + 
+ggplot(filter(lenQ, sex == "Male"), aes(x=lenQorderedNA, y=DW, color = dx)) + 
   geom_boxplot() 
 
-ggplot(filter(lenQ, sex == "Male"),aes(x=as.numeric(factor(lenQordered)), y=DW , color = NDD)) + 
+ggplot(filter(lenQ, sex == "Male"),aes(x=as.numeric(factor(lenQordered)), y=DW , color = dx)) + 
   geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
 
 ```
@@ -739,63 +919,67 @@ dwQ$dwQorderedNA <- factor(dwQ$dwQ, c('dwNA','dw1','dw2','dw3','dw4','dw5','dw6'
 ################### Does tract weight predict FC strength? ##################################
 # weight x dx
 print(paste("Anova - Does tract weight predict FC strength?"))
-F2 <- lmer(Z ~ dwQ*NDD + Age + sex + Comp.1 + Comp.2 + (1|subid), 
+F2 <- lmer(Z ~ dwQ*dx + Age + sex + Comp.1 + Comp.2 + (1|subid), 
                data = dwQ)
+summary(F2)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+summary(glht(F2, linfct=mcp(dx ="Tukey")))
 #summary(glht(F2, linfct=mcp(dwQ ="Tukey")))
 
 # plot dwQ X dx 
-ggplot(dwQ, aes(x=dwQorderedNA, y=Z, color = NDD)) + 
+ggplot(dwQ, aes(x=dwQorderedNA, y=Z, color = dx)) + 
   geom_boxplot() 
 
-ggplot(dwQ,aes(x=as.numeric(factor(dwQordered)), y=Z , color = NDD)) + 
+ggplot(dwQ,aes(x=as.numeric(factor(dwQordered)), y=Z , color = dx)) + 
   geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
 
 # dwQ x dx (male only)
-print(paste("Anova Table for dwQ X NDD, male only"))
-F2 <- lmer(Z ~ dwQ*NDD + Age + Comp.1 + Comp.2 + (1|subid), 
+print(paste("Anova Table for dwQ X dx, male only"))
+F2 <- lmer(Z ~ dwQ*dx + Age + Comp.1 + Comp.2 + (1|subid), 
                data = filter(dwQ, sex == "Male"))
+summary(F2)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+summary(glht(F2, linfct=mcp(dx ="Tukey")))
 #summary(glht(F2, linfct=mcp(dwQ ="Tukey")))
          
 # plot dwQ X dx (male only)
-ggplot(filter(dwQ, sex == "Male"), aes(x=dwQorderedNA, y=Z, color = NDD)) + 
+ggplot(filter(dwQ, sex == "Male"), aes(x=dwQorderedNA, y=Z, color = dx)) + 
   geom_boxplot() 
 
-ggplot(filter(dwQ, sex == "Male"),aes(x=as.numeric(factor(dwQordered)), y=Z , color = NDD)) + 
+ggplot(filter(dwQ, sex == "Male"),aes(x=as.numeric(factor(dwQordered)), y=Z , color = dx)) + 
   geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
 
 ################### Does tract weight predict FC stability? ##################################
 # weight x dx
 print(paste("Anova - Does tract weight predict FC stability?"))
-F2 <- lmer(TS ~ dwQ*NDD + Age + sex + Comp.1 + Comp.2 + (1|subid), 
+F2 <- lmer(TS ~ dwQ*dx + Age + sex + Comp.1 + Comp.2 + (1|subid), 
                data = dwQ)
+summary(F2)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+summary(glht(F2, linfct=mcp(dx ="Tukey")))
 #summary(glht(F2, linfct=mcp(dwQ ="Tukey")))
 
 # plot dwQ X dx 
-ggplot(dwQ, aes(x=dwQorderedNA, y=TS, color = NDD)) + 
+ggplot(dwQ, aes(x=dwQorderedNA, y=TS, color = dx)) + 
   geom_boxplot() 
 
-ggplot(dwQ,aes(x=as.numeric(factor(dwQordered)), y=TS , color = NDD)) + 
+ggplot(dwQ,aes(x=as.numeric(factor(dwQordered)), y=TS , color = dx)) + 
   geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
 
 # dwQ x dx (male only)
-print(paste("Anova Table for dwQ X NDD, male only"))
-F2 <- lmer(TS ~ dwQ*NDD + Age + Comp.1 + Comp.2 + (1|subid), 
+print(paste("Anova Table for dwQ X dx, male only"))
+F2 <- lmer(TS ~ dwQ*dx + Age + Comp.1 + Comp.2 + (1|subid), 
                data = filter(dwQ, sex == "Male"))
+summary(F2)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
+summary(glht(F2, linfct=mcp(dx ="Tukey")))
 #summary(glht(F2, linfct=mcp(dwQ ="Tukey")))
          
 # plot dwQ X dx (male only)
-ggplot(filter(dwQ, sex == "Male"), aes(x=dwQorderedNA, y=TS, color = NDD)) + 
+ggplot(filter(dwQ, sex == "Male"), aes(x=dwQorderedNA, y=TS, color = dx)) + 
   geom_boxplot() 
 
-ggplot(filter(dwQ, sex == "Male"),aes(x=as.numeric(factor(dwQordered)), y=TS , color = NDD)) + 
+ggplot(filter(dwQ, sex == "Male"),aes(x=as.numeric(factor(dwQordered)), y=TS , color = dx)) + 
   geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
 
 ```
@@ -818,7 +1002,7 @@ tmp3$metric <- "DW"
 
 tmp <- rbind(tmp1, tmp2, tmp3)
 
-ggplot(filter(tmp, sex == "Male", metric %in% c("Z", "TS", "DW")), aes(x=as.numeric(factor(lenQordered)), y=value, color = NDD)) + 
+ggplot(filter(tmp, sex == "Male", metric %in% c("Z", "TS", "DW")), aes(x=as.numeric(factor(lenQordered)), y=value, color = dx)) + 
   geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +
   facet_wrap(~metric, scales = "free_y", nrow=3)
 
@@ -836,7 +1020,7 @@ tmp3$metric <- "DW"
 
 tmp <- rbind(tmp1, tmp2, tmp3)
 
-ggplot(filter(tmp, sex == "Male", metric %in% c("Z", "TS", "DW")), aes(x=as.numeric(factor(dwQordered)), y=value, color = NDD)) + 
+ggplot(filter(tmp, sex == "Male", metric %in% c("Z", "TS", "DW")), aes(x=as.numeric(factor(dwQordered)), y=value, color = dx)) + 
   geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +
   facet_wrap(~metric, scales = "free_y", nrow=3)
 
