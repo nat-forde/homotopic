@@ -131,7 +131,7 @@ def SSE_overlay(sse,out,grad):
     4. Background filling with 0 fuzziness to prevent leakage
     '''
     slice_out = out.replace('.nii.gz','.gif')
-    cmd1 = 'fslmaths {} -sub 2 -mul -1 -thr 0 -mul -1 -add 2 {}'.format(sse,out)
+    cmd1 = 'fslmaths {} -sub 3 -mul -1 -thr 0 -mul -1 -add 3 {}'.format(sse,out)
     cmd2 = 'slices {} -o {}'.format(out, slice_out)
     cmd3 = 'convert {} {} -clut {}'.format(slice_out, grad, slice_out)
     cmd4 = 'convert {} -fill black -draw "color 0,0 floodfill" {}'.format(slice_out,slice_out)
