@@ -7,10 +7,11 @@ module load rstudio/1.1.414
 
 cd /scratch/nforde/homotopic/bin
 for subj in $(<RS_trio.txt); do
-  echo Rscript temp_stab_ColeAnti.r ${subj}
+  echo Rscript temp_stab_DK.r ${subj}
 done > RSstab_batch.txt
 
-qbatch --walltime '10:00:00' -b sge --ppj 1 -c 15 -j 15 RSstab_batch.txt
+#qbatch --walltime '10:00:00' -b sge --ppj 1 -c 15 -j 15 RSstab_batch.txt
+cat RSstab_batch.txt | xargs -I {} sbatch -p low-moby --time=01:00:00 --export=ALL --cpus-per-task=4 --wrap "{}"
 
 #inPath=/projects/edickie/analysis/ABIDEI/hcp/NYU
 #cd $inPath
