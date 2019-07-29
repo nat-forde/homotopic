@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -l
+#!/usr/bin/env bash
 
 #get time series for each subj within region
 module load python/3.6_ciftify_01
@@ -44,12 +44,12 @@ for subj in $subjects; do
 	echo $subj
 	indir=/projects/nforde/POND/rsMRI/$subj
 
-#mk time series for ColeAnticevic atlas
+#mk time series for DK atlas
   ciftify_meants \
         --outputcsv ${indir}/DK_meants.csv \
         --outputlabels ${indir}/DK_roiids.csv \
         ${indir}/${subj}_ses-01_task-rest_bold_p36.dtseries.nii \
-        /projects/mjoseph/studies/pond/pipelines/fmriprep/pond_out/ciftify/${subj}/MNINonLinear/aparc.a2009s+aseg.nii.gz
+        /external/pond/pipelines/fmriprep/out/ciftify/${subj}/MNINonLinear/aparc.a2009s+aseg.nii.gz
 done
 
 ##---------------------ABIDE----------------------------------------------------
