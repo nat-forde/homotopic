@@ -39,6 +39,7 @@ atlas <- "glasser"
 pond_demographics <- read.csv("/projects/nforde/POND/clinical/POND_06JUN2018_pp.csv")
 QCfunc <- read.csv("/projects/nforde/POND/rsMRI/bold.csv")
 QCdwi <- read.csv("/projects/nforde/POND/dtifit/qc.csv")
+QCdwi.class <- read.csv("/scratch/janderson/DWI_QC/POND/squad_single/Classified.csv")
 hand <- read.csv("/projects/nforde/POND/clinical/handedness.csv")
 SCQ <- read.csv("/projects/nforde/POND/clinical/SCQ_Data_23_July_2018.csv")
 WISCV <- read.csv("/projects/nforde/POND/clinical/WISC_5_Data_24_July_2018.csv")
@@ -88,7 +89,67 @@ for (i in 1:nrow(demogs)) {
 #add prefix to sub name
 demogs$subid <- paste0("sub-",demogs$SUBJECT)
 
-demogs <- merge(demogs, QCdwi[c("subject", "shell", "in.ex")], by.x= "subid", by.y = "subject", all.x=TRUE)
+
+QCdwi.class <- QCdwi.class %>% separate(ID, "subid", sep="/") 
+
+demogs <- merge(demogs, QCdwi[c("subject", "shell", "in.ex")], by.x= "subid", by.y = "subject", all.x=TRUE) %>% 
+  merge(QCdwi.class[c("subid", "PC1", "cutree.res.hc..k...3.")], by="subid", all.x=TRUE)
+
+```
+## set all the paths/directories & read in data for COMPULS
+```{r}
+#compuls
+comp_demographics <- read.csv("/projects/nforde/COMPULS/clinical/pheno_Nij.csv")
+comp_QCfunc <- read.csv("/projects/nforde/COMPULS/data/bids/derivatives/ bold.csv")
+comp_QCdwi.class <- read.csv("/scratch/nforde/COMPULS/data/dwi_out/Classified.csv")
+
+comp_tsdir <- "/projects/nforde/COMPULS/data/rsMRI"
+comp_diffdir <- "/projects/nforde/COMPULS/data/CSD"
+comp_edgedir <- "/projects/nforde/COMPULS/data/edges"
+
+
+# #do some organising and renaming
+# demogs <- filter(demogs, !is.na(DOB)) %>% filter(!is.na(POND_DATE))
+# demogs$Age <- interval(ymd(demogs$DOB), ymd(demogs$POND_DATE)) %>% as.duration() %>% as.numeric(unit="years") %>% round(digits=2)
+# demogs$sex <- demogs$GENDER
+# demogs$dx <- NA
+# demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="1"] <- 'ASD'
+# demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="2" | demogs$RESEARCH_CONFIRM_DIAG_STD=="6"] <- 'ADHD'
+# demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="3"] <- 'OCD'
+# demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="10"] <- 'HC'
+# demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="15"] <- 'GAD'
+# IQ <- data.frame(demogs$WASI_FSIQ_2, demogs$WASI_II_FSIQ_2, demogs$WASI_FSIQ_4, demogs$WASI_II_FSIQ_4, demogs$WISC_IV_FSIQ, demogs$WISC_V_FSIQ)
+# demogs$FSIQ_any <- apply(IQ, 1, mean, na.rm=TRUE)
+# demogs$FSIQ_any[demogs$FSIQ_any == "NaN"] <- NA
+# demogs$NDDdx <- NA
+# demogs$NDDdx[demogs$dx == "ASD" | demogs$dx == "OCD" | demogs$dx == "ADHD"] <- "NDD"
+# demogs$NDDdx[demogs$dx == "HC"] <- "HC"
+#   
+# ### reduce the demographic data and merge if other sources
+# demogs <- demogs[c("SUBJECT","dx", "NDDdx", "Age", "sex", "FSIQ_any", "AB21GCCS", "RBSCPT",
+#                         "VAB2CP", "OB_SUB", "COM_SUB", "ADHD_I_SUB", "ADHD_HI_SUB", "TPOCS_TOT", "CB68TPTOT", "CB68TPTS")] %>%
+#   merge(SCQ[c("Subject","SCQTOT")], by.x="SUBJECT", by.y="Subject", all.x=TRUE) %>%
+#   merge(hand[c("ID","Handed")], by.x="SUBJECT", by.y="ID", all.x=TRUE) %>%
+#   merge(QCfunc, by.x="SUBJECT", by.y="subject_id") 
+# demogs$scanner <-NA
+# demogs$scanner[demogs$spacing_tr!="1.5"] <- 'trio'
+# demogs$scanner[demogs$spacing_tr=="1.5"] <- 'prisma'
+# 
+# 
+# #add 0 infront of 88 subjects
+# for (i in 1:nrow(demogs)) {
+#   if (startsWith(as.character(demogs$SUBJECT[i]), "88")) {
+#     demogs$SUBJECT[i] <- paste0("0", demogs$SUBJECT[i])
+#   }
+# }
+# #add prefix to sub name
+# demogs$subid <- paste0("sub-",demogs$SUBJECT)
+# 
+# 
+# QCdwi.class <- QCdwi.class %>% separate(ID, "subid", sep="/") 
+# 
+# demogs <- merge(demogs, QCdwi[c("subject", "shell", "in.ex")], by.x= "subid", by.y = "subject", all.x=TRUE) %>% 
+#   merge(QCdwi.class[c("subid", "PC1", "cutree.res.hc..k...3.")], by="subid", all.x=TRUE)
 
 ```
 #define functions
@@ -180,7 +241,7 @@ make_g_template <- function(subid, tsdir) {
 
 
 ## to calculate FC strength (Z-scores), temmp stabiulity and structural connection weight
-calc_everything <- function(subids, tsdir , g.df, diffdir, FC_thresh) {
+calc_everything <- function(subids, tsdir , g.df, diffdir, FC_thresh, dwi_thresh) {
   ###########  set up empty dataframes ##################
   theZs <- data.frame("subid" = subids, 
                       "HO" = numeric(length(subids)),
@@ -221,249 +282,249 @@ calc_everything <- function(subids, tsdir , g.df, diffdir, FC_thresh) {
     meants.file <- file.path(tsdir, subid, paste(atlas, "meants.csv", sep="_"))
     out.file <- file.path(edgedir, paste(subid, atlas, "edge_metrics.csv", sep="_"))
     
-    if (file.exists(out.file)){
-      edges.all <- read.csv(out.file, header =TRUE)
-      edges.dw_nonzero <- subset(edges.all)
-      theZs$HO[i] <- mean(filter(edges.all, FCtype == "Homotopic")$theseZ, na.rm=TRUE)
-      theZs$HE[i] <- mean(filter(edges.all, FCtype == "Heterotopic")$theseZ, na.rm=TRUE)
-      theZs$I[i] <- mean(filter(edges.all, FCtype == "Intrahemispheric")$theseZ, na.rm=TRUE)
-      theZs$lenNA[i] <- mean(filter(edges.all, is.na(len_quant))$theseZ, na.rm=TRUE)
-      theZs$len1[i] <- mean(filter(edges.all, len_quant == "1")$theseZ, na.rm=TRUE)
-      theZs$len2[i] <- mean(filter(edges.all, len_quant == "2")$theseZ, na.rm=TRUE)
-      theZs$len3[i] <- mean(filter(edges.all, len_quant == "3")$theseZ, na.rm=TRUE)
-      theZs$len4[i] <- mean(filter(edges.all, len_quant == "4")$theseZ, na.rm=TRUE)
-      theZs$len5[i] <- mean(filter(edges.all, len_quant == "5")$theseZ, na.rm=TRUE)
-      theZs$len6[i] <- mean(filter(edges.all, len_quant == "6")$theseZ, na.rm=TRUE)
-      theZs$len7[i] <- mean(filter(edges.all, len_quant == "7")$theseZ, na.rm=TRUE)
-      theZs$len8[i] <- mean(filter(edges.all, len_quant == "8")$theseZ, na.rm=TRUE)
-      theZs$len9[i] <- mean(filter(edges.all, len_quant == "9")$theseZ, na.rm=TRUE)
-      theZs$len10[i] <- mean(filter(edges.all, len_quant == "10")$theseZ, na.rm=TRUE)
-  
-      theZs$dwNA[i] <- mean(filter(edges.all, is.na(dw_quant))$theseZ, na.rm=TRUE)
-      theZs$dw1[i] <- mean(filter(edges.all, dw_quant == "1")$theseZ, na.rm=TRUE)
-      theZs$dw2[i] <- mean(filter(edges.all, dw_quant == "2")$theseZ, na.rm=TRUE)
-      theZs$dw3[i] <- mean(filter(edges.all, dw_quant == "3")$theseZ, na.rm=TRUE)
-      theZs$dw4[i] <- mean(filter(edges.all, dw_quant == "4")$theseZ, na.rm=TRUE)
-      theZs$dw5[i] <- mean(filter(edges.all, dw_quant == "5")$theseZ, na.rm=TRUE)
-      theZs$dw6[i] <- mean(filter(edges.all, dw_quant == "6")$theseZ, na.rm=TRUE)
-      theZs$dw7[i] <- mean(filter(edges.all, dw_quant == "7")$theseZ, na.rm=TRUE)
-      theZs$dw8[i] <- mean(filter(edges.all, dw_quant == "8")$theseZ, na.rm=TRUE)
-      theZs$dw9[i] <- mean(filter(edges.all, dw_quant == "9")$theseZ, na.rm=TRUE)
-      theZs$dw10[i] <- mean(filter(edges.all, dw_quant == "10")$theseZ, na.rm=TRUE)
-
-      theDW$HO[i] <- mean(filter(edges.dw_nonzero, FCtype == "Homotopic")$weight, na.rm=TRUE)  ######### get very low numbers if edges.all used
-      theDW$HE[i] <- mean(filter(edges.dw_nonzero, FCtype == "Heterotopic")$weight, na.rm=TRUE)
-      theDW$I[i] <- mean(filter(edges.dw_nonzero, FCtype == "Intrahemispheric")$weight, na.rm=TRUE)
-      theDW$lenNA[i] <- mean(filter(edges.dw_nonzero, is.na(len_quant))$weight)
-      theDW$len1[i] <- mean(filter(edges.dw_nonzero, len_quant == "1")$weight)
-      theDW$len2[i] <- mean(filter(edges.dw_nonzero, len_quant == "2")$weight)
-      theDW$len3[i] <- mean(filter(edges.dw_nonzero, len_quant == "3")$weight)
-      theDW$len4[i] <- mean(filter(edges.dw_nonzero, len_quant == "4")$weight)
-      theDW$len5[i] <- mean(filter(edges.dw_nonzero, len_quant == "5")$weight)
-      theDW$len6[i] <- mean(filter(edges.dw_nonzero, len_quant == "6")$weight)
-      theDW$len7[i] <- mean(filter(edges.dw_nonzero, len_quant == "7")$weight)
-      theDW$len8[i] <- mean(filter(edges.dw_nonzero, len_quant == "8")$weight)
-      theDW$len9[i] <- mean(filter(edges.dw_nonzero, len_quant == "9")$weight)
-      theDW$len10[i] <- mean(filter(edges.dw_nonzero, len_quant == "10")$weight)
-
-      theDW$dwNA[i] <- mean(filter(edges.dw_nonzero, is.na(dw_quant))$weight)
-      theDW$dw1[i] <- mean(filter(edges.dw_nonzero, dw_quant == "1")$weight)
-      theDW$dw2[i] <- mean(filter(edges.dw_nonzero, dw_quant == "2")$weight)
-      theDW$dw3[i] <- mean(filter(edges.dw_nonzero, dw_quant == "3")$weight)
-      theDW$dw4[i] <- mean(filter(edges.dw_nonzero, dw_quant == "4")$weight)
-      theDW$dw5[i] <- mean(filter(edges.dw_nonzero, dw_quant == "5")$weight)
-      theDW$dw6[i] <- mean(filter(edges.dw_nonzero, dw_quant == "6")$weight)
-      theDW$dw7[i] <- mean(filter(edges.dw_nonzero, dw_quant == "7")$weight)
-      theDW$dw8[i] <- mean(filter(edges.dw_nonzero, dw_quant == "8")$weight)
-      theDW$dw9[i] <- mean(filter(edges.dw_nonzero, dw_quant == "9")$weight)
-      theDW$dw10[i] <- mean(filter(edges.dw_nonzero, dw_quant == "10")$weight)
-
-    } else {
+    # if (file.exists(out.file)){
+    #   edges.all <- read.csv(out.file, header =TRUE)
+    #   edges.dw_nonzero <- subset(edges.all)
+    #   theZs$HO[i] <- mean(filter(edges.all, FCtype == "Homotopic")$theseZ, na.rm=TRUE)
+    #   theZs$HE[i] <- mean(filter(edges.all, FCtype == "Heterotopic")$theseZ, na.rm=TRUE)
+    #   theZs$I[i] <- mean(filter(edges.all, FCtype == "Intrahemispheric")$theseZ, na.rm=TRUE)
+    #   theZs$lenNA[i] <- mean(filter(edges.all, is.na(len_quant))$theseZ, na.rm=TRUE)
+    #   theZs$len1[i] <- mean(filter(edges.all, len_quant == "1")$theseZ, na.rm=TRUE)
+    #   theZs$len2[i] <- mean(filter(edges.all, len_quant == "2")$theseZ, na.rm=TRUE)
+    #   theZs$len3[i] <- mean(filter(edges.all, len_quant == "3")$theseZ, na.rm=TRUE)
+    #   theZs$len4[i] <- mean(filter(edges.all, len_quant == "4")$theseZ, na.rm=TRUE)
+    #   theZs$len5[i] <- mean(filter(edges.all, len_quant == "5")$theseZ, na.rm=TRUE)
+    #   theZs$len6[i] <- mean(filter(edges.all, len_quant == "6")$theseZ, na.rm=TRUE)
+    #   theZs$len7[i] <- mean(filter(edges.all, len_quant == "7")$theseZ, na.rm=TRUE)
+    #   theZs$len8[i] <- mean(filter(edges.all, len_quant == "8")$theseZ, na.rm=TRUE)
+    #   theZs$len9[i] <- mean(filter(edges.all, len_quant == "9")$theseZ, na.rm=TRUE)
+    #   theZs$len10[i] <- mean(filter(edges.all, len_quant == "10")$theseZ, na.rm=TRUE)
+    # 
+    #   theZs$dwNA[i] <- mean(filter(edges.all, is.na(dw_quant))$theseZ, na.rm=TRUE)
+    #   theZs$dw1[i] <- mean(filter(edges.all, dw_quant == "1")$theseZ, na.rm=TRUE)
+    #   theZs$dw2[i] <- mean(filter(edges.all, dw_quant == "2")$theseZ, na.rm=TRUE)
+    #   theZs$dw3[i] <- mean(filter(edges.all, dw_quant == "3")$theseZ, na.rm=TRUE)
+    #   theZs$dw4[i] <- mean(filter(edges.all, dw_quant == "4")$theseZ, na.rm=TRUE)
+    #   theZs$dw5[i] <- mean(filter(edges.all, dw_quant == "5")$theseZ, na.rm=TRUE)
+    #   theZs$dw6[i] <- mean(filter(edges.all, dw_quant == "6")$theseZ, na.rm=TRUE)
+    #   theZs$dw7[i] <- mean(filter(edges.all, dw_quant == "7")$theseZ, na.rm=TRUE)
+    #   theZs$dw8[i] <- mean(filter(edges.all, dw_quant == "8")$theseZ, na.rm=TRUE)
+    #   theZs$dw9[i] <- mean(filter(edges.all, dw_quant == "9")$theseZ, na.rm=TRUE)
+    #   theZs$dw10[i] <- mean(filter(edges.all, dw_quant == "10")$theseZ, na.rm=TRUE)
+    # 
+    #   theDW$HO[i] <- mean(filter(edges.dw_nonzero, FCtype == "Homotopic")$weight, na.rm=TRUE)  ######### get very low numbers if edges.all used
+    #   theDW$HE[i] <- mean(filter(edges.dw_nonzero, FCtype == "Heterotopic")$weight, na.rm=TRUE)
+    #   theDW$I[i] <- mean(filter(edges.dw_nonzero, FCtype == "Intrahemispheric")$weight, na.rm=TRUE)
+    #   theDW$lenNA[i] <- mean(filter(edges.dw_nonzero, is.na(len_quant))$weight)
+    #   theDW$len1[i] <- mean(filter(edges.dw_nonzero, len_quant == "1")$weight)
+    #   theDW$len2[i] <- mean(filter(edges.dw_nonzero, len_quant == "2")$weight)
+    #   theDW$len3[i] <- mean(filter(edges.dw_nonzero, len_quant == "3")$weight)
+    #   theDW$len4[i] <- mean(filter(edges.dw_nonzero, len_quant == "4")$weight)
+    #   theDW$len5[i] <- mean(filter(edges.dw_nonzero, len_quant == "5")$weight)
+    #   theDW$len6[i] <- mean(filter(edges.dw_nonzero, len_quant == "6")$weight)
+    #   theDW$len7[i] <- mean(filter(edges.dw_nonzero, len_quant == "7")$weight)
+    #   theDW$len8[i] <- mean(filter(edges.dw_nonzero, len_quant == "8")$weight)
+    #   theDW$len9[i] <- mean(filter(edges.dw_nonzero, len_quant == "9")$weight)
+    #   theDW$len10[i] <- mean(filter(edges.dw_nonzero, len_quant == "10")$weight)
+    # 
+    #   theDW$dwNA[i] <- mean(filter(edges.dw_nonzero, is.na(dw_quant))$weight)
+    #   theDW$dw1[i] <- mean(filter(edges.dw_nonzero, dw_quant == "1")$weight)
+    #   theDW$dw2[i] <- mean(filter(edges.dw_nonzero, dw_quant == "2")$weight)
+    #   theDW$dw3[i] <- mean(filter(edges.dw_nonzero, dw_quant == "3")$weight)
+    #   theDW$dw4[i] <- mean(filter(edges.dw_nonzero, dw_quant == "4")$weight)
+    #   theDW$dw5[i] <- mean(filter(edges.dw_nonzero, dw_quant == "5")$weight)
+    #   theDW$dw6[i] <- mean(filter(edges.dw_nonzero, dw_quant == "6")$weight)
+    #   theDW$dw7[i] <- mean(filter(edges.dw_nonzero, dw_quant == "7")$weight)
+    #   theDW$dw8[i] <- mean(filter(edges.dw_nonzero, dw_quant == "8")$weight)
+    #   theDW$dw9[i] <- mean(filter(edges.dw_nonzero, dw_quant == "9")$weight)
+    #   theDW$dw10[i] <- mean(filter(edges.dw_nonzero, dw_quant == "10")$weight)
+    # 
+    # } else {
     
-      if (file.exists(meants.file)) {
-        meants <- read.csv(meants.file,header=FALSE)  
+    if (file.exists(meants.file)) {
+      meants <- read.csv(meants.file,header=FALSE)  
+      
+      if (atlas == "glasser" | atlas == "ColeAnti") {
+        roiids <- read.csv(file.path(tsdir, subid, paste(atlas, "roiids.csv", sep="_")), header=TRUE)
+        rois <- as.character(roiids$labelname)
+      } else if (atlas == "DK")  {
+        roiids <- read.csv(file.path(tsdir, subid, paste(atlas, "roiids.csv", sep="_")), header=FALSE) 
+        rois <- as.character(roiids$V1)
+      }
+      
+      names(meants) <- paste0("TR_",1:ncol(meants))
+      ## correlate and graph
+      cormat <- cor(t(dplyr::select(meants,starts_with("TR_"))))
+      g <-graph_from_adjacency_matrix(cormat,mode="upper", weighted=TRUE, diag=FALSE)
+      V(g)$name <- rois
+      # take the egde list as a vector
+      thecorrs <- E(g)$weight
+      edge.namesZ <- as.data.frame(as_edgelist(g, names=TRUE))
+      edge.namesZ$thecorrs <- thecorrs
+      edges.Z <- merge(g.df, edge.namesZ, by=c("V1","V2"))
+      
+      edges.Z$theseZ <- edges.Z$thecorrs
+      edges.Z$theseZ[edges.Z$theseZ < 0.1] <- 'NA' ###threshold for functional connectivity matrix. Note: removes all neg correlations
+      edges.Z$theseZ <- as.numeric(edges.Z$theseZ)
+     
+      ########## get lots of NAs with DK....
+      
+      ################ DWI connectivity ###########################                    
+      diff.file <- file.path(diffdir, subid, paste0("prob_", atlas, ".csv"))
+      len.file <- file.path(diffdir, subid, paste0("prob_length_", atlas, ".csv"))
+      vox.file <- file.path(diffdir, subid, paste0("voxel_count_", atlas,".txt"))                    
+      if (file.exists(diff.file)) {
+        diff <- read.csv(diff.file, sep="", header=FALSE) 
         
-        if (atlas == "glasser" | atlas == "ColeAnti") {
-          roiids <- read.csv(file.path(tsdir, subid, paste(atlas, "roiids.csv", sep="_")), header=TRUE)
-          rois <- as.character(roiids$labelname)
-        } else if (atlas == "DK")  {
-          roiids <- read.csv(file.path(tsdir, subid, paste(atlas, "roiids.csv", sep="_")), header=FALSE) 
-          rois <- as.character(roiids$V1)
+        if (atlas == "glasser"| atlas == "ColeAnti"){
+          colnames(diff) <- rois #########for DK atlas this will be different
+          rownames(diff) <- rois
+        } else if (atlas == "DK") {
+          diffrois <- as.character(seq(1:length(diff)))
+          colnames(diff) <- diffrois 
+          rownames(diff) <- diffrois
+          diff <- diff[rois, rois]  
         }
         
-        names(meants) <- paste0("TR_",1:ncol(meants))
-        ## correlate and graph
-        cormat <- cor(t(dplyr::select(meants,starts_with("TR_"))))
-        g <-graph_from_adjacency_matrix(cormat,mode="upper", weighted=TRUE, diag=FALSE)
-        V(g)$name <- rois
+        #can't have 0's for igraph : +1, make graph merge and then -1
+        diffplus1 <-diff +1
+        diff_g<-graph_from_adjacency_matrix(as.matrix(diffplus1),mode="upper", 
+                                            weighted=TRUE, diag=FALSE, add.colnames=TRUE) 
+        V(diff_g)$name <- rois
+        
         # take the egde list as a vector
-        thecorrs <- E(g)$weight
-        edge.namesZ <- as.data.frame(as_edgelist(g, names=TRUE))
-        edge.namesZ$thecorrs <- thecorrs
-        edges.Z <- merge(g.df, edge.namesZ, by=c("V1","V2"))
+        rawplus1 <- E(diff_g)$weight
+        raw <- rawplus1 -1
         
-        edges.Z$theseZ <- edges.Z$thecorrs
-        edges.Z$theseZ[edges.Z$theseZ < 0.1] <- 'NA' ###threshold for functional connectivity matrix. Note: removes all neg correlations
-        edges.Z$theseZ <- as.numeric(edges.Z$theseZ)
-       
-        ########## get lots of NAs with DK....
+        edge.namesDW <- as.data.frame(as_edgelist(diff_g, names=TRUE))
         
-        ################ DWI connectivity ###########################                    
-        diff.file <- file.path(diffdir, subid, paste0("prob_", atlas, ".csv"))
-        len.file <- file.path(diffdir, subid, paste0("prob_length_", atlas, ".csv"))
-        vox.file <- file.path(diffdir, subid, paste0("voxel_count_", atlas,".txt"))                    
-        if (file.exists(diff.file)) {
-          diff <- read.csv(diff.file, sep="", header=FALSE) 
+        edge.namesDW$raw <- raw
+        edges.dw <- merge(g.df, edge.namesDW, by=c("V1","V2"), all.x=TRUE)
+        
+       #normalise for number of voxels 
+        vox <- read.table(vox.file, sep="", header=FALSE)
+        oddvals <- seq(1, ncol(vox), by=2)
+        vox_count <- vox[,oddvals] #select voxel number and exclude volume
+        t.vox <- t(vox_count)
+        
+        if (atlas == "glasser" | atlas == "ColeAnti"){
+          voxels <- data.frame(t.vox, rois)
           
-          if (atlas == "glasser"| atlas == "ColeAnti"){
-            colnames(diff) <- rois #########for DK atlas this will be different
-            rownames(diff) <- rois
-          } else if (atlas == "DK") {
-            diffrois <- as.character(seq(1:length(diff)))
-            colnames(diff) <- diffrois 
-            rownames(diff) <- diffrois
-            diff <- diff[rois, rois]  
-          }
-          
-          #can't have 0's for igraph : +1, make graph merge and then -1
-          diffplus1 <-diff +1
-          diff_g<-graph_from_adjacency_matrix(as.matrix(diffplus1),mode="upper", 
-                                              weighted=TRUE, diag=FALSE, add.colnames=TRUE) 
-          V(diff_g)$name <- rois
-          
-          # take the egde list as a vector
-          rawplus1 <- E(diff_g)$weight
-          raw <- rawplus1 -1
-          
-          edge.namesDW <- as.data.frame(as_edgelist(diff_g, names=TRUE))
-          
-          edge.namesDW$raw <- raw
-          edges.dw <- merge(g.df, edge.namesDW, by=c("V1","V2"), all.x=TRUE)
-          
-         #normalise for number of voxels 
-          vox <- read.table(vox.file, sep="", header=FALSE)
-          oddvals <- seq(1, ncol(vox), by=2)
-          vox_count <- vox[,oddvals] #select voxel number and exclude volume
-          t.vox <- t(vox_count)
-          
-          if (atlas == "glasser" | atlas == "ColeAnti"){
-            voxels <- data.frame(t.vox, rois)
-            
-          } else if (atlas == "DK") {
-            voxels <- data.frame(t.vox, diffrois)
-            rownames(voxels) <- diffrois
-            voxels <- voxels[rois, ]  
-          }
-          
-          colnames(voxels) <- c('vox', 'rois')
-          edges <- edges.dw[c('V1','V2')]
-          V1.vox <- merge(edges, voxels, by.x='V1', by.y='rois')
-          V2.vox <- merge(edges, voxels, by.x='V2', by.y='rois')
-          V1.V2 <- merge(V1.vox, V2.vox, by=c('V1', 'V2'))
-          V1.V2$vox.total <- as.numeric(V1.V2$vox.x) + as.numeric(V1.V2$vox.y)
-          edges.dw_w <- merge(edges.dw, V1.V2[c('V1', 'V2', 'vox.total')], by=c('V1', 'V2'))
-          if (atlas == "glasser"){
-            edges.dw_w$weight <- edges.dw_w$raw / edges.dw_w$vox.total * (sum(edges.dw_w$vox.total)/64620)
-          } else if (atlas == "ColeAnti"){
-            edges.dw_w$weight <- edges.dw_w$raw / edges.dw_w$vox.total * (sum(edges.dw_w$vox.total)/64620) #### check numbers
-          } else if (atlas == "DK") {
-            SumVox <- sum(filter(edges.dw_w, FCtype == "Intrahemispheric" | FCtype == "Homotopic" | FCtype == "Heterotopic")$vox.total)
-            SumROI <- nrow(filter(edges.dw_w, FCtype == "Intrahemispheric" | FCtype == "Homotopic" | FCtype == "Heterotopic"))
-            edges.dw_w$weight <- edges.dw_w$raw / edges.dw_w$vox.total * (SumVox)/SumROI #### check numbers
-          }
-          
-          #length connectome
-          len <- read.csv(len.file, sep="", header=FALSE)
-          
-          if (atlas == "glasser"| atlas == "ColeAnti"){
-            colnames(len) <- rois
-          } else if (atlas == "DK") {
-            colnames(len) <- diffrois 
-            rownames(len) <- diffrois
-            len <- len[rois, rois]  
-          }
-          
-          #can't have 0's for igraph : +1, make graph merge and then -1
-          lenplus1 <-len +1
-          len_g<-graph_from_adjacency_matrix(as.matrix(lenplus1),mode="upper", 
-                                             weighted=TRUE, diag=FALSE, add.colnames=TRUE) 
-          V(len_g)$name <- rois
+        } else if (atlas == "DK") {
+          voxels <- data.frame(t.vox, diffrois)
+          rownames(voxels) <- diffrois
+          voxels <- voxels[rois, ]  
+        }
+        
+        colnames(voxels) <- c('vox', 'rois')
+        edges <- edges.dw[c('V1','V2')]
+        V1.vox <- merge(edges, voxels, by.x='V1', by.y='rois')
+        V2.vox <- merge(edges, voxels, by.x='V2', by.y='rois')
+        V1.V2 <- merge(V1.vox, V2.vox, by=c('V1', 'V2'))
+        V1.V2$vox.total <- as.numeric(V1.V2$vox.x) + as.numeric(V1.V2$vox.y)
+        edges.dw_w <- merge(edges.dw, V1.V2[c('V1', 'V2', 'vox.total')], by=c('V1', 'V2'))
+        if (atlas == "glasser"){
+          edges.dw_w$weight <- edges.dw_w$raw / edges.dw_w$vox.total * (sum(edges.dw_w$vox.total)/64620)
+        } else if (atlas == "ColeAnti"){
+          edges.dw_w$weight <- edges.dw_w$raw / edges.dw_w$vox.total * (sum(edges.dw_w$vox.total)/64620) #### check numbers
+        } else if (atlas == "DK") {
+          SumVox <- sum(filter(edges.dw_w, FCtype == "Intrahemispheric" | FCtype == "Homotopic" | FCtype == "Heterotopic")$vox.total)
+          SumROI <- nrow(filter(edges.dw_w, FCtype == "Intrahemispheric" | FCtype == "Homotopic" | FCtype == "Heterotopic"))
+          edges.dw_w$weight <- edges.dw_w$raw / edges.dw_w$vox.total * (SumVox)/SumROI #### check numbers
+        }
+        
+        #length connectome
+        len <- read.csv(len.file, sep="", header=FALSE)
+        
+        if (atlas == "glasser"| atlas == "ColeAnti"){
+          colnames(len) <- rois
+        } else if (atlas == "DK") {
+          colnames(len) <- diffrois 
+          rownames(len) <- diffrois
+          len <- len[rois, rois]  
+        }
+        
+        #can't have 0's for igraph : +1, make graph merge and then -1
+        lenplus1 <-len +1
+        len_g<-graph_from_adjacency_matrix(as.matrix(lenplus1),mode="upper", 
+                                           weighted=TRUE, diag=FALSE, add.colnames=TRUE) 
+        V(len_g)$name <- rois
+    
+        #take the egde list as a vector
+        lenplus1 <- E(len_g)$weight
+        length <- lenplus1 -1
+        len.df <- as.data.frame(as_edgelist(len_g, names=TRUE))
+        len.df$length <- length
+        edges.dw_norm <- merge(edges.dw_w, len.df, by=c('V1', 'V2'), all.x=TRUE)
+        
+        #select nonzero length connections and bin by i) length and ii) edge weight 
+        # first threshold by connection weight to remove spurious connections .....%
+        edges.dw_nonzero <- filter(edges.dw_norm, weight > quantile(weight, prob = 1 - dwi_thresh/100))
+        #edges.dw_nonzero <- filter(edges.dw_norm, length > 4 & weight >5)
+        edges.dw_nonzero <- within(edges.dw_nonzero, len_quant <- as.integer(cut(length, quantile(length, probs=0:10/10), include.lowest=TRUE)))
+        edges.dw_nonzero <- within(edges.dw_nonzero, dw_quant <- as.integer(cut(weight, quantile(weight, probs=0:10/10), include.lowest=TRUE)))
+        
+        #can merge to get full edge list again
+        edges.dw_all <- merge(edges.dw_norm, edges.dw_nonzero[c('V1', 'V2', 'len_quant', 'dw_quant')], by=c('V1', 'V2'), all.x=TRUE)
+        edges.all <- merge(edges.Z[c("V1", "V2", "theseZ")], edges.dw_all, by=c('V1', 'V2'), all=TRUE)
+        out.file <- file.path(edgedir, paste(subid, atlas, "edge_metrics.csv", sep="_"))
+        write.csv(edges.all, out.file, row.names = F)
       
-          #take the egde list as a vector
-          lenplus1 <- E(len_g)$weight
-          length <- lenplus1 -1
-          len.df <- as.data.frame(as_edgelist(len_g, names=TRUE))
-          len.df$length <- length
-          edges.dw_norm <- merge(edges.dw_w, len.df, by=c('V1', 'V2'), all.x=TRUE)
-          
-          #select nonzero length connections and bin by i) length and ii) edge weight 
-          edges.dw_nonzero <- filter(edges.dw_norm, length > 4 & weight >5)
-          edges.dw_nonzero <- within(edges.dw_nonzero, len_quant <- as.integer(cut(length, quantile(length, probs=0:10/10), include.lowest=TRUE)))
-          edges.dw_nonzero <- within(edges.dw_nonzero, dw_quant <- as.integer(cut(weight, quantile(weight, probs=0:10/10), include.lowest=TRUE)))
-          
-          #can merge to get full edge list again
-          edges.dw_all <- merge(edges.dw_norm, edges.dw_nonzero[c('V1', 'V2', 'len_quant', 'dw_quant')], by=c('V1', 'V2'), all.x=TRUE)
-          edges.all <- merge(edges.Z[c("V1", "V2", "theseZ")], edges.dw_all, by=c('V1', 'V2'), all=TRUE)
-          #threshold by connection weight to remove spurious connections .....%
-          #edges_thresh <- subset(edges_wlq, weight > quantile(weight, prob = 1 - percent_threshold/100))
-          out.file <- file.path(edgedir, paste(subid, atlas, "edge_metrics.csv", sep="_"))
-          write.csv(edges.all, out.file, row.names = F)
+        theZs$HO[i] <- mean(filter(edges.all, FCtype == "Homotopic")$theseZ, na.rm=TRUE)
+        theZs$HE[i] <- mean(filter(edges.all, FCtype == "Heterotopic")$theseZ, na.rm=TRUE)
+        theZs$I[i] <- mean(filter(edges.all, FCtype == "Intrahemispheric")$theseZ, na.rm=TRUE)
+        theZs$lenNA[i] <- mean(filter(edges.all, is.na(len_quant))$theseZ, na.rm=TRUE)
+        theZs$len1[i] <- mean(filter(edges.all, len_quant == "1")$theseZ, na.rm=TRUE)
+        theZs$len2[i] <- mean(filter(edges.all, len_quant == "2")$theseZ, na.rm=TRUE)
+        theZs$len3[i] <- mean(filter(edges.all, len_quant == "3")$theseZ, na.rm=TRUE)
+        theZs$len4[i] <- mean(filter(edges.all, len_quant == "4")$theseZ, na.rm=TRUE)
+        theZs$len5[i] <- mean(filter(edges.all, len_quant == "5")$theseZ, na.rm=TRUE)
+        theZs$len6[i] <- mean(filter(edges.all, len_quant == "6")$theseZ, na.rm=TRUE)
+        theZs$len7[i] <- mean(filter(edges.all, len_quant == "7")$theseZ, na.rm=TRUE)
+        theZs$len8[i] <- mean(filter(edges.all, len_quant == "8")$theseZ, na.rm=TRUE)
+        theZs$len9[i] <- mean(filter(edges.all, len_quant == "9")$theseZ, na.rm=TRUE)
+        theZs$len10[i] <- mean(filter(edges.all, len_quant == "10")$theseZ, na.rm=TRUE)
         
-          theZs$HO[i] <- mean(filter(edges.all, FCtype == "Homotopic")$theseZ, na.rm=TRUE)
-          theZs$HE[i] <- mean(filter(edges.all, FCtype == "Heterotopic")$theseZ, na.rm=TRUE)
-          theZs$I[i] <- mean(filter(edges.all, FCtype == "Intrahemispheric")$theseZ, na.rm=TRUE)
-          theZs$lenNA[i] <- mean(filter(edges.all, is.na(len_quant))$theseZ, na.rm=TRUE)
-          theZs$len1[i] <- mean(filter(edges.all, len_quant == "1")$theseZ, na.rm=TRUE)
-          theZs$len2[i] <- mean(filter(edges.all, len_quant == "2")$theseZ, na.rm=TRUE)
-          theZs$len3[i] <- mean(filter(edges.all, len_quant == "3")$theseZ, na.rm=TRUE)
-          theZs$len4[i] <- mean(filter(edges.all, len_quant == "4")$theseZ, na.rm=TRUE)
-          theZs$len5[i] <- mean(filter(edges.all, len_quant == "5")$theseZ, na.rm=TRUE)
-          theZs$len6[i] <- mean(filter(edges.all, len_quant == "6")$theseZ, na.rm=TRUE)
-          theZs$len7[i] <- mean(filter(edges.all, len_quant == "7")$theseZ, na.rm=TRUE)
-          theZs$len8[i] <- mean(filter(edges.all, len_quant == "8")$theseZ, na.rm=TRUE)
-          theZs$len9[i] <- mean(filter(edges.all, len_quant == "9")$theseZ, na.rm=TRUE)
-          theZs$len10[i] <- mean(filter(edges.all, len_quant == "10")$theseZ, na.rm=TRUE)
-          
-          theZs$dwNA[i] <- mean(filter(edges.all, is.na(dw_quant))$theseZ, na.rm=TRUE)
-          theZs$dw1[i] <- mean(filter(edges.all, dw_quant == "1")$theseZ, na.rm=TRUE)
-          theZs$dw2[i] <- mean(filter(edges.all, dw_quant == "2")$theseZ, na.rm=TRUE)
-          theZs$dw3[i] <- mean(filter(edges.all, dw_quant == "3")$theseZ, na.rm=TRUE)
-          theZs$dw4[i] <- mean(filter(edges.all, dw_quant == "4")$theseZ, na.rm=TRUE)
-          theZs$dw5[i] <- mean(filter(edges.all, dw_quant == "5")$theseZ, na.rm=TRUE)
-          theZs$dw6[i] <- mean(filter(edges.all, dw_quant == "6")$theseZ, na.rm=TRUE)
-          theZs$dw7[i] <- mean(filter(edges.all, dw_quant == "7")$theseZ, na.rm=TRUE)
-          theZs$dw8[i] <- mean(filter(edges.all, dw_quant == "8")$theseZ, na.rm=TRUE)
-          theZs$dw9[i] <- mean(filter(edges.all, dw_quant == "9")$theseZ, na.rm=TRUE)
-          theZs$dw10[i] <- mean(filter(edges.all, dw_quant == "10")$theseZ, na.rm=TRUE)
-          
-          theDW$HO[i] <- mean(filter(edges.dw_nonzero, FCtype == "Homotopic")$weight, na.rm=TRUE)  ######### get very low numbers if edges.all used
-          theDW$HE[i] <- mean(filter(edges.dw_nonzero, FCtype == "Heterotopic")$weight, na.rm=TRUE)
-          theDW$I[i] <- mean(filter(edges.dw_nonzero, FCtype == "Intrahemispheric")$weight, na.rm=TRUE)
-          theDW$lenNA[i] <- mean(filter(edges.dw_nonzero, is.na(len_quant))$weight)
-          theDW$len1[i] <- mean(filter(edges.dw_nonzero, len_quant == "1")$weight)
-          theDW$len2[i] <- mean(filter(edges.dw_nonzero, len_quant == "2")$weight)
-          theDW$len3[i] <- mean(filter(edges.dw_nonzero, len_quant == "3")$weight)
-          theDW$len4[i] <- mean(filter(edges.dw_nonzero, len_quant == "4")$weight)
-          theDW$len5[i] <- mean(filter(edges.dw_nonzero, len_quant == "5")$weight)
-          theDW$len6[i] <- mean(filter(edges.dw_nonzero, len_quant == "6")$weight)
-          theDW$len7[i] <- mean(filter(edges.dw_nonzero, len_quant == "7")$weight)
-          theDW$len8[i] <- mean(filter(edges.dw_nonzero, len_quant == "8")$weight)
-          theDW$len9[i] <- mean(filter(edges.dw_nonzero, len_quant == "9")$weight)
-          theDW$len10[i] <- mean(filter(edges.dw_nonzero, len_quant == "10")$weight)
+        theZs$dwNA[i] <- mean(filter(edges.all, is.na(dw_quant))$theseZ, na.rm=TRUE)
+        theZs$dw1[i] <- mean(filter(edges.all, dw_quant == "1")$theseZ, na.rm=TRUE)
+        theZs$dw2[i] <- mean(filter(edges.all, dw_quant == "2")$theseZ, na.rm=TRUE)
+        theZs$dw3[i] <- mean(filter(edges.all, dw_quant == "3")$theseZ, na.rm=TRUE)
+        theZs$dw4[i] <- mean(filter(edges.all, dw_quant == "4")$theseZ, na.rm=TRUE)
+        theZs$dw5[i] <- mean(filter(edges.all, dw_quant == "5")$theseZ, na.rm=TRUE)
+        theZs$dw6[i] <- mean(filter(edges.all, dw_quant == "6")$theseZ, na.rm=TRUE)
+        theZs$dw7[i] <- mean(filter(edges.all, dw_quant == "7")$theseZ, na.rm=TRUE)
+        theZs$dw8[i] <- mean(filter(edges.all, dw_quant == "8")$theseZ, na.rm=TRUE)
+        theZs$dw9[i] <- mean(filter(edges.all, dw_quant == "9")$theseZ, na.rm=TRUE)
+        theZs$dw10[i] <- mean(filter(edges.all, dw_quant == "10")$theseZ, na.rm=TRUE)
+        
+        theDW$HO[i] <- mean(filter(edges.dw_nonzero, FCtype == "Homotopic")$weight, na.rm=TRUE)  ######### get very low numbers if edges.all used
+        theDW$HE[i] <- mean(filter(edges.dw_nonzero, FCtype == "Heterotopic")$weight, na.rm=TRUE)
+        theDW$I[i] <- mean(filter(edges.dw_nonzero, FCtype == "Intrahemispheric")$weight, na.rm=TRUE)
+        theDW$lenNA[i] <- mean(filter(edges.dw_nonzero, is.na(len_quant))$weight)
+        theDW$len1[i] <- mean(filter(edges.dw_nonzero, len_quant == "1")$weight)
+        theDW$len2[i] <- mean(filter(edges.dw_nonzero, len_quant == "2")$weight)
+        theDW$len3[i] <- mean(filter(edges.dw_nonzero, len_quant == "3")$weight)
+        theDW$len4[i] <- mean(filter(edges.dw_nonzero, len_quant == "4")$weight)
+        theDW$len5[i] <- mean(filter(edges.dw_nonzero, len_quant == "5")$weight)
+        theDW$len6[i] <- mean(filter(edges.dw_nonzero, len_quant == "6")$weight)
+        theDW$len7[i] <- mean(filter(edges.dw_nonzero, len_quant == "7")$weight)
+        theDW$len8[i] <- mean(filter(edges.dw_nonzero, len_quant == "8")$weight)
+        theDW$len9[i] <- mean(filter(edges.dw_nonzero, len_quant == "9")$weight)
+        theDW$len10[i] <- mean(filter(edges.dw_nonzero, len_quant == "10")$weight)
 
-          theDW$dwNA[i] <- mean(filter(edges.dw_nonzero, is.na(dw_quant))$weight)
-          theDW$dw1[i] <- mean(filter(edges.dw_nonzero, dw_quant == "1")$weight)
-          theDW$dw2[i] <- mean(filter(edges.dw_nonzero, dw_quant == "2")$weight)
-          theDW$dw3[i] <- mean(filter(edges.dw_nonzero, dw_quant == "3")$weight)
-          theDW$dw4[i] <- mean(filter(edges.dw_nonzero, dw_quant == "4")$weight)
-          theDW$dw5[i] <- mean(filter(edges.dw_nonzero, dw_quant == "5")$weight)
-          theDW$dw6[i] <- mean(filter(edges.dw_nonzero, dw_quant == "6")$weight)
-          theDW$dw7[i] <- mean(filter(edges.dw_nonzero, dw_quant == "7")$weight)
-          theDW$dw8[i] <- mean(filter(edges.dw_nonzero, dw_quant == "8")$weight)
-          theDW$dw9[i] <- mean(filter(edges.dw_nonzero, dw_quant == "9")$weight)
-          theDW$dw10[i] <- mean(filter(edges.dw_nonzero, dw_quant == "10")$weight)
-        
-        } else {
+        theDW$dwNA[i] <- mean(filter(edges.dw_nonzero, is.na(dw_quant))$weight)
+        theDW$dw1[i] <- mean(filter(edges.dw_nonzero, dw_quant == "1")$weight)
+        theDW$dw2[i] <- mean(filter(edges.dw_nonzero, dw_quant == "2")$weight)
+        theDW$dw3[i] <- mean(filter(edges.dw_nonzero, dw_quant == "3")$weight)
+        theDW$dw4[i] <- mean(filter(edges.dw_nonzero, dw_quant == "4")$weight)
+        theDW$dw5[i] <- mean(filter(edges.dw_nonzero, dw_quant == "5")$weight)
+        theDW$dw6[i] <- mean(filter(edges.dw_nonzero, dw_quant == "6")$weight)
+        theDW$dw7[i] <- mean(filter(edges.dw_nonzero, dw_quant == "7")$weight)
+        theDW$dw8[i] <- mean(filter(edges.dw_nonzero, dw_quant == "8")$weight)
+        theDW$dw9[i] <- mean(filter(edges.dw_nonzero, dw_quant == "9")$weight)
+        theDW$dw10[i] <- mean(filter(edges.dw_nonzero, dw_quant == "10")$weight)
+      
+      } else {
           print(paste(diff.file, "does not exist"))
           theZs[i,5:ncol(theZs)] <- NA
           theDW[i,2:ncol(theDW)] <- NA
@@ -472,13 +533,13 @@ calc_everything <- function(subids, tsdir , g.df, diffdir, FC_thresh) {
           theZs$HE[i] <- mean(filter(edges.Z, FCtype == "Heterotopic")$theseZ)
           theZs$I[i] <- mean(filter(edges.Z, FCtype == "Intrahemispheric")$theseZ)
           
-        }
-      } else {
-         print(paste(meants.file, "does not exist"))
-         theZs[i,2:ncol(theZs)] <- NA
-         
       }
+    } else {
+       print(paste(meants.file, "does not exist"))
+       theZs[i,2:ncol(theZs)] <- NA
+       
     }
+    
   }
   return(list("theZs"=theZs,"theDW"=theDW))
 }
@@ -494,7 +555,7 @@ subids <- demogs$subid
 
 g.df <- make_g_template(subids[1], tsdir)
 
-pond_metrics <- calc_everything(subids, tsdir, g.df, diffdir, FC_thresh)
+pond_metrics <- calc_everything(subids, tsdir, g.df, diffdir, FC_thresh, dwi_thresh)
 
 theZs <- pond_metrics$theZs
 theDW <- pond_metrics$theDW
@@ -684,14 +745,14 @@ figTrioZ_cbcl_all
 ## TRIO
 # type x dx
 print(paste("Anova - Does tract type predict structure? - trio"))
-F2.trio.DW <- lmer(DW ~ FCtype + dx +sex + Age + (1|subid), 
-               data = filter(type_trio, in.ex == "in"))
+F2.trio.DW <- lmer(DW ~ FCtype*dx*sex + Age + PC1 + (1|subid), 
+               data = filter(type_trio, cutree.res.hc..k...3. != 3))
 print(Anova(F2.trio.DW))
 summary(glht(F2.trio.DW, linfct=mcp(FCtype ="Tukey")))
 
 
 # plot type X dx 
-ggplot(filter(type_trio, in.ex == "in"), aes(x=FCtype, y=DW, color = dx)) + 
+ggplot(filter(type_trio, cutree.res.hc..k...3. != 3), aes(x=FCtype, y=DW, color = dx)) + 
   geom_boxplot()+ylim(0,70)
 
 # figdx.file <- paste(outdir, "POND.SI_dx_6to18.png", sep="/")
@@ -702,20 +763,20 @@ ggplot(filter(type_trio, in.ex == "in"), aes(x=FCtype, y=DW, color = dx)) +
 ```{r TRIO-DWI-dx-sex}
 # type x dx (Male only)
 print(paste("Anova - Does tract type predict structure? - trio"))
-F2.trio.DWm <- lmer(DW ~ FCtype*dx + Age + (1|subid), 
-               data = filter(type_trio, in.ex == "in", sex == "Male"))
+F2.trio.DWm <- lmer(DW ~ FCtype*dx + Age + PC1 + (1|subid), 
+               data = filter(type_trio, cutree.res.hc..k...3. != 3, sex == "Male"))
 print(Anova(F2.trio.DWm))
 
 # type x dx (female only)
 print(paste("Anova - Does tract type predict structure? - trio"))
-F2.trio.DWf <- lmer(DW ~ FCtype*dx + Age + (1|subid), 
-               data = filter(type_trio, in.ex == "in", sex == "Female"))
+F2.trio.DWf <- lmer(DW ~ FCtype*dx + Age + PC1 + (1|subid), 
+               data = filter(type_trio, cutree.res.hc..k...3. != 3, sex == "Female"))
 print(Anova(F2.trio.DWf))
 
-pltTrioDW_dx_male <- ggplot(filter(type_trio, in.ex == "in", sex =="Male"), aes(x=FCtype, y=DW, color = dx)) + 
+pltTrioDW_dx_male <- ggplot(filter(type_trio, cutree.res.hc..k...3. != 3, sex =="Male"), aes(x=FCtype, y=DW, color = dx)) + 
   geom_boxplot() +ylim(0,70)
 
-pltTrioDW_dx_female <- ggplot(filter(type_trio, in.ex == "in", sex == "Female"), aes(x=FCtype, y=DW, color = dx)) + 
+pltTrioDW_dx_female <- ggplot(filter(type_trio, cutree.res.hc..k...3. != 3, sex == "Female"), aes(x=FCtype, y=DW, color = dx)) + 
   geom_boxplot() +ylim(0,70)
 
 ##figs
@@ -726,27 +787,27 @@ figDW_bysex
 
 ```{r TRIO-DWI-gaf}
 print(paste("Anova - Does tract type predict structure? - trio - GAF"))
-F2.trio.DWgaf <- lmer(DW ~ FCtype*AB21GCCS + Age + sex + (1|subid), 
-               data = filter(type_trio, in.ex == "in"))
+F2.trio.DWgaf <- lmer(DW ~ FCtype*AB21GCCS + FCtype*sex + Age + PC1 + (1|subid), 
+               data = filter(type_trio, cutree.res.hc..k...3. != 3))
 #summary(F2)
 print(Anova(F2.trio.DWgaf))
 
 print(paste("Anova - Does tract type predict structure? - trio - GAF"))
-F2.trio.DWgafM <- lmer(DW ~ FCtype*AB21GCCS + Age + (1|subid), 
-               data = filter(type_trio, in.ex == "in", sex == "Male"))
+F2.trio.DWgafM <- lmer(DW ~ FCtype*AB21GCCS + Age + PC1+ (1|subid), 
+               data = filter(type_trio, cutree.res.hc..k...3. != 3, sex == "Male"))
 print(Anova(F2.trio.DWgafM)) 
 
 print(paste("Anova - Does tract type predict structure? - trio - GAF"))
-F2.trio.DWgafF <- lmer(DW ~ FCtype*AB21GCCS + Age + (1|subid), 
-               data = filter(type_trio, in.ex == "in", sex == "Female"))
+F2.trio.DWgafF <- lmer(DW ~ FCtype*AB21GCCS + Age + PC1 + (1|subid), 
+               data = filter(type_trio, cutree.res.hc..k...3. != 3, sex == "Female"))
 print(Anova(F2.trio.DWgafF))
 
 
-pltTrioDW_gaf <-ggplot(filter(type_trio, in.ex == "in"), aes(x=AB21GCCS, y=DW, color = FCtype)) + 
+pltTrioDW_gaf <-ggplot(filter(type_trio, cutree.res.hc..k...3. != 3), aes(x=AB21GCCS, y=DW, color = FCtype)) + 
   geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70)
-pltTrioDW_gaf_male <-ggplot(filter(type_trio, in.ex == "in", sex =="Male"), aes(x=AB21GCCS, y=DW, color = FCtype)) + 
+pltTrioDW_gaf_male <-ggplot(filter(type_trio, cutree.res.hc..k...3. != 3, sex =="Male"), aes(x=AB21GCCS, y=DW, color = FCtype)) + 
   geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70)
-pltTrioDW_gaf_female <-ggplot(filter(type_trio, in.ex == "in", sex =="Female"), aes(x=AB21GCCS, y=DW, color = FCtype)) + 
+pltTrioDW_gaf_female <-ggplot(filter(type_trio, cutree.res.hc..k...3. != 3, sex =="Female"), aes(x=AB21GCCS, y=DW, color = FCtype)) + 
   geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70)
 
 figDW_gaf <- plot_grid(pltTrioDW_gaf, pltTrioDW_gaf_male, pltTrioDW_gaf_female, align="hv", ncol=3)
@@ -754,28 +815,28 @@ figDW_gaf
 ```
 ```{r TRIO-DWI-CBCL}
 print(paste("Anova - Does tract type predict structure? - trio - GAF"))
-F2.trio.DWcbcl <- lmer(DW ~ FCtype + CB68TPTOT*sex + Age + (1|subid), 
-               data = filter(type_trio, in.ex == "in"))
+F2.trio.DWcbcl <- lmer(DW ~ FCtype*CB68TPTOT*sex + Age + PC1 + (1|subid), 
+               data = filter(type_trio, cutree.res.hc..k...3. != 3))
 #summary(F2)
 print(Anova(F2.trio.DWcbcl))
 
 print(paste("Anova - Does tract type predict structure? - trio - GAF"))
-F2.trio.DWcbclM <- lmer(DW ~ FCtype*CB68TPTOT + Age + (1|subid), 
-               data = filter(type_trio, in.ex == "in", sex == "Male"))
+F2.trio.DWcbclM <- lmer(DW ~ FCtype*CB68TPTOT + Age + PC1 + (1|subid), 
+               data = filter(type_trio, cutree.res.hc..k...3. != 3, sex == "Male"))
 print(Anova(F2.trio.DWcbclM)) 
 
 print(paste("Anova - Does tract type predict structure? - trio - GAF"))
-F2.trio.DWcbclF <- lmer(DW ~ FCtype*CB68TPTOT + Age + (1|subid), 
-               data = filter(type_trio, in.ex == "in", sex == "Female"))
+F2.trio.DWcbclF <- lmer(DW ~ FCtype*CB68TPTOT + Age + PC1 + (1|subid), 
+               data = filter(type_trio, cutree.res.hc..k...3. != 3, sex == "Female"))
 print(Anova(F2.trio.DWcbclF))
 
 
-pltTrioDW_cbcl <-ggplot(filter(type_trio, in.ex == "in"), aes(x=CB68TPTOT, y=DW, color = FCtype)) + 
-  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70)
-pltTrioDW_cbcl_male <-ggplot(filter(type_trio, in.ex == "in", sex =="Male"), aes(x=CB68TPTOT, y=DW, color = FCtype)) + 
-  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70)
-pltTrioDW_cbcl_female <-ggplot(filter(type_trio, in.ex == "in", sex =="Female"), aes(x=CB68TPTOT, y=DW, color = FCtype)) + 
-  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70)
+pltTrioDW_cbcl <-ggplot(filter(type_trio, cutree.res.hc..k...3. != 3), aes(x=CB68TPTOT, y=DW, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70) +xlim(0,160)
+pltTrioDW_cbcl_male <-ggplot(filter(type_trio, cutree.res.hc..k...3. != 3, sex =="Male"), aes(x=CB68TPTOT, y=DW, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70) +xlim(0,160)
+pltTrioDW_cbcl_female <-ggplot(filter(type_trio, cutree.res.hc..k...3. != 3, sex =="Female"), aes(x=CB68TPTOT, y=DW, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70) +xlim(0,160)
 
 figDW_cbcl <- plot_grid(pltTrioDW_cbcl, pltTrioDW_cbcl_male, pltTrioDW_cbcl_female, align="hv", ncol=3)
 figDW_cbcl
