@@ -28,6 +28,18 @@ shapiro.test(POND$FSIQ_any)
 Anova(lm(POND$FSIQ_any ~ POND$dx))
 
 
+#CBCL
+bartlett.test(POND$CB68TPTS ~POND$dx) 
+shapiro.test(POND$CB68TPTS)
+kruskal.test(POND$dx, POND$CB68TPTS)
+
+
+#GAF
+bartlett.test(POND$AB21GCCS ~POND$dx) 
+shapiro.test(POND$AB21GCCS)
+kruskal.test(POND$dx, POND$AB21GCCS)
+
+
 table1 <- POND %>%
   group_by(dx) %>%
   summarise(n = sum(!is.na(Age)), 
