@@ -1,6 +1,4 @@
-bash CSD_scc.sh MR160-088-0258-01
-bash CSD_scc.sh MR160-088-0265-01
-bash CSD_scc.sh MR160-088-0276-01
-bash CSD_scc.sh MR160-088-0276-02
-bash CSD_scc.sh MR160-088-0284-01
-bash CSD_scc.sh MR160-088-0291-01
+bash CSD_multi.sh sub-1050446
+bash CSD_multi.sh sub-1050548
+bash CSD_multi.sh sub-1050607
+bash CSD_multi.sh sub-1050672
