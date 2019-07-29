@@ -562,6 +562,20 @@ theDW <- pond_metrics$theDW
 
 ```
 
+## Run COMPULS
+```{r}
+# filter to get rid of bad QC
+comp_demogs <- comp_demogs %>% filter(fd_mean < 0.5) %>% filter(size_t > 100) ### dwi data filtered in analyses
+
+comp_subids <- comp_demogs$subid
+
+comp_metrics <- calc_everything(comp_subids, comp_tsdir, g.df, comp_diffdir, FC_thresh, dwi_thresh)
+
+comp_theZs <- comp_metrics$theZs
+comp_theDW <- comp_metrics$theDW
+
+```
+
 ## Sort data POND
 ```{r, fig.width=12}
 
@@ -628,6 +642,70 @@ trio <- cbind(trio ,fit_trio$scores[ ,1:2]) # the principal components
 type_trio <- type_trio %>% merge(trio[c("subid","Comp.1", "Comp.2")], by="subid")
 lenQ_trio <- lenQ_trio %>% merge(trio[c("subid","Comp.1", "Comp.2")], by="subid")
 dwQ_trio <- dwQ_trio %>% merge(trio[c("subid","Comp.1", "Comp.2")], by="subid")
+
+```
+
+## Sort data COMPULS
+```{r, fig.width=12}
+
+comp_typeZ <- comp_theZs %>%
+   gather(FCtype, Z, HO, HE, I) %>%
+   filter(!is.na(Z))
+  
+comp_typeDW <- comp_theDW %>%
+   gather(FCtype, DW, HO, HE, I)
+
+type_comp <- comp_demogs %>%
+  merge(comp_typeZ[c("subid","FCtype","Z")], by="subid") %>%
+  merge(comp_typeDW[c("subid","FCtype","DW")], by=c("subid","FCtype"), all.x =TRUE) %>%
+  filter(Age > 6, Age <= 18, dx != "GAD", !is.na(dx))
+
+
+comp_lenQZ <- comp_theZs %>% 
+  gather(lenQ, Z, starts_with("len")) %>%
+  filter(!is.na(Z))
+ 
+comp_lenQDW <- comp_theDW %>%
+   gather(lenQ, DW, starts_with("len")) 
+
+lenQ_comp <- comp_demogs %>%
+  merge(comp_lenQZ[c("subid","lenQ","Z")], by="subid") %>%
+  merge(comp_lenQDW[c("subid","lenQ","DW")], by=c("subid","lenQ"), all.x =TRUE) %>%
+  filter(Age > 6, dx != "GAD", !is.na(dx))
+
+comp_dwQZ <- comp_theZs %>%
+   gather(dwQ, Z, starts_with("dw")) %>%
+   filter(!is.na(Z))
+
+comp_dwQDW <- comp_theDW %>%
+   gather(dwQ, DW, starts_with("dw"))
+
+dwQ_comp <- comp_demogs %>%
+  merge(comp_dwQZ[c("subid","dwQ","Z")], by="subid") %>%
+  merge(comp_dwQDW[c("subid","dwQ","DW")], by=c("subid","dwQ"), all.x =TRUE) %>%
+  filter(Age > 6, dx != "GAD", !is.na(dx))
+
+
+## transform QC measures to normality ## this should be done separately for trio and prisma
+comp <- comp_demogs %>%
+  mutate("dvars_pT"  = transform_to_normal(dvars_nstd),
+         "tsnr_pT"  = transform_to_normal(tsnr),
+         "fd_pT"  = transform_to_normal(fd_mean))
+
+# Pricipal Components Analysis
+# entering raw data and extracting PCs
+# from the correlation matrix
+fit_comp <- princomp(dplyr::select(comp, dvars_pT, tsnr_pT, fd_pT) , cor=TRUE)
+summary(fit_comp) # print variance accounted for
+loadings(fit_comp) # pc loadings
+plot(fit_comp,type="lines") # scree plot
+## write the top 5 principal components to the speadsheet
+comp <- cbind(comp, fit_comp$scores[ ,1:2]) # the principal components
+
+## add Func QC PCs to dfs
+type_comp <- type_comp %>% merge(comp[c("subid","Comp.1", "Comp.2")], by="subid")
+lenQ_comp <- lenQ_comp %>% merge(comp[c("subid","Comp.1", "Comp.2")], by="subid")
+dwQ_comp <- dwQ_comp %>% merge(comp[c("subid","Comp.1", "Comp.2")], by="subid")
 
 ```
 
