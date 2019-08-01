@@ -11,36 +11,40 @@ outdir <- "/projects/nforde/POND/stats"
 
 
 #use df from func_struct_tidy.Rmd 
-POND <- filter(type_trio, FCtype == "HO")
+TRIO <- filter(type_trio, FCtype == "HO")
+PRISMA <- filter(type_prisma, FCtype == "HO")
+COMP <- filter(type_comp, FCtype =="HO")
+TRIOdw <- filter(type_trio, FCtype == "HO", cutree.res.hc..k...3. != 3)
+COMPdw <- filter(type_comp, FCtype == "HO", cutree.res.hc..k...3. != 3)
 
-table(POND[ ,c("dx","sex")])
-chisq.test(POND$sex, POND$dx)
+table(TRIO[ ,c("dx","sex")])
+chisq.test(TRIO$sex, TRIO$dx)
 
 #age
-bartlett.test(POND$Age ~POND$dx) 
-shapiro.test(POND$Age)
-kruskal.test(POND$dx, POND$Age)
+bartlett.test(TRIO$Age ~TRIO$dx) 
+shapiro.test(TRIO$Age)
+kruskal.test(TRIO$dx, TRIO$Age)
 
 
 #IQ
-bartlett.test(POND$FSIQ_any ~POND$dx) 
-shapiro.test(POND$FSIQ_any)
-Anova(lm(POND$FSIQ_any ~ POND$dx))
+bartlett.test(TRIO$FSIQ_any ~TRIO$dx) 
+shapiro.test(TRIO$FSIQ_any)
+Anova(lm(TRIO$FSIQ_any ~ TRIO$dx))
 
 
 #CBCL
-bartlett.test(POND$CB68TPTS ~POND$dx) 
-shapiro.test(POND$CB68TPTS)
-kruskal.test(POND$dx, POND$CB68TPTS)
+bartlett.test(TRIO$CB68TPTS ~TRIO$dx) 
+shapiro.test(TRIO$CB68TPTS)
+kruskal.test(TRIO$dx, TRIO$CB68TPTS)
 
 
 #GAF
-bartlett.test(POND$AB21GCCS ~POND$dx) 
-shapiro.test(POND$AB21GCCS)
-kruskal.test(POND$dx, POND$AB21GCCS)
+bartlett.test(TRIO$AB21GCCS ~TRIO$dx) 
+shapiro.test(TRIO$AB21GCCS)
+kruskal.test(TRIO$dx, TRIO$AB21GCCS)
 
 
-table1 <- POND %>%
+tbl_TRIO_FC <- TRIO %>%
   group_by(dx) %>%
   summarise(n = sum(!is.na(Age)), 
             sexM = sum(sex == "Male"),
@@ -54,10 +58,78 @@ table1 <- POND %>%
             mean_gaf = round(mean(AB21GCCS, na.rm =T),2),
             sd_gaf = round(sd(AB21GCCS, na.rm =T),2)) 
 
-kable(table1, digits = 2)
+kable(tbl_TRIO_FC, digits = 2)
 
-POND_demog_table.file <- file.path(outdir, "POND_demog_tbl.csv")
-#write.csv(table1, POND_demog_table.file, row.names = F)
+TRIO_demog_table.file <- file.path(outdir, "TRIO_demog_tbl.csv")
+#write.csv(tbl_TRIO_FC, TRIO_demog_table.file, row.names = F)
+
+tbl_PRISMA_FC <- PRISMA %>%
+  group_by(dx) %>%
+  summarise(n = sum(!is.na(Age)), 
+            sexM = sum(sex == "Male"),
+            sexF = sum(sex == "Female"),
+            mean_age = round(mean(Age, na.rm=T),2),
+            sd_age = round(sd(Age, na.rm =T),2),
+            mean_IQ = round(mean(FSIQ_any, na.rm =T),2),
+            sd_IQ = round(sd(FSIQ_any, na.rm =T),2),
+            mean_cbcl = round(mean(CB68TPTS, na.rm =T),2),
+            sd_cbcl = round(sd(CB68TPTS, na.rm =T),2),
+            mean_gaf = round(mean(AB21GCCS, na.rm =T),2),
+            sd_gaf = round(sd(AB21GCCS, na.rm =T),2)) 
+
+kable(tbl_PRISMA_FC, digits = 2)
+
+PRISMA_demog_table.file <- file.path(outdir, "PRISMA_demog_tbl.csv")
+
+
+tbl_COMP_FC <- COMP %>%
+  group_by(dx) %>%
+  summarise(n = sum(!is.na(Age)), 
+            sexM = sum(sex == "Male"),
+            sexF = sum(sex == "Female"),
+            mean_age = round(mean(Age, na.rm=T),2),
+            sd_age = round(sd(Age, na.rm =T),2),
+            mean_IQ = round(mean(IQ, na.rm =T),2),
+            sd_IQ = round(sd(IQ, na.rm =T),2),
+            mean_cbcl = round(mean(CBCL_total, na.rm =T),2),
+            sd_cbcl = round(sd(CBCL_total, na.rm =T),2)) 
+
+kable(tbl_COMP_FC, digits = 2)
+
+COMP_demog_table.file <- file.path(outdir, "COMP_demog_tbl.csv")
+
+
+tbl_TRIO_DW <- TRIOdw %>%
+  group_by(dx) %>%
+  summarise(n = sum(!is.na(Age)), 
+            sexM = sum(sex == "Male"),
+            sexF = sum(sex == "Female"),
+            mean_age = round(mean(Age, na.rm=T),2),
+            sd_age = round(sd(Age, na.rm =T),2),
+            mean_IQ = round(mean(FSIQ_any, na.rm =T),2),
+            sd_IQ = round(sd(FSIQ_any, na.rm =T),2),
+            mean_cbcl = round(mean(CB68TPTS, na.rm =T),2),
+            sd_cbcl = round(sd(CB68TPTS, na.rm =T),2),
+            mean_gaf = round(mean(AB21GCCS, na.rm =T),2),
+            sd_gaf = round(sd(AB21GCCS, na.rm =T),2)) 
+
+kable(tbl_TRIO_DW, digits = 2)
+
+
+tbl_COMP_DW <- COMPdw %>%
+  group_by(dx) %>%
+  summarise(n = sum(!is.na(Age)), 
+            sexM = sum(sex == "Male"),
+            sexF = sum(sex == "Female"),
+            mean_age = round(mean(Age, na.rm=T),2),
+            sd_age = round(sd(Age, na.rm =T),2),
+            mean_IQ = round(mean(IQ, na.rm =T),2),
+            sd_IQ = round(sd(IQ, na.rm =T),2),
+            mean_cbcl = round(mean(CBCL_total, na.rm =T),2),
+            sd_cbcl = round(sd(CBCL_total, na.rm =T),2)) 
+
+kable(tbl_COMP_DW, digits = 2)
+
 
 ```
 
