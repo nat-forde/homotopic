@@ -22,7 +22,7 @@ library(forecast)
 outdir <- "/projects/nforde/POND/stats"
 
 #diffusion threshold
-dwi_thresh = 5 #percent threshold value, keeps this percent of connections # unused
+dwi_thresh = 5 #percent threshold value, keeps this percent of connections 
 FC_thresh = 0.1 # absolute threshold for FC strength
 
 atlas <- "glasser"
@@ -99,59 +99,46 @@ demogs <- merge(demogs, QCdwi[c("subject", "shell", "in.ex")], by.x= "subid", by
 ## set all the paths/directories & read in data for COMPULS
 ```{r}
 #compuls
-comp_demographics <- read.csv("/projects/nforde/COMPULS/clinical/pheno_Nij.csv")
-comp_QCfunc <- read.csv("/projects/nforde/COMPULS/data/bids/derivatives/ bold.csv")
-comp_QCdwi.class <- read.csv("/scratch/nforde/COMPULS/data/dwi_out/Classified.csv")
+comp_demogs <- read.csv("/projects/nforde/COMPULS/clinical/phenotype.csv", stringsAsFactors=FALSE)
+comp_QCfunc <- read.csv("/projects/nforde/COMPULS/data/bids/derivatives/mriqc/group_bold.tsv", sep = "\t")
+# comp_QCdwi.class <- read.csv("/scratch/nforde/COMPULS/data/dwi_out/Classified.csv")
 
 comp_tsdir <- "/projects/nforde/COMPULS/data/rsMRI"
 comp_diffdir <- "/projects/nforde/COMPULS/data/CSD"
 comp_edgedir <- "/projects/nforde/COMPULS/data/edges"
 
+comp_demogs <- comp_demogs %>% rowwise() %>%
+  mutate(CBCL_total = sum(anxious_depr, withdrawn_depr, somatic, social_problems,
+                          thought_problems, attention, rule_breaking, aggression, na.rm=TRUE))
 
-# #do some organising and renaming
-# demogs <- filter(demogs, !is.na(DOB)) %>% filter(!is.na(POND_DATE))
-# demogs$Age <- interval(ymd(demogs$DOB), ymd(demogs$POND_DATE)) %>% as.duration() %>% as.numeric(unit="years") %>% round(digits=2)
-# demogs$sex <- demogs$GENDER
-# demogs$dx <- NA
-# demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="1"] <- 'ASD'
-# demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="2" | demogs$RESEARCH_CONFIRM_DIAG_STD=="6"] <- 'ADHD'
-# demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="3"] <- 'OCD'
-# demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="10"] <- 'HC'
-# demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="15"] <- 'GAD'
-# IQ <- data.frame(demogs$WASI_FSIQ_2, demogs$WASI_II_FSIQ_2, demogs$WASI_FSIQ_4, demogs$WASI_II_FSIQ_4, demogs$WISC_IV_FSIQ, demogs$WISC_V_FSIQ)
-# demogs$FSIQ_any <- apply(IQ, 1, mean, na.rm=TRUE)
-# demogs$FSIQ_any[demogs$FSIQ_any == "NaN"] <- NA
-# demogs$NDDdx <- NA
-# demogs$NDDdx[demogs$dx == "ASD" | demogs$dx == "OCD" | demogs$dx == "ADHD"] <- "NDD"
-# demogs$NDDdx[demogs$dx == "HC"] <- "HC"
-#   
-# ### reduce the demographic data and merge if other sources
-# demogs <- demogs[c("SUBJECT","dx", "NDDdx", "Age", "sex", "FSIQ_any", "AB21GCCS", "RBSCPT",
-#                         "VAB2CP", "OB_SUB", "COM_SUB", "ADHD_I_SUB", "ADHD_HI_SUB", "TPOCS_TOT", "CB68TPTOT", "CB68TPTS")] %>%
-#   merge(SCQ[c("Subject","SCQTOT")], by.x="SUBJECT", by.y="Subject", all.x=TRUE) %>%
-#   merge(hand[c("ID","Handed")], by.x="SUBJECT", by.y="ID", all.x=TRUE) %>%
-#   merge(QCfunc, by.x="SUBJECT", by.y="subject_id") 
-# demogs$scanner <-NA
-# demogs$scanner[demogs$spacing_tr!="1.5"] <- 'trio'
-# demogs$scanner[demogs$spacing_tr=="1.5"] <- 'prisma'
-# 
-# 
-# #add 0 infront of 88 subjects
-# for (i in 1:nrow(demogs)) {
-#   if (startsWith(as.character(demogs$SUBJECT[i]), "88")) {
-#     demogs$SUBJECT[i] <- paste0("0", demogs$SUBJECT[i])
-#   }
-# }
-# #add prefix to sub name
-# demogs$subid <- paste0("sub-",demogs$SUBJECT)
-# 
-# 
-# QCdwi.class <- QCdwi.class %>% separate(ID, "subid", sep="/") 
-# 
-# demogs <- merge(demogs, QCdwi[c("subject", "shell", "in.ex")], by.x= "subid", by.y = "subject", all.x=TRUE) %>% 
-#   merge(QCdwi.class[c("subid", "PC1", "cutree.res.hc..k...3.")], by="subid", all.x=TRUE)
+comp_demogs <- comp_demogs %>% mutate(Age = round(Age, digits=2))
+comp_demogs$Sex <- NA
+comp_demogs$Sex[comp_demogs$sex=="male"] <- 'Male'
+comp_demogs$Sex[comp_demogs$sex=="female"] <- 'Female'
 
-```
+comp_demogs$dx <- NA
+comp_demogs$dx[comp_demogs$Diagnosis=="1"] <- 'HC'
+comp_demogs$dx[comp_demogs$Diagnosis=="2"] <- 'OCD' 
+comp_demogs$dx[comp_demogs$Diagnosis=="3"] <- 'ASD' 
+comp_demogs$dx[comp_demogs$Diagnosis=="4"] <- 'ADHD'
+comp_demogs$dx[comp_demogs$Diagnosis=="5"] <- 'TS'
+
+#func QC data is separate for each echo (MRIQC output) so need to average across echoes 
+comp_QCfunc <- comp_QCfunc %>% separate(bids_name, c("subid", "task", "echo"), sep="_") %>%
+  group_by(subid) %>% summarise_all(funs(mean))
+
+# comp_QCdwi.class <- comp_QCdwi.class %>% separate(ID, "subid", sep="/") 
+
+### reduce the demographic data and merge if other sources
+comp_demogs <- merge(comp_QCdwi.class[c("subid", "PC1", "cutree.res.hc..k...3.")], 
+                     comp_demogs[c("Subject.details","dx", "Age", "Sex", "Estimated.IQ..Total.IQ", "CBCL_total")], by.x="subid", by.y="Subject.details", all=TRUE) %>%
+  merge(comp_QCfunc[c("subid", "dvars_nstd", "fd_mean", "size_t", "tsnr")], by.x="subid", by.y="subid", all=TRUE)
+
+
+names(comp_demogs)[names(comp_demogs) == 'Sex'] <- 'sex'
+names(comp_demogs)[names(comp_demogs) == 'Estimated.IQ..Total.IQ'] <- 'IQ'
+
+```figZ_bysex
 #define functions
 ```{r}
 
@@ -529,9 +516,9 @@ calc_everything <- function(subids, tsdir , g.df, diffdir, FC_thresh, dwi_thresh
           theZs[i,5:ncol(theZs)] <- NA
           theDW[i,2:ncol(theDW)] <- NA
         
-          theZs$HO[i] <- mean(filter(edges.Z, FCtype == "Homotopic")$theseZ)
-          theZs$HE[i] <- mean(filter(edges.Z, FCtype == "Heterotopic")$theseZ)
-          theZs$I[i] <- mean(filter(edges.Z, FCtype == "Intrahemispheric")$theseZ)
+          theZs$HO[i] <- mean(filter(edges.Z, FCtype == "Homotopic")$theseZ, na.rm=TRUE)
+          theZs$HE[i] <- mean(filter(edges.Z, FCtype == "Heterotopic")$theseZ, na.rm=TRUE)
+          theZs$I[i] <- mean(filter(edges.Z, FCtype == "Intrahemispheric")$theseZ, na.rm=TRUE)
           
       }
     } else {
@@ -544,7 +531,6 @@ calc_everything <- function(subids, tsdir , g.df, diffdir, FC_thresh, dwi_thresh
   return(list("theZs"=theZs,"theDW"=theDW))
 }
   
-
 ```
 ## Run POND
 ```{r}
@@ -565,7 +551,7 @@ theDW <- pond_metrics$theDW
 ## Run COMPULS
 ```{r}
 # filter to get rid of bad QC
-comp_demogs <- comp_demogs %>% filter(fd_mean < 0.5) %>% filter(size_t > 100) ### dwi data filtered in analyses
+comp_demogs <- comp_demogs %>% filter(fd_mean < 0.5) %>% filter(size_t > 200) ### dwi data filtered in analyses
 
 comp_subids <- comp_demogs$subid
 
@@ -592,6 +578,7 @@ type <- demogs %>%
   filter(Age > 6, Age <= 18, dx != "GAD", !is.na(dx))
 
 type_trio <- subset(type, scanner =="trio" & shell == "single")
+type_prisma <- subset(type, scanner =="prisma")
 
 lenQZ <- theZs %>% 
   gather(lenQ, Z, starts_with("len")) %>%
@@ -643,6 +630,27 @@ type_trio <- type_trio %>% merge(trio[c("subid","Comp.1", "Comp.2")], by="subid"
 lenQ_trio <- lenQ_trio %>% merge(trio[c("subid","Comp.1", "Comp.2")], by="subid")
 dwQ_trio <- dwQ_trio %>% merge(trio[c("subid","Comp.1", "Comp.2")], by="subid")
 
+prisma <- subset(demogs, scanner=="prisma") %>%
+  mutate("dvars_pT"  = transform_to_normal(dvars_nstd),
+         "tsnr_pT"  = transform_to_normal(tsnr),
+         "fd_pT"  = transform_to_normal(fd_mean))
+
+# Pricipal Components Analysis
+# entering raw data and extracting PCs
+# from the correlation matrix
+fit_prisma <- princomp(dplyr::select(prisma, dvars_pT, tsnr_pT, fd_pT) , cor=TRUE)
+summary(fit_prisma) # print variance accounted for
+loadings(fit_prisma) # pc loadings
+plot(fit_prisma,type="lines") # scree plot
+## write the top 5 principal components to the speadsheet
+prisma <- cbind(prisma ,fit_prisma$scores[ ,1:2]) # the principal components
+
+## add Func QC PCs to dfs
+type_prisma <- type_prisma %>% merge(prisma[c("subid","Comp.1", "Comp.2")], by="subid")
+# lenQ_prisma <- lenQ_prisma %>% merge(prisma[c("subid","Comp.1", "Comp.2")], by="subid")
+# dwQ_prisma <- dwQ_prisma %>% merge(prisma[c("subid","Comp.1", "Comp.2")], by="subid")
+
+
 ```
 
 ## Sort data COMPULS
@@ -658,7 +666,7 @@ comp_typeDW <- comp_theDW %>%
 type_comp <- comp_demogs %>%
   merge(comp_typeZ[c("subid","FCtype","Z")], by="subid") %>%
   merge(comp_typeDW[c("subid","FCtype","DW")], by=c("subid","FCtype"), all.x =TRUE) %>%
-  filter(Age > 6, Age <= 18, dx != "GAD", !is.na(dx))
+  filter(!is.na(dx))
 
 
 comp_lenQZ <- comp_theZs %>% 
@@ -671,7 +679,7 @@ comp_lenQDW <- comp_theDW %>%
 lenQ_comp <- comp_demogs %>%
   merge(comp_lenQZ[c("subid","lenQ","Z")], by="subid") %>%
   merge(comp_lenQDW[c("subid","lenQ","DW")], by=c("subid","lenQ"), all.x =TRUE) %>%
-  filter(Age > 6, dx != "GAD", !is.na(dx))
+  filter(!is.na(dx))
 
 comp_dwQZ <- comp_theZs %>%
    gather(dwQ, Z, starts_with("dw")) %>%
@@ -683,7 +691,7 @@ comp_dwQDW <- comp_theDW %>%
 dwQ_comp <- comp_demogs %>%
   merge(comp_dwQZ[c("subid","dwQ","Z")], by="subid") %>%
   merge(comp_dwQDW[c("subid","dwQ","DW")], by=c("subid","dwQ"), all.x =TRUE) %>%
-  filter(Age > 6, dx != "GAD", !is.na(dx))
+  filter(!is.na(dx))
 
 
 ## transform QC measures to normality ## this should be done separately for trio and prisma
@@ -710,7 +718,7 @@ dwQ_comp <- dwQ_comp %>% merge(comp[c("subid","Comp.1", "Comp.2")], by="subid")
 ```
 
 ## statistics! Does tract type predict connectivity strength?
-```{r FC-trio}
+```{r FC_dx}
 
 ################### Does tract type predict FC strength? #########
 ## TRIO
@@ -724,16 +732,42 @@ summary(glht(F2.trio.Z, linfct=mcp(FCtype ="Tukey")))
 
 
 # plot type X dx 
-ggplot(type_trio, aes(x=FCtype, y=Z, color = dx)) + 
-  geom_boxplot() +ylim(0.2,0.7)
+pltTrioZ <- ggplot(type_trio, aes(x=FCtype, y=Z, color = dx)) + 
+  geom_boxplot() +ylim(0.2,0.8) +
+  scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF"))
 
-# figZ <- plot_grid(pltTtrioZ, pltTprismaZ, pltTSIZ, align="hv", ncol = 3)
-#figZ
+## PRISMA
+print(paste("Anova - Does tract type predict FC strength?- prisma"))
+F2.prisma.Z <- lmer(Z ~ FCtype +dx +sex + Age + Comp.1 + Comp.2 + (1|subid), 
+               data = type_prisma)
+print(Anova(F2.prisma.Z))
+summary(glht(F2.prisma.Z, linfct=mcp(FCtype ="Tukey")))
+
+# plot type X dx 
+pltPrismaZ <- ggplot(type_prisma, aes(x=FCtype, y=Z, color = dx)) + 
+  geom_boxplot() +ylim(0.2,0.8) +
+  scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF"))
+
+## COMP
+print(paste("Anova - Does tract type predict FC strength?- comp"))
+F2.comp.Z <- lmer(Z ~ FCtype + dx + sex + Age + Comp.1 + Comp.2 + (1|subid), 
+               data = type_comp)
+print(Anova(F2.comp.Z))
+summary(glht(F2.comp.Z, linfct=mcp(FCtype ="Tukey")))
+
+# plot type X dx 
+pltCompZ <- ggplot(type_comp, aes(x=FCtype, y=Z, color = dx)) + 
+  geom_boxplot() +ylim(0.2,0.8) +
+  scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF", "#000066"))
+
+figZ <- plot_grid(pltTrioZ, pltPrismaZ, pltCompZ, align="hv", ncol = 3)
+figZ
+
 
 ```
-```{r FC-trio-by-sex}
-# type x dx (Male only)
-# type x dx
+```{r FC_dx_by-sex}
+#TRIO
+# type x dx 
 print(paste("Anova - Does tract type predict FC strength?- trio"))
 F2.trio.Zm <- lmer(Z ~ FCtype*dx + Age + Comp.1 + Comp.2 + (1|subid), 
                data = filter(type_trio, sex=="Male"))
@@ -744,50 +778,111 @@ F2.trio.Zf <- lmer(Z ~ FCtype*dx + Age + Comp.1 + Comp.2 + (1|subid),
                data = filter(type_trio, sex=="Female"))
 print(Anova(F2.trio.Zf))
 
-##figures male only
-# plot type X dx 
-pltTrioZ_dx_male <- ggplot(filter(type_trio, sex =="Male"), aes(x=FCtype, y=Z, color = dx)) + 
-  geom_boxplot() +ylim(0.2,0.7)
+##figures by sex
+figZ_bysex_trio <-ggplot(type_trio, aes(x=FCtype, y=Z, color = dx, fill=sex)) + geom_boxplot(outlier.alpha = 0.5, outlier.size = 1) + 
+  scale_fill_manual(values=c("#FFFFFF","#CCCCCC")) +ylim(0.2,0.8) +
+  scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF"))
+figZ_bysex_trio
 
-pltTrioZ_dx_female <- ggplot(filter(type_trio, sex =="Female"), aes(x=FCtype, y=Z, color = dx)) + 
-  geom_boxplot() +ylim(0.2,0.7)
+##PRISMA
+# type x dx 
+print(paste("Anova - Does tract type predict FC strength?- prisma"))
+F2.prisma.Zm <- lmer(Z ~ FCtype*dx + Age + Comp.1 + Comp.2 + (1|subid), 
+               data = filter(type_prisma, sex=="Male"))
+print(Anova(F2.prisma.Zm))
 
-figZ_bysex <- plot_grid(pltTrioZ_dx_male, pltTrioZ_dx_female, align="hv", ncol = 2)
+print(paste("Anova - Does tract type predict FC strength?- prisma"))
+F2.prisma.Zf <- lmer(Z ~ FCtype*dx + Age + Comp.1 + Comp.2 + (1|subid), 
+               data = filter(type_prisma, sex=="Female"))
+print(Anova(F2.prisma.Zf))
+
+##figures by sex
+figZ_bysex_prisma <-ggplot(type_prisma, aes(x=FCtype, y=Z, color = dx, fill=sex)) + geom_boxplot(outlier.alpha = 0.5, outlier.size = 1) + 
+  scale_fill_manual(values=c("#FFFFFF","#CCCCCC")) +ylim(0.2,0.8) +
+  scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF"))
+figZ_bysex_prisma
+
+#COMPULS
+# type x dx
+print(paste("Anova - Does tract type predict FC strength?- comp"))
+F2.comp.Zm <- lmer(Z ~ FCtype*dx + Age + Comp.1 + Comp.2 + (1|subid), 
+               data = filter(type_comp, sex=="Male"))
+print(Anova(F2.comp.Zm))
+
+print(paste("Anova - Does tract type predict FC strength?- comp"))
+F2.comp.Zf <- lmer(Z ~ FCtype*dx + Age + Comp.1 + Comp.2 + (1|subid), 
+               data = filter(type_comp, sex=="Female"))
+print(Anova(F2.comp.Zf))
+
+##figures by sex
+figZ_bysex_comp <- ggplot(type_comp, aes(x=FCtype, y=Z, color = dx, fill=sex)) + geom_boxplot(outlier.alpha = 0.5, outlier.size = 1) + 
+  scale_fill_manual(values=c("#FFFFFF","#CCCCCC")) +ylim(0.2,0.8) +
+  scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF", "#000066"))
+figZ_bysex_comp
+
+figZ_bysex <- plot_grid(figZ_bysex_trio, figZ_bysex_prisma, figZ_bysex_comp, align="hv", ncol = 3)
 figZ_bysex
 
+#combine figure
+figZ_bysex.file <- paste(outdir, "FC_dxXsex.png", sep="/")
+ggsave(figZ_bysex.file, figZ_bysex, dpi=300, width = 42, height = 12, units = "cm")
 
 ```
 
-```{r TRIO-gaf}
+```{r FC-gaf}
+##TRIO
 print(paste("Anova - Does tract type predict FC strength?- trio - GAF"))
-F2.trio.Zgaf <- lmer(Z ~ FCtype*AB21GCCS*sex + Age + Comp.1 + Comp.2 + (1|subid), 
+F2.trio.Zgaf <- lmer(Z ~ FCtype*AB21GCCS*sex + Age + Comp.1 + Comp.2 + (1|subid),
                data = type_trio)
 print(Anova(F2.trio.Zgaf))
 
 print(paste("Anova - Does tract type predict FC strength?- trio - GAF"))
-F2.trio.ZgafM <- lmer(Z ~ FCtype*AB21GCCS + Age + Comp.1 + Comp.2 + (1|subid), 
+F2.trio.ZgafM <- lmer(Z ~ FCtype*AB21GCCS + Age + Comp.1 + Comp.2 + (1|subid),
                data = filter(type_trio, sex== "Male"))
 print(Anova(F2.trio.ZgafM))
 
 print(paste("Anova - Does tract type predict FC strength?- trio - GAF"))
-F2.trio.ZgafF <- lmer(Z ~ FCtype*AB21GCCS + Age + Comp.1 + Comp.2 + (1|subid), 
+F2.trio.ZgafF <- lmer(Z ~ FCtype*AB21GCCS + Age + Comp.1 + Comp.2 + (1|subid),
                data = filter(type_trio, sex== "Female"))
 print(Anova(F2.trio.ZgafF))
 
-pltTrioZ_gaf <- ggplot(type_trio, aes(x=AB21GCCS, y=Z, color = FCtype)) + 
+pltTrioZ_gaf <- ggplot(type_trio, aes(x=AB21GCCS, y=Z, color = FCtype)) +
   geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0.2,0.8)
-pltTrioZ_gaf_M <- ggplot(filter(type_trio, sex== "Male"), aes(x=AB21GCCS, y=Z, color = FCtype)) + 
+pltTrioZ_gaf_M <- ggplot(filter(type_trio, sex== "Male"), aes(x=AB21GCCS, y=Z, color = FCtype)) +
   geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0.2,0.8)
-pltTrioZ_gaf_F <-ggplot(filter(type_trio, sex== "Female"), aes(x=AB21GCCS, y=Z, color = FCtype)) + 
+pltTrioZ_gaf_F <-ggplot(filter(type_trio, sex== "Female"), aes(x=AB21GCCS, y=Z, color = FCtype)) +
   geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0.2,0.8)
 
-figTrioZ_gaf_all <- plot_grid(pltTrioZ_gaf, pltTrioZ_gaf_M, pltTrioZ_gaf_F, align="hv", ncol = 3)
-figTrioZ_gaf_all
+#PRISMA
+print(paste("Anova - Does tract type predict FC strength?- prisma - GAF"))
+F2.prisma.Zgaf <- lmer(Z ~ FCtype +AB21GCCS +sex + Age + Comp.1 + Comp.2 + (1|subid),
+               data = type_prisma)
+print(Anova(F2.prisma.Zgaf))
+
+print(paste("Anova - Does tract type predict FC strength?- prisma - GAF"))
+F2.prisma.ZgafM <- lmer(Z ~ FCtype +AB21GCCS + Age + Comp.1 + Comp.2 + (1|subid),
+               data = filter(type_prisma, sex== "Male"))
+print(Anova(F2.prisma.ZgafM))
+
+print(paste("Anova - Does tract type predict FC strength?- prisma - GAF"))
+F2.prisma.ZgafF <- lmer(Z ~ FCtype + AB21GCCS + Age + Comp.1 + Comp.2 + (1|subid),
+               data = filter(type_prisma, sex== "Female"))
+print(Anova(F2.prisma.ZgafF))
+
+pltPrismaZ_gaf <- ggplot(type_prisma, aes(x=AB21GCCS, y=Z, color = FCtype)) +
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0.2,0.8)
+pltPrismaZ_gaf_M <- ggplot(filter(type_prisma, sex== "Male"), aes(x=AB21GCCS, y=Z, color = FCtype)) +
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0.2,0.8)
+pltPrismaZ_gaf_F <-ggplot(filter(type_prisma, sex== "Female"), aes(x=AB21GCCS, y=Z, color = FCtype)) +
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0.2,0.8)
+
+figZ_gaf_all <- plot_grid(pltTrioZ_gaf, pltTrioZ_gaf_M, pltTrioZ_gaf_F, pltPrismaZ_gaf, pltPrismaZ_gaf_M, pltPrismaZ_gaf_F, align="hv", ncol = 3)
+figZ_gaf_all
 ```
 
 
 
-```{r TRIO-CBCL-tot}
+```{r FC_TRIO-CBCL-tot}
 print(paste("Anova - Does tract type predict FC strength?- trio - CBCL"))
 F2.trio.Zcbcl <- lmer(Z ~ sex*FCtype + CB68TPTOT + Age + Comp.1 + Comp.2 + (1|subid), 
                data = type_trio)
@@ -814,10 +909,62 @@ figTrioZ_cbcl_all <- plot_grid(pltTrioZ_cbcl, pltTrioZ_cbcl_M, pltTrioZ_cbcl_F, 
 figTrioZ_cbcl_all
 ```
 
+```{r FC_PRISMA-CBCL-tot}
+print(paste("Anova - Does tract type predict FC strength?- prisma - CBCL"))
+F2.prisma.Zcbcl <- lmer(Z ~ FCtype +CB68TPTOT +sex + Age + Comp.1 + Comp.2 + (1|subid), 
+               data = type_prisma)
+print(Anova(F2.prisma.Zcbcl))
 
+print(paste("Anova - Does tract type predict FC strength?- prisma - CBCL"))
+F2.prisma.ZcbclM <- lmer(Z ~ FCtype +CB68TPTOT + Age + Comp.1 + Comp.2 + (1|subid), 
+               data = filter(type_prisma, sex== "Male"))
+print(Anova(F2.prisma.ZcbclM))
+
+print(paste("Anova - Does tract type predict FC strength?- prisma - CBCL"))
+F2.prisma.ZcbclF <- lmer(Z ~ FCtype + CB68TPTOT + Age + Comp.1 + Comp.2 + (1|subid), 
+               data = filter(type_prisma, sex== "Female"))
+print(Anova(F2.prisma.ZcbclF))
+
+pltPrismaZ_cbcl <- ggplot(type_prisma, aes(x=CB68TPTOT, y=Z, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0.2,0.8)
+pltPrismaZ_cbcl_M <- ggplot(filter(type_prisma, sex== "Male"), aes(x=CB68TPTOT, y=Z, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0.2,0.8)
+pltPrismaZ_cbcl_F <-ggplot(filter(type_prisma, sex== "Female"), aes(x=CB68TPTOT, y=Z, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0.2,0.8)
+
+figPrismaZ_cbcl_all <- plot_grid(pltPrismaZ_cbcl, pltPrismaZ_cbcl_M, pltPrismaZ_cbcl_F, align="hv", ncol = 3)
+figPrismaZ_cbcl_all
+```
+
+```{r FC_COMP-CBCL-tot}
+print(paste("Anova - Does tract type predict FC strength?- comp - CBCL"))
+F2.comp.Zcbcl <- lmer(Z ~ FCtype + sex + CBCL_total + Age + Comp.1 + Comp.2 + (1|subid), 
+               data = type_comp)
+print(Anova(F2.comp.Zcbcl))
+
+print(paste("Anova - Does tract type predict FC strength?- comp - CBCL"))
+F2.comp.ZcbclM <- lmer(Z ~ FCtype + CBCL_total + Age + Comp.1 + Comp.2 + (1|subid), 
+               data = filter(type_comp, sex== "Male"))
+print(Anova(F2.comp.ZcbclM))
+
+print(paste("Anova - Does tract type predict FC strength?- comp - CBCL"))
+F2.comp.ZcbclF <- lmer(Z ~ FCtype + CBCL_total + Age + Comp.1 + Comp.2 + (1|subid), 
+               data = filter(type_comp, sex== "Female"))
+print(Anova(F2.comp.ZcbclF))
+
+pltCompZ_cbcl <- ggplot(type_comp, aes(x=CBCL_total, y=Z, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0.2,0.8)
+pltCompZ_cbcl_M <- ggplot(filter(type_comp, sex== "Male"), aes(x=CBCL_total, y=Z, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0.2,0.8)
+pltCompZ_cbcl_F <-ggplot(filter(type_comp, sex== "Female"), aes(x=CBCL_total, y=Z, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0.2,0.8)
+
+figCompZ_cbcl_all <- plot_grid(pltCompZ_cbcl, pltCompZ_cbcl_M, pltCompZ_cbcl_F, align="hv", ncol = 3)
+figCompZ_cbcl_all
+```
 
 # Does tract type predict structure?
-```{r TRIO-DWI-dx}
+```{r DWI-dx}
 ##################### Does tract type predict structure? ############################################
 
 ## TRIO
@@ -828,17 +975,49 @@ F2.trio.DW <- lmer(DW ~ FCtype*dx*sex + Age + PC1 + (1|subid),
 print(Anova(F2.trio.DW))
 summary(glht(F2.trio.DW, linfct=mcp(FCtype ="Tukey")))
 
+# plot type X dx 
+pltTrioDW <- ggplot(filter(type_trio, cutree.res.hc..k...3. != 3), aes(x=FCtype, y=DW, color = dx)) + 
+  geom_boxplot()+ylim(0,70) +
+  scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF"))
+pltTrioDW
+
+## PRISMA
+# type x dx
+print(paste("Anova - Does tract type predict structure? - prisma"))
+F2.prisma.DW <- lmer(DW ~ FCtype*dx*sex + Age + PC1 + (1|subid), 
+               data = filter(type_prisma, cutree.res.hc..k...3. != 3))
+print(Anova(F2.prisma.DW))
+summary(glht(F2.prisma.DW, linfct=mcp(FCtype ="Tukey")))
 
 # plot type X dx 
-ggplot(filter(type_trio, cutree.res.hc..k...3. != 3), aes(x=FCtype, y=DW, color = dx)) + 
-  geom_boxplot()+ylim(0,70)
+pltTrioDW <- ggplot(filter(type_trio, cutree.res.hc..k...3. != 3), aes(x=FCtype, y=DW, color = dx)) + 
+  geom_boxplot()+ylim(0,70) +
+  scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF"))
+pltTrioDW
 
+## COMP
+# type x dx
+print(paste("Anova - Does tract type predict structure? - comp"))
+F2.comp.DW <- lmer(DW ~ FCtype*dx*sex + Age + PC1 + (1|subid), 
+               data = filter(type_comp, cutree.res.hc..k...3. != 3))
+print(Anova(F2.comp.DW))
+summary(glht(F2.comp.DW, linfct=mcp(FCtype ="Tukey")))
+
+# plot type X dx 
+pltCompDW <- ggplot(filter(type_comp, cutree.res.hc..k...3. != 3), aes(x=FCtype, y=DW, color = dx)) + 
+  geom_boxplot()+ylim(0,70) +
+  scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF", "#000066"))
+pltCompDW
+
+figDW <- plot_grid(pltTrioDW, pltCompDW, align="hv", ncol = 2)
+figDW
 # figdx.file <- paste(outdir, "POND.SI_dx_6to18.png", sep="/")
 # ggsave(figdx.file, figdx, dpi=300, width = 21, height = 18, units = "cm")
 
 ```
 
-```{r TRIO-DWI-dx-sex}
+```{r DWI-dx-sex}
+#TRIO
 # type x dx (Male only)
 print(paste("Anova - Does tract type predict structure? - trio"))
 F2.trio.DWm <- lmer(DW ~ FCtype*dx + Age + PC1 + (1|subid), 
@@ -851,109 +1030,167 @@ F2.trio.DWf <- lmer(DW ~ FCtype*dx + Age + PC1 + (1|subid),
                data = filter(type_trio, cutree.res.hc..k...3. != 3, sex == "Female"))
 print(Anova(F2.trio.DWf))
 
-pltTrioDW_dx_male <- ggplot(filter(type_trio, cutree.res.hc..k...3. != 3, sex =="Male"), aes(x=FCtype, y=DW, color = dx)) + 
-  geom_boxplot() +ylim(0,70)
+##figures by sex
+figDW_bysex_trio <- ggplot(type_trio, aes(x=FCtype, y=DW, color = dx, fill=sex)) + geom_boxplot(outlier.alpha = 0.5, outlier.size = 1) + 
+  scale_fill_manual(values=c("#FFFFFF","#CCCCCC")) +ylim(0,70) +
+  scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF"))
+figDW_bysex_trio
 
-pltTrioDW_dx_female <- ggplot(filter(type_trio, cutree.res.hc..k...3. != 3, sex == "Female"), aes(x=FCtype, y=DW, color = dx)) + 
-  geom_boxplot() +ylim(0,70)
+#COMP
+# # type x dx (Male only)
+# print(paste("Anova - Does tract type predict structure? - comp"))
+# F2.comp.DWm <- lmer(DW ~ FCtype*dx + Age + PC1 + (1|subid), 
+#                data = filter(type_comp, cutree.res.hc..k...3. != 3, sex == "Male"))
+# print(Anova(F2.comp.DWm))
+# 
+# # type x dx (female only)
+# print(paste("Anova - Does tract type predict structure? - comp"))
+# F2.comp.DWf <- lmer(DW ~ FCtype*dx + Age + PC1 + (1|subid), 
+#                data = filter(type_comp, cutree.res.hc..k...3. != 3, sex == "Female"))
+# print(Anova(F2.comp.DWf))
+# 
+# ##figures by sex
+# figDW_bysex_comp <- ggplot(type_comp, aes(x=FCtype, y=DW, color = dx, fill=sex)) + geom_boxplot(outlier.alpha = 0.5, outlier.size = 1) + 
+#   scale_fill_manual(values=c("#FFFFFF","#CCCCCC")) +ylim(0,70) +
+#   scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF", "#000066"))
+# figDW_bysex_comp
 
-##figs
-figDW_bysex <- plot_grid(pltTrioDW_dx_male, pltTrioDW_dx_female, align="hv", ncol=2)
+
+#combine DW figures
+figDW_bysex <- plot_grid(figDW_bysex_trio, figDW_bysex_comp, align="hv", ncol = 2)
 figDW_bysex
+figDW_bysex.file <- paste(outdir, "DW_dxXsex.png", sep="/")
+ggsave(figDW_bysex.file, figDW_bysex, dpi=300, width = 21, height = 10, units = "cm")
 
 ```
 
 ```{r TRIO-DWI-gaf}
-print(paste("Anova - Does tract type predict structure? - trio - GAF"))
-F2.trio.DWgaf <- lmer(DW ~ FCtype*AB21GCCS + FCtype*sex + Age + PC1 + (1|subid), 
-               data = filter(type_trio, cutree.res.hc..k...3. != 3))
-#summary(F2)
-print(Anova(F2.trio.DWgaf))
-
-print(paste("Anova - Does tract type predict structure? - trio - GAF"))
-F2.trio.DWgafM <- lmer(DW ~ FCtype*AB21GCCS + Age + PC1+ (1|subid), 
-               data = filter(type_trio, cutree.res.hc..k...3. != 3, sex == "Male"))
-print(Anova(F2.trio.DWgafM)) 
-
-print(paste("Anova - Does tract type predict structure? - trio - GAF"))
-F2.trio.DWgafF <- lmer(DW ~ FCtype*AB21GCCS + Age + PC1 + (1|subid), 
-               data = filter(type_trio, cutree.res.hc..k...3. != 3, sex == "Female"))
-print(Anova(F2.trio.DWgafF))
-
-
-pltTrioDW_gaf <-ggplot(filter(type_trio, cutree.res.hc..k...3. != 3), aes(x=AB21GCCS, y=DW, color = FCtype)) + 
-  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70)
-pltTrioDW_gaf_male <-ggplot(filter(type_trio, cutree.res.hc..k...3. != 3, sex =="Male"), aes(x=AB21GCCS, y=DW, color = FCtype)) + 
-  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70)
-pltTrioDW_gaf_female <-ggplot(filter(type_trio, cutree.res.hc..k...3. != 3, sex =="Female"), aes(x=AB21GCCS, y=DW, color = FCtype)) + 
-  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70)
-
-figDW_gaf <- plot_grid(pltTrioDW_gaf, pltTrioDW_gaf_male, pltTrioDW_gaf_female, align="hv", ncol=3)
-figDW_gaf
+# print(paste("Anova - Does tract type predict structure? - trio - GAF"))
+# F2.trio.DWgaf <- lmer(DW ~ FCtype*AB21GCCS + FCtype*sex + Age + PC1 + (1|subid),
+#                data = filter(type_trio, cutree.res.hc..k...3. != 3))
+# #summary(F2)
+# print(Anova(F2.trio.DWgaf))
+# 
+# print(paste("Anova - Does tract type predict structure? - trio - GAF"))
+# F2.trio.DWgafM <- lmer(DW ~ FCtype*AB21GCCS + Age + PC1+ (1|subid),
+#                data = filter(type_trio, cutree.res.hc..k...3. != 3, sex == "Male"))
+# print(Anova(F2.trio.DWgafM))
+# 
+# print(paste("Anova - Does tract type predict structure? - trio - GAF"))
+# F2.trio.DWgafF <- lmer(DW ~ FCtype*AB21GCCS + Age + PC1 + (1|subid),
+#                data = filter(type_trio, cutree.res.hc..k...3. != 3, sex == "Female"))
+# print(Anova(F2.trio.DWgafF))
+# 
+# 
+# pltTrioDW_gaf <-ggplot(filter(type_trio, cutree.res.hc..k...3. != 3), aes(x=AB21GCCS, y=DW, color = FCtype)) +
+#   geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70)
+# pltTrioDW_gaf_male <-ggplot(filter(type_trio, cutree.res.hc..k...3. != 3, sex =="Male"), aes(x=AB21GCCS, y=DW, color = FCtype)) +
+#   geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70)
+# pltTrioDW_gaf_female <-ggplot(filter(type_trio, cutree.res.hc..k...3. != 3, sex =="Female"), aes(x=AB21GCCS, y=DW, color = FCtype)) +
+#   geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70)
+# 
+# figDW_gaf <- plot_grid(pltTrioDW_gaf, pltTrioDW_gaf_male, pltTrioDW_gaf_female, align="hv", ncol=3)
+# figDW_gaf
 ```
-```{r TRIO-DWI-CBCL}
-print(paste("Anova - Does tract type predict structure? - trio - GAF"))
-F2.trio.DWcbcl <- lmer(DW ~ FCtype*CB68TPTOT*sex + Age + PC1 + (1|subid), 
+
+```{r DW_TRIO-CBCL-tot}
+print(paste("Anova - Does tract type predict DW strength?- trio - CBCL"))
+F2.trio.DWZcbcl <- lmer(DW ~ sex*FCtype*CB68TPTOT + Age + Comp.1 + Comp.2 + (1|subid), 
                data = filter(type_trio, cutree.res.hc..k...3. != 3))
-#summary(F2)
-print(Anova(F2.trio.DWcbcl))
+print(Anova(F2.trio.DWZcbcl))
 
-print(paste("Anova - Does tract type predict structure? - trio - GAF"))
-F2.trio.DWcbclM <- lmer(DW ~ FCtype*CB68TPTOT + Age + PC1 + (1|subid), 
-               data = filter(type_trio, cutree.res.hc..k...3. != 3, sex == "Male"))
-print(Anova(F2.trio.DWcbclM)) 
+print(paste("Anova - Does tract type predict DW strength?- trio - CBCL"))
+F2.trio.DWcbclM <- lmer(DW ~ FCtype*CB68TPTOT + Age + Comp.1 + Comp.2 + (1|subid), 
+               data = filter(type_trio, cutree.res.hc..k...3. != 3, sex== "Male"))
+print(Anova(F2.trio.DWcbclM))
 
-print(paste("Anova - Does tract type predict structure? - trio - GAF"))
-F2.trio.DWcbclF <- lmer(DW ~ FCtype*CB68TPTOT + Age + PC1 + (1|subid), 
-               data = filter(type_trio, cutree.res.hc..k...3. != 3, sex == "Female"))
+print(paste("Anova - Does tract type predict DW strength?- trio - CBCL"))
+F2.trio.DWcbclF <- lmer(DW ~ FCtype*CB68TPTOT + Age + Comp.1 + Comp.2 + (1|subid), 
+               data = filter(type_trio, cutree.res.hc..k...3. != 3, sex== "Female"))
 print(Anova(F2.trio.DWcbclF))
 
+pltTrioDW_cbcl <- ggplot(filter(type_trio, cutree.res.hc..k...3. != 3), aes(x=CB68TPTOT, y=DW, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70)
+pltTrioDW_cbcl_M <- ggplot(filter(type_trio, cutree.res.hc..k...3. != 3, sex== "Male"), aes(x=CB68TPTOT, y=DW, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70)
+pltTrioDW_cbcl_F <-ggplot(filter(type_trio, cutree.res.hc..k...3. != 3, sex== "Female"), aes(x=CB68TPTOT, y=DW, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70)
 
-pltTrioDW_cbcl <-ggplot(filter(type_trio, cutree.res.hc..k...3. != 3), aes(x=CB68TPTOT, y=DW, color = FCtype)) + 
-  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70) +xlim(0,160)
-pltTrioDW_cbcl_male <-ggplot(filter(type_trio, cutree.res.hc..k...3. != 3, sex =="Male"), aes(x=CB68TPTOT, y=DW, color = FCtype)) + 
-  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70) +xlim(0,160)
-pltTrioDW_cbcl_female <-ggplot(filter(type_trio, cutree.res.hc..k...3. != 3, sex =="Female"), aes(x=CB68TPTOT, y=DW, color = FCtype)) + 
-  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70) +xlim(0,160)
+figTrioDW_cbcl_all <- plot_grid(pltTrioDW_cbcl, pltTrioDW_cbcl_M, pltTrioDW_cbcl_F, align="hv", ncol = 3)
+figTrioDW_cbcl_all
+```
 
-figDW_cbcl <- plot_grid(pltTrioDW_cbcl, pltTrioDW_cbcl_male, pltTrioDW_cbcl_female, align="hv", ncol=3)
-figDW_cbcl
+
+```{r DW_COMP-CBCL-tot}
+print(paste("Anova - Does tract type predict DW strength?- comp - CBCL"))
+F2.comp.DWZcbcl <- lmer(DW ~ sex*FCtype*CB68TPTOT + Age + Comp.1 + Comp.2 + (1|subid), 
+               data = filter(type_comp, cutree.res.hc..k...3. != 3))
+print(Anova(F2.comp.DWZcbcl))
+
+print(paste("Anova - Does tract type predict DW strength?- comp - CBCL"))
+F2.comp.DWcbclM <- lmer(DW ~ FCtype*CB68TPTOT + Age + Comp.1 + Comp.2 + (1|subid), 
+               data = filter(type_comp, cutree.res.hc..k...3. != 3, sex== "Male"))
+print(Anova(F2.comp.DWcbclM))
+
+print(paste("Anova - Does tract type predict DW strength?- comp - CBCL"))
+F2.comp.DWcbclF <- lmer(DW ~ FCtype*CB68TPTOT + Age + Comp.1 + Comp.2 + (1|subid), 
+               data = filter(type_comp, cutree.res.hc..k...3. != 3, sex== "Female"))
+print(Anova(F2.comp.DWcbclF))
+
+pltCompDW_cbcl <- ggplot(filter(type_comp, cutree.res.hc..k...3. != 3), aes(x=CB68TPTOT, y=DW, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70)
+pltCompDW_cbcl_M <- ggplot(filter(type_comp, cutree.res.hc..k...3. != 3, sex== "Male"), aes(x=CB68TPTOT, y=DW, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70)
+pltCompDW_cbcl_F <-ggplot(filter(type_comp, cutree.res.hc..k...3. != 3, sex== "Female"), aes(x=CB68TPTOT, y=DW, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,70)
+
+figCompDW_cbcl_all <- plot_grid(pltCompDW_cbcl, pltCompDW_cbcl_M, pltCompDW_cbcl_F, align="hv", ncol = 3)
+figCompDW_cbcl_all
 ```
 #graph
 ```{r}
 
-
-ggplot(filter(tmp, metric %in% c("Z", "DW")), aes(x=AB21GCCS, y=value, color = FCtype)) + 
-  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +
-  facet_wrap(~metric, scales = "free_y", nrow=2)
-
-figTz <- ggplot(type_trio, aes(x=AB21GCCS, y=Z, color = FCtype)) + 
- geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) 
+#combine FC and DWI figures
+#fig_bysex <- plot_grid(figZ_bysex_trio, figZ_bysex_comp, figDW_bysex_trio, figDW_bysex_comp, align="hv", ncol = 2)
+fig_bysex <- plot_grid(figZ_bysex_trio, figZ_bysex_comp, figDW_bysex_trio, align="hv", ncol = 2)
 
 
-figTdw <- ggplot(type_trio, aes(x=AB21GCCS, y=DW, color = FCtype)) + 
- geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) 
+fig_bysex.file <- paste(outdir, "FC_DW_dxXsex.png", sep="/")
+ggsave(fig_bysex.file, fig_bysex, dpi=300, width = 21, height = 18, units = "cm")
 
 
-figGAF <- plot_grid(figTz, figPz, figTdw, figPdw, align="hv", ncol=3)
 
-figGAF.file <- paste(outdir, "POND.SI_6to18GAF.png", sep="/")
-ggsave(figGAF.file, figGAF, dpi=300, width = 21, height = 18, units = "cm")
-
-
-tmp1 <- type_trio
-tmp1$value <- tmp1$Z
-tmp1$metric <- "Z"
-
-tmp3 <- type_trio
-tmp3$value <- tmp3$DW
-tmp3$metric <- "DW"
-
-tmp <- rbind(tmp1, tmp3)
-
-ggplot(filter(tmpP, metric %in% c("Z", "DW")), aes(x=AB21GCCS, y=value, color = FCtype)) + 
-  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +
-  facet_wrap(~metric, scales = "free_y", nrow=3)
+# ggplot(filter(tmp, metric %in% c("Z", "DW")), aes(x=AB21GCCS, y=value, color = FCtype)) + 
+#   geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +
+#   facet_wrap(~metric, scales = "free_y", nrow=2)
+# 
+# figTz <- ggplot(type_trio, aes(x=AB21GCCS, y=Z, color = FCtype)) + 
+#  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) 
+# 
+# 
+# figTdw <- ggplot(type_trio, aes(x=AB21GCCS, y=DW, color = FCtype)) + 
+#  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) 
+# 
+# 
+# figGAF <- plot_grid(figTz, figPz, figTdw, figPdw, align="hv", ncol=3)
+# 
+# figGAF.file <- paste(outdir, "POND.SI_6to18GAF.png", sep="/")
+# ggsave(figGAF.file, figGAF, dpi=300, width = 21, height = 18, units = "cm")
+# 
+# 
+# tmp1 <- type_trio
+# tmp1$value <- tmp1$Z
+# tmp1$metric <- "Z"
+# 
+# tmp3 <- type_trio
+# tmp3$value <- tmp3$DW
+# tmp3$metric <- "DW"
+# 
+# tmp <- rbind(tmp1, tmp3)
+# 
+# ggplot(filter(tmpP, metric %in% c("Z", "DW")), aes(x=AB21GCCS, y=value, color = FCtype)) + 
+#   geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +
+#   facet_wrap(~metric, scales = "free_y", nrow=3)
 
 
 ```
