@@ -4,6 +4,8 @@ author: "nforde"
 date: "April 20, 2018"
 output: html_document
 ---
+Run this after func_struct_tidy.Rmd. It will calculate the mean functional connectivity strength and track density for homotopic connections ordered Anterior posterior (divided in 10 bins) 
+
 ## get libraries/set paths
 ```{r}
 library(igraph)
@@ -14,29 +16,247 @@ library(broom)
 library(knitr)
 library(car)
 library(multcomp)
+library(lubridate)
+library(lme4)
+library(cowplot)
 
+outdir <- "/projects/nforde/POND/stats"
+atlas <- "glasser"
+```
+
+```{r set POND stuff}
 ## set all the paths
-## set all the paths
-pond_demographics <- read.csv("/projects/stephanie/DataFiles_CT.DTI.Beh.POND/GlimExtIN_CTROIUF.csv")
-qap_functional_temporal <- read.csv("/mnt/tigrlab/projects/edickie/analysis/POND_RST/qap/qap_functional_temporal.csv")
-edgedir <- "/scratch/nforde/homotopic/POND/edge_metrics"
+#POND
+pond_demographics <- read.csv("/projects/nforde/POND/clinical/POND_06JUN2018_pp.csv")
+QCfunc <- read.csv("/projects/nforde/POND/rsMRI/bold.csv")
+QCdwi <- read.csv("/projects/nforde/POND/dtifit/qc.csv")
+QCdwi.class <- read.csv("/projects/nforde/POND/dtifit/QC/Classified.csv")
+hand <- read.csv("/projects/nforde/POND/clinical/handedness.csv")
+SCQ <- read.csv("/projects/nforde/POND/clinical/SCQ_Data_23_July_2018.csv")
+WISCV <- read.csv("/projects/nforde/POND/clinical/WISC_5_Data_24_July_2018.csv")
 
-pond_extra <- read.csv("/scratch/nforde/homotopic/POND/pond_demog.csv")
+edgedir <- "/projects/nforde/POND/edges"
 
-for (i in 1:nrow(pond_extra)) {
-  if (startsWith(as.character(pond_extra$subject[i]), "88")) {
-    pond_extra$subject[i] <- paste0("0", pond_extra$subject[i])
+#merge diff sources of demog and QC data
+demogs <- pond_demographics %>% 
+  merge(WISCV[c("Subject","WISC_V_FSIQ")], by.x="SUBJECT", by.y="Subject", all.x=TRUE)
+
+#do some organising and renaming
+demogs <- filter(demogs, !is.na(DOB)) %>% filter(!is.na(POND_DATE))
+demogs$Age <- interval(ymd(demogs$DOB), ymd(demogs$POND_DATE)) %>% as.duration() %>% as.numeric(unit="years") %>% round(digits=2)
+demogs$sex <- demogs$GENDER
+demogs$dx <- NA
+demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="1"] <- 'ASD'
+demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="2" | demogs$RESEARCH_CONFIRM_DIAG_STD=="6"] <- 'ADHD'
+demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="3"] <- 'OCD'
+demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="10"] <- 'HC'
+demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="15"] <- 'GAD'
+IQ <- data.frame(demogs$WASI_FSIQ_2, demogs$WASI_II_FSIQ_2, demogs$WASI_FSIQ_4, demogs$WASI_II_FSIQ_4, demogs$WISC_IV_FSIQ, demogs$WISC_V_FSIQ)
+demogs$FSIQ_any <- apply(IQ, 1, mean, na.rm=TRUE)
+demogs$FSIQ_any[demogs$FSIQ_any == "NaN"] <- NA
+demogs$NDDdx <- NA
+demogs$NDDdx[demogs$dx == "ASD" | demogs$dx == "OCD" | demogs$dx == "ADHD"] <- "NDD"
+demogs$NDDdx[demogs$dx == "HC"] <- "HC"
+  
+### reduce the demographic data and merge if other sources
+demogs <- demogs[c("SUBJECT","dx", "NDDdx", "Age", "sex", "FSIQ_any", "AB21GCCS", "RBSCPT",
+                        "VAB2CP", "OB_SUB", "COM_SUB", "ADHD_I_SUB", "ADHD_HI_SUB", "TPOCS_TOT", "CB68TPTOT", "CB68TPTS")] %>%
+  merge(SCQ[c("Subject","SCQTOT")], by.x="SUBJECT", by.y="Subject", all.x=TRUE) %>%
+  merge(hand[c("ID","Handed")], by.x="SUBJECT", by.y="ID", all.x=TRUE) %>%
+  merge(QCfunc, by.x="SUBJECT", by.y="subject_id") 
+demogs$scanner <-NA
+demogs$scanner[demogs$spacing_tr!="1.5"] <- 'trio'
+demogs$scanner[demogs$spacing_tr=="1.5"] <- 'prisma'
+
+
+#add 0 infront of 88 subjects
+for (i in 1:nrow(demogs)) {
+  if (startsWith(as.character(demogs$SUBJECT[i]), "88")) {
+    demogs$SUBJECT[i] <- paste0("0", demogs$SUBJECT[i])
   }
 }
-z <-  strsplit(as.character(pond_demographics$DTI.CT.codes),"-")
-pond_demographics$subject <- sapply(z,FUN=function(x){paste0(x[1],x[2])})
-demogs <- merge(pond_demographics, pond_extra[c(1,2,7:10,12)], by.x="subject", by.y="subject", all.x=TRUE)
-demogs <- demogs[!duplicated(demogs$subject),]
+#add prefix to sub name
+demogs$subid <- paste0("sub-",demogs$SUBJECT)
 
+demogs <- unique(demogs)
+
+demogs <- demogs %>% group_by(subid) %>%
+  top_n(-1, fd_mean)
+
+QCdwi.class <- QCdwi.class %>% separate(ID, "subid", sep="/") 
+
+demogs <- merge(demogs, QCdwi[c("subject", "shell", "in.ex")], by.x= "subid", by.y = "subject", all.x=TRUE) %>% 
+  merge(QCdwi.class[c("subid", "PC1", "cutree.res.hc..k...3.")], by="subid", all.x=TRUE)
+
+```
+## set all the paths/directories & read in data for COMPULS
+```{r}
+#compuls
+comp_demogs <- read.csv("/projects/nforde/COMPULS/clinical/phenotype.csv", stringsAsFactors=FALSE)
+comp_QCfunc <- read.csv("/projects/nforde/COMPULS/data/bids/derivatives/mriqc/group_bold.tsv", sep = "\t")
+comp_QCdwi.class <- read.csv("/projects/nforde/COMPULS/data/dwi_QC/QC_dwi_classified.csv")
+
+comp_edgedir <- "/projects/nforde/COMPULS/data/edges"
+
+comp_demogs <- comp_demogs %>% rowwise() %>%
+  mutate(CBCL_total = sum(Acts.too.young.for.his.her.age, Drinks.alcohol.without.parents.approval, Often.gets.into.arguments, 
+                          Does.not.finish.things.he.she.starts.y, There.are.not.many.things.he.she.likes, Poops.outside.of.toilet.or.outside.of.trousers,
+                          Brags..acts.tough, Inable.to.concentrate..cannot.focus.on.something.for.very.long, Cannot.get.certain.thoughts.out.of.his.her.head..obsessions,
+                          Cannot.sit.still..is.restless.or.hyperactive, Clings.on.to.adults..is.too.dependent, Complains.about.being.lonely, Confused.or.blurred.thoughts, 
+                          Cries.often, Cruel.to.animals, Cruel..bullying.or.being.mean.to.others, Daydreaming.or.deep.in.thought, Tries.to.harm.or.kill.himself.herself, 
+                          Demands.a.lot.of.attention, Vandalizes.own.stuff, Vandalizes.stuff.of.family.members.or.others, Is.disobedient.at.home, Is.disobedient.at.school,
+                          Does.not.eat.well, Cannot.get.along.with.other.boys.or.girls, Does.not.seem.to.feel.guilty.after.misbehaving, Gets.jealous.easily,
+                          Does.not.follow.the.rules.at.home..at.school.or.somewhere.else, Is.afraid.of.certain.animals..situations.or.places.other.than.school, 
+                          Is.afraid.of.going.to.school, Is.afraid.that.he.she.might.do.or.think.something.bad, Has.the.feeling.that.he.she.has.to.be.perfect,
+                          Has.the.feeling.that.or.complains.about.that.no.one.loves.him.her, Has.the.feeling.that.others.are.out.to.get.him.her, Feels.worthless.or.inferior,
+                          He.she.often.hurts.himself.herself..or.gets.into.accidents, Fights.often, He.she.is.bullied.often, Spends.time.with.boys.or.girls.who.get.into.trouble,
+                          Hears.noises.or.voices.that.are.not.there, Impulsive.or.does.things.without.thinking, Prefers.to.be.alone.instead.of.being.with.others, 
+                          Lies.or.deceives, Bites.nails, Nervous.or.tense, nervous.movements.or.twitches, Nightmares, Other.boys.or.girls.do.not.like.him.her, 
+                          Suffers.from.constipation, Is.too.anxious.or.scared, Feels.dizzy.or.lightheaded, Feels.very.guilty, Eats.too.much,
+                          Feels.tired.without.a.clear.reason, Is.too.fat, Physical.problems.without.known.medical.cause..A..pains, 
+                          Physical.problems.without.known.medical.cause..B..headaches, Physical.problems.without.known.medical.cause..C..nausea,
+                          Physical.problems.without.known.medical.cause..D..eyeproblems., 
+                          Physical.problems.without.known.medical.cause..E..rashes, Physical.problems.without.known.medical.cause..F..stomache.aches,
+                          Physical.problems.without.known.medical.cause..G..throwing.up, 
+                          Physical.problems.without.known.medical.cause..H..other, 
+                          Physically.attacks.others, Picks.nose..skin.or.another.bodypart, Plays.with.own.genitals.in.public, Plays.with.own.genitals.too.often, 
+                          Schoolwork.is.of.bad.quality, Clumsy, Prefers.spending.time.with.older.boys.or.girls, Prefers.spending.time.with.younger.boys.or.girls, 
+                          Refuses.to.talk, Repeats.certain.actions.over.and.over.again..compulsive.actions, Walks.away.from.home, Shouts.or.screams.often, 
+                          Close.tongued..keeps.things.to.herself.himself, Sees.things.that.are.not.there, Is.embarressed.easily.or.feels.uncomfortable, 
+                          Starts.fires, Sexual.problems, Shows.off..or.behaves.crazily.to.get.noticed, Too.shy.or.timid, 
+                          Sleeps.less.than.other.boys.and.girls, Sleeps.more.than.other.boys.and.girls..during.the.night.or.during.the.day, 
+                          Does.not.pay.attention.or.is.easily.distracted, Speech.problems, Has.an.empty.stare, Steals.from.home, 
+                          Steals.outside.of.home, Saves.up.a.lot.of.things.he.or.she.does.not.need, Awkward.behaviours, 
+                          Awkward.thoughts, Stubborn..sullen.or.irritable, Mood.and.feelings.change.suddenly, Sulks.a.lot, Suspicious, 
+                          Swears.or.uses.dirty.words, Talks.about.wanting.to.kill.himself.herself, Sleeptalks.or.sleepwalks,
+                          Talks.too.much, Bullies.a.lot, Has.temper.tantrums.or.loses.temper.quickly, Thinks.about.sex.too.much, 
+                          Threatens.people, Thumb.sucking, Smokes.tobacco, Sleep.problems, Skips.or.stays.away.from.school, 
+                          Not.very.active..moves.slowly.or.has.too.little.energy, Unhappy..sad.or.depressed, Is.louder.than.neccessary,
+                          Uses.drugs, Vandalism, Wets.his.her.trousers.during.the.day, Wets.bed, Whines,
+                          Wishes.he.or.she.was.of.the.other.sexe, Withdrawn..does.not.associate.with.others, Worries, na.rm=TRUE))
+                          
+comp_demogs$CBCL_total_Tscore <-NA
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 0 ] <- 24
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 1 & comp_demogs$Age <12] <- 26
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 1 & comp_demogs$Age >12] <- 27
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 2] <- 31
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 3] <- 34
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 4 & comp_demogs$Age <12] <- 36
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 4 & comp_demogs$Age >12] <- 37
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 5] <- 38
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 6 & comp_demogs$Age <12] <- 39
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 6 & comp_demogs$Age >12] <- 40
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 7 & comp_demogs$Age <12] <- 40
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 7 & comp_demogs$Age >12] <- 41
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 8 & comp_demogs$Age <12] <- 41
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 8 & comp_demogs$Age >12] <- 42
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 9 & comp_demogs$Age <12] <- 42
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 9 & comp_demogs$Age >12] <- 43
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 10 & comp_demogs$Age <12] <- 43
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 10 & comp_demogs$Age >12] <- 44
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 11 & comp_demogs$Age <12] <- 44
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 14 & comp_demogs$Age <12] <- 46
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 15 & comp_demogs$Age <12] <- 47
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 16] <- 48
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 19 & comp_demogs$Age >12] <- 50
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 24 & comp_demogs$Age <12] <- 52
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 49 & comp_demogs$Age <12] <- 64
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total == 56 & comp_demogs$Age <12] <- 67
+
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 12 & comp_demogs$CBCL_total <= 13 & comp_demogs$Age <12] <- 45
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 17 & comp_demogs$CBCL_total <= 18] <- 49
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 19 & comp_demogs$CBCL_total <= 20 & comp_demogs$Age <12] <- 50
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 21 & comp_demogs$CBCL_total <= 23 & comp_demogs$Age <12] <- 51
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 25 & comp_demogs$CBCL_total <= 27 & comp_demogs$Age <12] <- 53
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 28 & comp_demogs$CBCL_total <= 29 & comp_demogs$Age <12] <- 54
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 30 & comp_demogs$CBCL_total <= 31 & comp_demogs$Age <12] <- 55
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 32 & comp_demogs$CBCL_total <= 33 & comp_demogs$Age <12] <- 56
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 35 & comp_demogs$CBCL_total <= 36 & comp_demogs$Age <12] <- 58
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 37 & comp_demogs$CBCL_total <= 38 & comp_demogs$Age <12] <- 59
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 39 & comp_demogs$CBCL_total <= 40 & comp_demogs$Age <12] <- 60
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 41 & comp_demogs$CBCL_total <= 43 & comp_demogs$Age <12] <- 61
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 44 & comp_demogs$CBCL_total <= 46 & comp_demogs$Age <12] <- 62
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 47 & comp_demogs$CBCL_total <= 48 & comp_demogs$Age <12] <- 63
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 50 & comp_demogs$CBCL_total <= 53 & comp_demogs$Age <12] <- 65
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 54 & comp_demogs$CBCL_total <= 55 & comp_demogs$Age <12] <- 66
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 57 & comp_demogs$CBCL_total <= 58 & comp_demogs$Age <12] <- 68
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 59 & comp_demogs$CBCL_total <= 60 & comp_demogs$Age <12] <- 69
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 61 & comp_demogs$CBCL_total <= 65 & comp_demogs$Age <12] <- 70
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 66 & comp_demogs$CBCL_total <= 71 & comp_demogs$Age <12] <- 71
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 72 & comp_demogs$CBCL_total <= 77 & comp_demogs$Age <12] <- 72
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 78 & comp_demogs$CBCL_total <= 83 & comp_demogs$Age <12] <- 73
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 84 & comp_demogs$CBCL_total <= 89 & comp_demogs$Age <12] <- 74
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 90 & comp_demogs$CBCL_total <= 95 & comp_demogs$Age <12] <- 75
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 96 & comp_demogs$CBCL_total <= 101 & comp_demogs$Age <12] <- 76
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 102 & comp_demogs$CBCL_total <= 107 & comp_demogs$Age <12] <- 77
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 108 & comp_demogs$CBCL_total <= 113 & comp_demogs$Age <12] <- 78
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 114 & comp_demogs$CBCL_total <= 120 & comp_demogs$Age <12] <- 79
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 121 & comp_demogs$CBCL_total <= 126 & comp_demogs$Age <12] <- 80
+
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 11 & comp_demogs$CBCL_total <= 12 & comp_demogs$Age >12] <- 45
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 14 & comp_demogs$CBCL_total <= 15 & comp_demogs$Age >12] <- 47
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 20 & comp_demogs$CBCL_total <= 21 & comp_demogs$Age >12] <- 51
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 22 & comp_demogs$CBCL_total <= 23 & comp_demogs$Age >12] <- 52
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 24 & comp_demogs$CBCL_total <= 25 & comp_demogs$Age >12] <- 53
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 26 & comp_demogs$CBCL_total <= 27 & comp_demogs$Age >12] <- 54
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 28 & comp_demogs$CBCL_total <= 29 & comp_demogs$Age >12] <- 55
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 30 & comp_demogs$CBCL_total <= 32 & comp_demogs$Age >12] <- 56
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 33 & comp_demogs$CBCL_total <= 34 & comp_demogs$Age >12] <- 57
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 35 & comp_demogs$CBCL_total <= 37 & comp_demogs$Age >12] <- 58
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 38 & comp_demogs$CBCL_total <= 39 & comp_demogs$Age >12] <- 59
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 40 & comp_demogs$CBCL_total <= 43 & comp_demogs$Age >12] <- 60
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 44 & comp_demogs$CBCL_total <= 46 & comp_demogs$Age >12] <- 61
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 47 & comp_demogs$CBCL_total <= 48 & comp_demogs$Age >12] <- 62
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 49 & comp_demogs$CBCL_total <= 51 & comp_demogs$Age >12] <- 63
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 52 & comp_demogs$CBCL_total <= 57 & comp_demogs$Age >12] <- 64
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 58 & comp_demogs$CBCL_total <= 60 & comp_demogs$Age >12] <- 65
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 61 & comp_demogs$CBCL_total <= 63 & comp_demogs$Age >12] <- 66
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 64 & comp_demogs$CBCL_total <= 65 & comp_demogs$Age >12] <- 67
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 66 & comp_demogs$CBCL_total <= 67 & comp_demogs$Age >12] <- 68
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 68 & comp_demogs$CBCL_total <= 70 & comp_demogs$Age >12] <- 69
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 71 & comp_demogs$CBCL_total <= 77 & comp_demogs$Age >12] <- 70
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 78 & comp_demogs$CBCL_total <= 82 & comp_demogs$Age >12] <- 71
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 83 & comp_demogs$CBCL_total <= 86 & comp_demogs$Age >12] <- 72
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 87 & comp_demogs$CBCL_total <= 91 & comp_demogs$Age >12] <- 73
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 92 & comp_demogs$CBCL_total <= 96 & comp_demogs$Age >12] <- 74
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 97 & comp_demogs$CBCL_total <= 101 & comp_demogs$Age >12] <- 75
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 102 & comp_demogs$CBCL_total <= 105 & comp_demogs$Age >12] <- 76
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 106 & comp_demogs$CBCL_total <= 110 & comp_demogs$Age >12] <- 77
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 111 & comp_demogs$CBCL_total <= 115 & comp_demogs$Age >12] <- 78
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 116 & comp_demogs$CBCL_total <= 120 & comp_demogs$Age >12] <- 79
+comp_demogs$CBCL_total_Tscore[comp_demogs$CBCL_total >= 121 & comp_demogs$CBCL_total <= 124 & comp_demogs$Age >12] <- 80
+
+
+comp_demogs <- comp_demogs %>% mutate(Age = round(Age, digits=2))
+comp_demogs$Sex <- NA
+comp_demogs$Sex[comp_demogs$sex=="male"] <- 'Male'
+comp_demogs$Sex[comp_demogs$sex=="female"] <- 'Female'
+
+comp_demogs$dx <- NA
+comp_demogs$dx[comp_demogs$Diagnosis=="1"] <- 'HC'
+comp_demogs$dx[comp_demogs$Diagnosis=="2"] <- 'OCD' 
+comp_demogs$dx[comp_demogs$Diagnosis=="3"] <- 'ASD' 
+comp_demogs$dx[comp_demogs$Diagnosis=="4"] <- 'ADHD'
+comp_demogs$dx[comp_demogs$Diagnosis=="5"] <- 'TS'
+
+#func QC data is separate for each echo (MRIQC output) so need to average across echoes 
+comp_QCfunc <- comp_QCfunc %>% separate(bids_name, c("subid", "task", "echo"), sep="_") %>%
+  group_by(subid) %>% summarise_all(funs(mean))
+
+# comp_QCdwi.class <- comp_QCdwi.class %>% separate(ID, "subid", sep="/") 
+
+### reduce the demographic data and merge if other sources
+comp_demogs <- merge(comp_QCdwi.class[c("subject_id", "Comp.1", "Comp.2", "QC_clust", "exclude")], 
+                     comp_demogs[c("Subject.details","dx", "Age", "Sex", "Estimated.IQ..Total.IQ", "CBCL_total", "CBCL_total_Tscore")], by.x="subject_id", by.y="Subject.details", all=TRUE) %>%
+  merge(comp_QCfunc[c("subid", "dvars_nstd", "fd_mean", "size_t", "tsnr")], by.x="subject_id", by.y="subid", all=TRUE)
+
+names(comp_demogs)[names(comp_demogs) == 'Sex'] <- 'sex'
+names(comp_demogs)[names(comp_demogs) == 'Estimated.IQ..Total.IQ'] <- 'IQ'
+names(comp_demogs)[names(comp_demogs) == 'subject_id'] <- 'subid'
 
 ```
 
-```{r}
+```{r define_funcs}
 anterior_posterior <- function(subids, edgedir) {
   AP <- data.frame("subid" = subids, 
                       "AP1" = numeric(length(subids)),
@@ -49,27 +269,15 @@ anterior_posterior <- function(subids, edgedir) {
                       "AP8" = numeric(length(subids)),
                       "AP9" = numeric(length(subids)),
                       "AP10" = numeric(length(subids)))
-                   # ,
-                      # "AP11" = numeric(length(subids)),
-                      # "AP12" = numeric(length(subids)),
-                      # "AP13" = numeric(length(subids)),
-                      # "AP14" = numeric(length(subids)),
-                      # "AP15" = numeric(length(subids)),
-                      # "AP16" = numeric(length(subids)),
-                      # "AP17" = numeric(length(subids)),
-                      # "AP18" = numeric(length(subids)),
-                      # "AP19" = numeric(length(subids)),
-                      # "AP20" = numeric(length(subids)))
-                      
+        
   AP[ ,2:ncol(AP)] <- numeric(nrow(AP)*(ncol(AP)-1))
   
   Z_AP <- AP
-  TS_AP <- AP
   DW_AP <- AP
   
   for (i in 1:length(subids)) {
     subid <- AP$subid[i]
-    edge.file <- file.path(edgedir, paste(subid, "edge_metrics.csv", sep="_"))
+    edge.file <- file.path(edgedir, paste(subid, atlas, "edge_metrics.csv", sep="_")) 
       
     if (file.exists(edge.file)) {
       edges <- read.csv(edge.file, header =TRUE)
@@ -80,214 +288,391 @@ anterior_posterior <- function(subids, edgedir) {
       #edgesHO <- within(edgesHO, AP_quant <- as.integer(cut(y_mean, quantile(y_mean, probs=0:20/20), include.lowest=TRUE)))
       edgesHO <- within(edgesHO, AP_quant <- as.integer(cut(y_mean, quantile(y_mean, probs=0:10/10), include.lowest=TRUE)))
       
-      
-      Z_AP$AP1[i] <- mean(filter(edgesHO, AP_quant == "1")$theseZ)
-      Z_AP$AP2[i] <- mean(filter(edgesHO, AP_quant == "2")$theseZ)
-      Z_AP$AP3[i] <- mean(filter(edgesHO, AP_quant == "3")$theseZ)
-      Z_AP$AP4[i] <- mean(filter(edgesHO, AP_quant == "4")$theseZ)
-      Z_AP$AP5[i] <- mean(filter(edgesHO, AP_quant == "5")$theseZ)
-      Z_AP$AP6[i] <- mean(filter(edgesHO, AP_quant == "6")$theseZ)
-      Z_AP$AP7[i] <- mean(filter(edgesHO, AP_quant == "7")$theseZ)
-      Z_AP$AP8[i] <- mean(filter(edgesHO, AP_quant == "8")$theseZ)
-      Z_AP$AP9[i] <- mean(filter(edgesHO, AP_quant == "9")$theseZ)
-      Z_AP$AP10[i] <- mean(filter(edgesHO, AP_quant == "10")$theseZ)
-      # Z_AP$AP11[i] <- mean(filter(edgesHO, AP_quant == "11")$theseZ)
-      # Z_AP$AP12[i] <- mean(filter(edgesHO, AP_quant == "12")$theseZ)
-      # Z_AP$AP13[i] <- mean(filter(edgesHO, AP_quant == "13")$theseZ)
-      # Z_AP$AP14[i] <- mean(filter(edgesHO, AP_quant == "14")$theseZ)
-      # Z_AP$AP15[i] <- mean(filter(edgesHO, AP_quant == "15")$theseZ)
-      # Z_AP$AP16[i] <- mean(filter(edgesHO, AP_quant == "16")$theseZ)
-      # Z_AP$AP17[i] <- mean(filter(edgesHO, AP_quant == "17")$theseZ)
-      # Z_AP$AP18[i] <- mean(filter(edgesHO, AP_quant == "18")$theseZ)
-      # Z_AP$AP19[i] <- mean(filter(edgesHO, AP_quant == "19")$theseZ)
-      # Z_AP$AP20[i] <- mean(filter(edgesHO, AP_quant == "20")$theseZ)
-      
-      TS_AP$AP1[i] <- mean(filter(edgesHO, AP_quant == "1")$Stability)
-      TS_AP$AP2[i] <- mean(filter(edgesHO, AP_quant == "2")$Stability)
-      TS_AP$AP3[i] <- mean(filter(edgesHO, AP_quant == "3")$Stability)
-      TS_AP$AP4[i] <- mean(filter(edgesHO, AP_quant == "4")$Stability)
-      TS_AP$AP5[i] <- mean(filter(edgesHO, AP_quant == "5")$Stability)
-      TS_AP$AP6[i] <- mean(filter(edgesHO, AP_quant == "6")$Stability)
-      TS_AP$AP7[i] <- mean(filter(edgesHO, AP_quant == "7")$Stability)
-      TS_AP$AP8[i] <- mean(filter(edgesHO, AP_quant == "8")$Stability)
-      TS_AP$AP9[i] <- mean(filter(edgesHO, AP_quant == "9")$Stability)
-      TS_AP$AP10[i] <- mean(filter(edgesHO, AP_quant == "10")$Stability)
-      # TS_AP$AP11[i] <- mean(filter(edgesHO, AP_quant == "11")$Stability)
-      # TS_AP$AP12[i] <- mean(filter(edgesHO, AP_quant == "12")$Stability)
-      # TS_AP$AP13[i] <- mean(filter(edgesHO, AP_quant == "13")$Stability)
-      # TS_AP$AP14[i] <- mean(filter(edgesHO, AP_quant == "14")$Stability)
-      # TS_AP$AP15[i] <- mean(filter(edgesHO, AP_quant == "15")$Stability)
-      # TS_AP$AP16[i] <- mean(filter(edgesHO, AP_quant == "16")$Stability)
-      # TS_AP$AP17[i] <- mean(filter(edgesHO, AP_quant == "17")$Stability)
-      # TS_AP$AP18[i] <- mean(filter(edgesHO, AP_quant == "18")$Stability)
-      # TS_AP$AP19[i] <- mean(filter(edgesHO, AP_quant == "19")$Stability)
-      # TS_AP$AP20[i] <- mean(filter(edgesHO, AP_quant == "20")$Stability)
- 
-      DW_AP$AP1[i] <- mean(filter(edgesHO, AP_quant == "1")$weight)
-      DW_AP$AP2[i] <- mean(filter(edgesHO, AP_quant == "2")$weight)
-      DW_AP$AP3[i] <- mean(filter(edgesHO, AP_quant == "3")$weight)
-      DW_AP$AP4[i] <- mean(filter(edgesHO, AP_quant == "4")$weight)
-      DW_AP$AP5[i] <- mean(filter(edgesHO, AP_quant == "5")$weight)
-      DW_AP$AP6[i] <- mean(filter(edgesHO, AP_quant == "6")$weight)
-      DW_AP$AP7[i] <- mean(filter(edgesHO, AP_quant == "7")$weight)
-      DW_AP$AP8[i] <- mean(filter(edgesHO, AP_quant == "8")$weight)
-      DW_AP$AP9[i] <- mean(filter(edgesHO, AP_quant == "9")$weight)
-      DW_AP$AP10[i] <- mean(filter(edgesHO, AP_quant == "10")$weight)
-      # DW_AP$AP11[i] <- mean(filter(edgesHO, AP_quant == "11")$weight)
-      # DW_AP$AP12[i] <- mean(filter(edgesHO, AP_quant == "12")$weight)
-      # DW_AP$AP13[i] <- mean(filter(edgesHO, AP_quant == "13")$weight)
-      # DW_AP$AP14[i] <- mean(filter(edgesHO, AP_quant == "14")$weight)
-      # DW_AP$AP15[i] <- mean(filter(edgesHO, AP_quant == "15")$weight)
-      # DW_AP$AP16[i] <- mean(filter(edgesHO, AP_quant == "16")$weight)
-      # DW_AP$AP17[i] <- mean(filter(edgesHO, AP_quant == "17")$weight)
-      # DW_AP$AP18[i] <- mean(filter(edgesHO, AP_quant == "18")$weight)
-      # DW_AP$AP19[i] <- mean(filter(edgesHO, AP_quant == "19")$weight)
-      # DW_AP$AP20[i] <- mean(filter(edgesHO, AP_quant == "20")$weight)
-      
+      ### making 1 = quantile 10 etc so 1 is anterior and 10 mostp posterior
+      Z_AP$AP1[i] <- mean(filter(edgesHO, AP_quant == "10")$theseZ, na.rm=TRUE)
+      Z_AP$AP2[i] <- mean(filter(edgesHO, AP_quant == "9")$theseZ, na.rm=TRUE)
+      Z_AP$AP3[i] <- mean(filter(edgesHO, AP_quant == "8")$theseZ, na.rm=TRUE)
+      Z_AP$AP4[i] <- mean(filter(edgesHO, AP_quant == "7")$theseZ, na.rm=TRUE)
+      Z_AP$AP5[i] <- mean(filter(edgesHO, AP_quant == "6")$theseZ, na.rm=TRUE)
+      Z_AP$AP6[i] <- mean(filter(edgesHO, AP_quant == "5")$theseZ, na.rm=TRUE)
+      Z_AP$AP7[i] <- mean(filter(edgesHO, AP_quant == "4")$theseZ, na.rm=TRUE)
+      Z_AP$AP8[i] <- mean(filter(edgesHO, AP_quant == "3")$theseZ, na.rm=TRUE)
+      Z_AP$AP9[i] <- mean(filter(edgesHO, AP_quant == "3")$theseZ, na.rm=TRUE)
+      Z_AP$AP10[i] <- mean(filter(edgesHO, AP_quant == "1")$theseZ, na.rm=TRUE)
+
+      DW_AP$AP1[i] <- mean(filter(edgesHO, AP_quant == "10")$raw, na.rm=TRUE)
+      DW_AP$AP2[i] <- mean(filter(edgesHO, AP_quant == "9")$raw, na.rm=TRUE)
+      DW_AP$AP3[i] <- mean(filter(edgesHO, AP_quant == "8")$raw, na.rm=TRUE)
+      DW_AP$AP4[i] <- mean(filter(edgesHO, AP_quant == "7")$raw, na.rm=TRUE)
+      DW_AP$AP5[i] <- mean(filter(edgesHO, AP_quant == "6")$raw, na.rm=TRUE)
+      DW_AP$AP6[i] <- mean(filter(edgesHO, AP_quant == "5")$raw, na.rm=TRUE)
+      DW_AP$AP7[i] <- mean(filter(edgesHO, AP_quant == "4")$raw, na.rm=TRUE)
+      DW_AP$AP8[i] <- mean(filter(edgesHO, AP_quant == "3")$raw, na.rm=TRUE)
+      DW_AP$AP9[i] <- mean(filter(edgesHO, AP_quant == "2")$raw, na.rm=TRUE)
+      DW_AP$AP10[i] <- mean(filter(edgesHO, AP_quant == "1")$raw, na.rm=TRUE)
+
     } else {
       print(paste(edge.file, "does not exist"))
       Z_AP[i,2:ncol(Z_AP)] <- NA
-      TS_AP[i,2:ncol(TS_AP)] <- NA
       DW_AP[i,2:ncol(DW_AP)] <- NA
     }
   }
-  return(list("Z_AP"=Z_AP,"TS_AP"=TS_AP,"DW_AP"=DW_AP))
+  return(list("Z_AP"=Z_AP,"DW_AP"=DW_AP))
 }
       
 ```
 ## Run 
-```{r}
-demogs$subid <- paste0("MR160-",demogs$DTI.CT.codes)
-demogs <- merge(demogs, qap_functional_temporal, by.x = "subid", by.y = "subject")
-demogs <- demogs[!duplicated(demogs$subject),]
-demogs <- filter(demogs, perc_fd < 5)
+```{r run POND}
+
+demogs <- demogs %>% filter(fd_mean < 0.4) %>% filter(size_t > 100) ### dwi data filtered in analyses
 
 subids <- demogs$subid
 
 AP <- anterior_posterior(subids, edgedir)
 
-theZs <- AP$Z_AP
-theTS <- AP$TS_AP
-theDW <- AP$DW_AP ####not very many homotopic pairs have structural connections
+APZ <- AP$Z_AP
+APDW <- AP$DW_AP ####not very many homotopic pairs have structural connections
 
 ```
 
+```{r run COMP}
 
-```{r}
+comp_demogs <- comp_demogs %>% filter(fd_mean < 0.4) %>% filter(size_t > 200) ### dwi data filtered in analyses
 
-apQZ <- merge(theZs,demogs,by="subid") %>%
-   gather(apQ, Z, starts_with("AP")) %>%
-   filter(NDD != "", !is.na(Z))
+comp_subids <- comp_demogs$subid
+
+comp_AP <- anterior_posterior(comp_subids, comp_edgedir)
+
+comp_APZ <- comp_AP$Z_AP
+comp_APDW <- comp_AP$DW_AP ####not very many homotopic pairs have structural connections
+
+```
+
+```{r org pond}
+apQZ <- APZ %>%
+   gather(apQ, Z, starts_with("AP")) 
+
+apQDW <- APDW %>%
+   gather(apQ, DW, starts_with("AP")) 
+
+APQ <- demogs %>%
+  merge(apQZ[c("subid","apQ","Z")], by="subid") %>%
+  merge(apQDW[c("subid","apQ","DW")], by=c("subid","apQ"), all.x =TRUE) %>%
+  filter(Age > 6, dx != "GAD", !is.na(dx))
+
+APQ_trio <- subset(APQ, scanner =="trio" & shell == "single")
+APQ_prisma <- subset(APQ, scanner =="prisma")
+
+```
+
+```{r org comp}
+comp_apQZ <- comp_APZ %>%
+   gather(apQ, Z, starts_with("AP")) 
+
+comp_apQDW <- comp_APDW %>%
+   gather(apQ, DW, starts_with("AP")) 
+
+APQ_comp <- comp_demogs %>%
+  merge(comp_apQZ[c("subid","apQ","Z")], by="subid") %>%
+  merge(comp_apQDW[c("subid","apQ","DW")], by=c("subid","apQ"), all.x =TRUE)
   
-apQTS <- merge(theTS,demogs,by="subid") %>%
-   gather(apQ, TS, starts_with("AP")) %>%
-   filter(NDD != "", !is.na(TS))
- 
-apQDW <- merge(theDW,demogs,by="subid") %>%
-   gather(apQ, DW, starts_with("AP")) %>%
-   filter(NDD != "")
-
-APQ_ <- merge(apQZ[c(1,4,5,7, 120:125,137,138)], apQTS[c(1,137,138)], by=c("subid","apQ"))  #index numbers may change if QC added
-APQ  <- merge(APQ_, apQDW[c(1,137,138)], by=c("subid","apQ")) #%>%
-  #filter(NDD != "")
-
 ```
 
 ```{r, fig.width=12}
-
-APQ$apQordered <- factor(APQ$apQ, c('AP1','AP2','AP3','AP4','AP5','AP6','AP7','AP8','AP9','AP10'))
+##TRIO
+APQ_trio$apQordered <- factor(APQ_trio$apQ, c('AP1','AP2','AP3','AP4','AP5','AP6','AP7','AP8','AP9','AP10'))
 
 ############ Does anterior-posterior position influence strength? ###############
 # AP x dx
 print(paste("Anova - Does anterior-posterior position influence strength?"))
-F2 <- lmer(Z ~ apQ*NDD + Age + sex + (1|subid), 
-               data = APQ)
+F2 <- lmer(Z ~ apQ + dx + Age + sex + fd_mean + (1|subid), 
+               data = APQ_trio)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
-#summary(glht(F2, linfct=mcp(lenQ ="Tukey")))
+#summary(glht(F2, linfct=mcp(dx ="Tukey")))
+summary(glht(F2, linfct=mcp(apQ ="Tukey")))
 
 # plot APQ X dx 
-ggplot(APQ, aes(x=apQordered, y=Z, color = NDD)) + 
+ggplot(APQ_trio, aes(x=apQordered, y=Z, color = dx)) + 
   geom_boxplot() 
 
-ggplot(APQ,aes(x=as.numeric(factor(apQordered)), y=Z , color = NDD)) + 
-  geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
+pltFC_AP_trio <- ggplot(APQ_trio,aes(x=as.numeric(factor(apQordered)), y=Z , color = dx)) + 
+  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0.2,1) + theme(legend.position = "none") + 
+  ylab("Functional Connectivity") + xlab(NULL) +
+  scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF")) + scale_x_continuous(limits=c(0.5,10.5), breaks=seq(1,10,1))
 
-# APQ x dx (male only)
-print(paste("Anova Table for APQ X NDD, male only"))
-F2 <- lmer(Z ~ apQ*NDD + Age + (1|subid), 
-               data = filter(APQ, sex == "Male"))
+pltFC_AP_trio_sex <- ggplot(APQ_trio,aes(x=as.numeric(factor(apQordered)), y=Z , color = sex)) + 
+  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0.2,1) + theme(legend.position = "none") + 
+  ylab("Functional Connectivity") + xlab(NULL) +
+  scale_x_continuous(limits=c(0.5,10.5), breaks=seq(1,10,1))
+
+# # APQ x dx (male only)
+# print(paste("Anova Table for APQ X dx, male only"))
+# F2 <- lmer(Z ~ apQ*dx + Age + fd_mean + (1|subid), 
+#                data = filter(APQ_trio, sex == "Male"))
+# print(Anova(F2))
+# #summary(glht(F2, linfct=mcp(dx ="Tukey")))
+# summary(glht(F2, linfct=mcp(APQ ="Tukey")))
+#          
+# # plot APQ X dx (male only)
+# ggplot(filter(APQ_trio, sex == "Male"), aes(x=apQordered, y=Z, color = dx)) + 
+#   geom_boxplot() 
+# 
+# ggplot(filter(APQ_trio, sex == "Male"),aes(x=as.numeric(factor(apQordered)), y=Z , color = dx)) + 
+#   geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) 
+
+############ PRISMA ###############
+APQ_prisma$apQordered <- factor(APQ_prisma$apQ, c('AP1','AP2','AP3','AP4','AP5','AP6','AP7','AP8','AP9','AP10'))
+
+# AP x dx
+print(paste("Anova - Does anterior-posterior position influence strength?"))
+F2 <- lmer(Z ~ apQ + dx + Age + sex + fd_mean + (1|subid), 
+               data = APQ_prisma)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
-#summary(glht(F2, linfct=mcp(APQ ="Tukey")))
-         
-# plot APQ X dx (male only)
-ggplot(filter(APQ, sex == "Male"), aes(x=apQordered, y=Z, color = NDD)) + 
-  geom_boxplot() 
-
-ggplot(filter(APQ, sex == "Male"),aes(x=as.numeric(factor(apQordered)), y=Z , color = NDD)) + 
-  geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
-
-################### Does anterior-posterior position influence stability? ##################################
-# length x dx
-print(paste("Anova - Does anterior-posterior position influence stability?"))
-F2 <- lmer(TS ~ apQ*NDD + Age + sex + (1|subid), 
-               data = APQ)
-print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
-#summary(glht(F2, linfct=mcp(APQ ="Tukey")))
+#summary(glht(F2, linfct=mcp(dx ="Tukey")))
+summary(glht(F2, linfct=mcp(apQ ="Tukey")))
 
 # plot APQ X dx 
-ggplot(APQ, aes(x=apQordered, y=TS, color = NDD)) + 
+ggplot(APQ_prisma, aes(x=apQordered, y=Z, color = dx)) + 
   geom_boxplot() 
 
-ggplot(APQ,aes(x=as.numeric(factor(apQordered)), y=TS , color = NDD)) + 
-  geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
+pltFC_AP_prisma <- ggplot(APQ_prisma,aes(x=as.numeric(factor(apQordered)), y=Z , color = dx)) + 
+  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0.2,1) + theme(legend.position = "none") +
+  ylab("Functional Connectivity") + xlab(NULL) +
+  scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF")) + scale_x_continuous(limits=c(0.5,10.5), breaks=seq(1,10,1))
 
-# APQ x dx (male only)
-print(paste("Anova Table for APQ X NDD, male only"))
-F2 <- lmer(TS ~ apQ*NDD + Age + (1|subid), 
-               data = filter(APQ, sex == "Male"))
+pltFC_AP_prisma_sex <- ggplot(APQ_prisma,aes(x=as.numeric(factor(apQordered)), y=Z , color = sex)) + 
+  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0.2,1) + theme(legend.position = "none") +
+  ylab("Functional Connectivity") + xlab(NULL) +
+  scale_x_continuous(limits=c(0.5,10.5), breaks=seq(1,10,1))
+
+# # APQ x dx (male only)
+# print(paste("Anova Table for APQ X dx, male only"))
+# F2 <- lmer(Z ~ apQ*dx + Age + fd_mean + (1|subid), 
+#                data = filter(APQ_prisma, sex == "Male"))
+# print(Anova(F2))
+# #summary(glht(F2, linfct=mcp(dx ="Tukey")))
+# summary(glht(F2, linfct=mcp(APQ ="Tukey")))
+#          
+# # plot APQ X dx (male only)
+# ggplot(filter(APQ_prisma, sex == "Male"), aes(x=apQordered, y=Z, color = dx)) + 
+#   geom_boxplot() 
+# 
+# ggplot(filter(APQ_prisma, sex == "Male"),aes(x=as.numeric(factor(apQordered)), y=Z , color = dx)) + 
+#   geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) 
+# 
+
+################# COMPULS ###################################
+APQ_comp$apQordered <- factor(APQ_comp$apQ, c('AP1','AP2','AP3','AP4','AP5','AP6','AP7','AP8','AP9','AP10'))
+
+# AP x dx
+print(paste("Anova - Does anterior-posterior position influence strength?"))
+F2 <- lmer(Z ~ apQ + dx + Age + sex + fd_mean + (1|subid), 
+               data = APQ_comp)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
-#summary(glht(F2, linfct=mcp(APQ ="Tukey")))
-         
-# plot APQ X dx (male only)
-ggplot(filter(APQ, sex == "Male"), aes(x=apQordered, y=TS, color = NDD)) + 
+#summary(glht(F2, linfct=mcp(dx ="Tukey")))
+summary(glht(F2, linfct=mcp(apQ ="Tukey")))
+
+# plot APQ X dx 
+ggplot(APQ_comp, aes(x=apQordered, y=Z, color = dx)) + 
   geom_boxplot() 
 
-ggplot(filter(APQ, sex == "Male"),aes(x=as.numeric(factor(apQordered)), y=TS , color = NDD)) + 
-  geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
+pltFC_AP_comp <- ggplot(APQ_comp,aes(x=as.numeric(factor(apQordered)), y=Z , color = dx)) + 
+  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0.2,1) + theme(legend.position = "none") +
+  ylab("Functional Connectivity") + xlab(NULL) +
+  scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF", "#000066")) + scale_x_continuous(limits=c(0.5,10.5), breaks=seq(1,10,1))
 
+pltFC_AP_comp_sex <- ggplot(APQ_comp,aes(x=as.numeric(factor(apQordered)), y=Z , color = sex)) + 
+  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0.2,1) + theme(legend.position = "none") +
+  ylab("Functional Connectivity") + xlab(NULL) +
+  scale_x_continuous(limits=c(0.5,10.5), breaks=seq(1,10,1))
+
+# # APQ x dx (male only)
+# print(paste("Anova Table for APQ X dx, male only"))
+# F2 <- lmer(Z ~ apQ*dx + Age + fd_mean + (1|subid), 
+#                data = filter(APQ_comp, sex == "Male"))
+# print(Anova(F2))
+# summary(glht(F2, linfct=mcp(dx ="Tukey")))
+# #summary(glht(F2, linfct=mcp(apQ ="Tukey")))
+#          
+# # plot APQ X dx (male only)
+# ggplot(filter(APQ_comp, sex == "Male"), aes(x=apQordered, y=Z, color = dx)) + 
+#   geom_boxplot() 
+# 
+# ggplot(filter(APQ_comp, sex == "Male"),aes(x=as.numeric(factor(apQordered)), y=Z , color = dx)) + 
+#   geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) 
+
+############# plot together
+fig_FC_AP <- plot_grid(pltFC_AP_trio, pltFC_AP_prisma, pltFC_AP_comp, align="hv", ncol = 1)
+fig_FC_AP
+fig_FC_AP.file <- paste(outdir, "FC_AP.png", sep="/")
+ggsave(fig_FC_AP.file, fig_FC_AP, dpi=300, width = 30, height = 24, units = "cm")
+```
+
+```{r DWI}
 ################### Does anterior-posterior position influence structural weight? ##################################
-# length x dx
-print(paste("Anova - Does anterior-posterior position influence structural weight?"))
-F2 <- lmer(DW ~ apQ*NDD + Age + sex + (1|subid), 
-               data = APQ)
+##TRIO
+# AP x dx
+print(paste("Anova - Does anterior-posterior position influence strength?"))
+F2 <- lmer(DW ~ apQ + dx + Age + sex + PC1 + (1|subid), 
+               data = filter(APQ_trio, cutree.res.hc..k...3. != 3, in.ex == "in"))
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
-#summary(glht(F2, linfct=mcp(APQ ="Tukey")))
+#summary(glht(F2, linfct=mcp(dx ="Tukey")))
+summary(glht(F2, linfct=mcp(apQ ="Tukey")))
 
 # plot APQ X dx 
-ggplot(APQ, aes(x=apQordered, y=DW, color = NDD)) + 
+ggplot(filter(APQ_trio, cutree.res.hc..k...3. != 3, in.ex == "in"), aes(x=apQordered, y=DW, color = dx)) + 
   geom_boxplot() 
 
-ggplot(APQ,aes(x=as.numeric(factor(apQordered)), y=DW , color = NDD)) + 
-  geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
+pltDW_AP_trio <- ggplot(filter(APQ_trio, cutree.res.hc..k...3. != 3, in.ex == "in"), aes(x=as.numeric(factor(apQordered)), y=DW , color = dx)) + 
+  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.04) + theme(legend.position = "none") +
+  ylab("Track Density") + xlab(NULL) +
+  scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF")) + scale_x_continuous(limits=c(0.5,10.5), breaks=seq(1,10,1))
 
-# APQ x dx (male only)
-print(paste("Anova Table for APQ X NDD, male only"))
-F2 <- lmer(DW ~ apQ*NDD + Age + (1|subid), 
-               data = filter(APQ, sex == "Male"))
+pltDW_AP_trio_sex <- ggplot(filter(APQ_trio, cutree.res.hc..k...3. != 3, in.ex == "in"), aes(x=as.numeric(factor(apQordered)), y=DW , color = sex)) + 
+  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.04) + theme(legend.position = "none") +
+  ylab("Track Density") + xlab(NULL) +
+  scale_x_continuous(limits=c(0.5,10.5), breaks=seq(1,10,1))
+
+# # APQ x dx (male only)
+# print(paste("Anova Table for APQ X dx, male only"))
+# F2 <- lmer(DW ~ apQ*dx + Age + PC1 + (1|subid), 
+#                data = filter(APQ_trio, sex == "Male", cutree.res.hc..k...3. != 3, in.ex == "in"))
+# print(Anova(F2))
+# #summary(glht(F2, linfct=mcp(dx ="Tukey")))
+# summary(glht(F2, linfct=mcp(apQ ="Tukey")))
+#          
+# # plot APQ X dx (male only)
+# ggplot(filter(APQ_trio, sex == "Male", cutree.res.hc..k...3. != 3, in.ex == "in"), aes(x=apQordered, y=DW, color = dx)) + 
+#   geom_boxplot() 
+# 
+# ggplot(filter(APQ_trio, sex == "Male", cutree.res.hc..k...3. != 3, in.ex == "in"), aes(x=as.numeric(factor(apQordered)), y=DW , color = dx)) + 
+#   geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.1)
+
+############ PRISMA ###############
+# AP x dx
+print(paste("Anova - Does anterior-posterior position influence strength?"))
+F2 <- lmer(DW ~ apQ + dx + Age + sex + (1|subid), 
+               data = filter(APQ_prisma, in.ex == "in"))
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(NDD ="Tukey")))
-#summary(glht(F2, linfct=mcp(APQ ="Tukey")))
-         
-# plot APQ X dx (male only)
-ggplot(filter(APQ, sex == "Male"), aes(x=apQordered, y=DW, color = NDD)) + 
+#summary(glht(F2, linfct=mcp(dx ="Tukey")))
+summary(glht(F2, linfct=mcp(apQ ="Tukey")))
+
+# plot APQ X dx 
+ggplot(filter(APQ_prisma, in.ex == "in"), aes(x=apQordered, y=DW, color = dx)) + theme(legend.position = "none") + 
   geom_boxplot() 
 
-ggplot(filter(APQ, sex == "Male"),aes(x=as.numeric(factor(apQordered)), y=DW , color = NDD)) + 
-  geom_jitter(width = 0.3) + geom_smooth(span = 0.5) 
+pltDW_AP_prisma <- ggplot(filter(APQ_prisma, in.ex == "in"),aes(x=as.numeric(factor(apQordered)), y=DW , color = dx)) + 
+  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.04) +
+  ylab("Track Density") + xlab(NULL) +
+  scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF")) + scale_x_continuous(limits=c(0.5,10.5), breaks=seq(1,10,1))
 
+pltDW_AP_prisma_sex <- ggplot(filter(APQ_prisma, in.ex == "in"),aes(x=as.numeric(factor(apQordered)), y=DW , color = sex)) + 
+  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.04) +
+  ylab("Track Density") + xlab(NULL) +
+  scale_x_continuous(limits=c(0.5,10.5), breaks=seq(1,10,1))
+
+# # APQ x dx (male only)
+# print(paste("Anova Table for APQ X dx, male only"))
+# F2 <- lmer(DW ~ apQ*dx + Age + (1|subid), 
+#                data = filter(APQ_prisma, sex == "Male", in.ex == "in"))
+# print(Anova(F2))
+# #summary(glht(F2, linfct=mcp(dx ="Tukey")))
+# summary(glht(F2, linfct=mcp(apQ ="Tukey")))
+#          
+# # plot APQ X dx (male only)
+# ggplot(filter(APQ_prisma, sex == "Male", in.ex == "in"), aes(x=apQordered, y=DW, color = dx)) + 
+#   geom_boxplot() 
+# 
+# ggplot(filter(APQ_prisma, sex == "Male", in.ex == "in"),aes(x=as.numeric(factor(apQordered)), y=DW , color = dx)) + 
+#   geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.1)
+# 
+
+################# COMPULS ###################################
+# AP x dx
+print(paste("Anova - Does anterior-posterior position influence strength?"))
+F2 <- lmer(DW ~ apQ + dx + Age + sex + Comp.1 + Comp.2 + (1|subid), 
+               data = filter(APQ_comp, QC_clust != 2, exclude == "in", !is.na(DW)))
+print(Anova(F2))
+#summary(glht(F2, linfct=mcp(dx ="Tukey")))
+summary(glht(F2, linfct=mcp(apQ ="Tukey")))
+
+# plot APQ X dx 
+ggplot(filter(APQ_comp, QC_clust != 2, exclude == "in", !is.na(DW)), aes(x=apQordered, y=DW, color = dx)) + 
+  geom_boxplot() 
+
+pltDW_AP_comp <- ggplot(filter(APQ_comp, QC_clust != 2, exclude == "in", !is.na(DW)), aes(x=as.numeric(factor(apQordered)), y=DW , color = dx)) + 
+  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.04) + theme(legend.position = "none")  +
+  ylab("Track Density") + xlab(NULL) +
+  scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF", "#000066")) + scale_x_continuous(limits=c(0.5,10.5), breaks=seq(1,10,1))
+
+pltDW_AP_comp_sex <- ggplot(filter(APQ_comp, QC_clust != 2, exclude == "in", !is.na(DW)), aes(x=as.numeric(factor(apQordered)), y=DW , color = sex)) + 
+  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.04) + theme(legend.position = "none")  +
+  ylab("Track Density") + xlab(NULL) +
+  scale_x_continuous(limits=c(0.5,10.5), breaks=seq(1,10,1))
+
+
+# # APQ x dx (male only)
+# print(paste("Anova Table for APQ X dx, male only"))
+# F2 <- lmer(DW ~ apQ*dx + Age + Comp.1 + Comp.2 + (1|subid), 
+#                data = filter(APQ_comp, sex == "Male", QC_clust != 2, exclude == "in", !is.na(DW)))
+# print(Anova(F2))
+# #summary(glht(F2, linfct=mcp(dx ="Tukey")))
+# summary(glht(F2, linfct=mcp(apQ ="Tukey")))
+#          
+# # plot APQ X dx (male only)
+# ggplot(filter(APQ_comp, sex == "Male", QC_clust != 2, exclude == "in", !is.na(DW)), aes(x=apQordered, y=DW, color = dx)) + 
+#   geom_boxplot() 
+# 
+# ggplot(filter(APQ_comp, sex == "Male", QC_clust != 2, exclude == "in", !is.na(DW)),aes(x=as.numeric(factor(apQordered)), y=DW , color = dx)) + 
+#   geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.1)
+
+
+############# plot together
+fig_DW_AP <- plot_grid(pltDW_AP_trio, pltDW_AP_prisma, pltDW_AP_comp, align="hv", ncol = 1)
+fig_DW_AP
+fig_DW_AP.file <- paste(outdir, "DW_AP.png", sep="/")
+ggsave(fig_DW_AP.file, fig_DW_AP, dpi=300, width = 30, height = 24, units = "cm")
+
+#plot fc and DW dx
+fig_AP <- plot_grid(pltFC_AP_trio, pltFC_AP_prisma, pltFC_AP_comp, pltDW_AP_trio, NULL, pltDW_AP_comp, align="hv", ncol = 3)
+fig_AP
+fig_AP.file <- paste(outdir, "AP.png", sep="/")
+ggsave(fig_AP.file, fig_AP, dpi=300, width = 30, height = 18, units = "cm")
+
+
+#plot fc and DW sex
+fig_AP_sex <- plot_grid(pltFC_AP_trio_sex, pltFC_AP_prisma_sex, pltFC_AP_comp_sex, pltDW_AP_trio_sex, NULL, pltDW_AP_comp_sex, align="hv", ncol = 3)
+fig_AP_sex
+fig_AP_sex.file <- paste(outdir, "AP_sex.png", sep="/")
+ggsave(fig_AP_sex.file, fig_AP_sex, dpi=300, width = 30, height = 18, units = "cm")
+
+
+```
+
+```{r}
+pltZ_AP_trio_Age <- ggplot(APQ_trio, aes(x=Age, y=Z , color = apQordered)) + 
+  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0.2,1) +
+  ylab("Functional Connectivity") + theme(legend.position = "none")
+
+pltZ_AP_prisma_Age <- ggplot(APQ_prisma, aes(x=Age, y=Z , color = apQordered)) + 
+  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0.2,1) +
+  ylab("Functional Connectivity") + theme(legend.position = "none")
+
+pltZ_AP_comp_Age <- ggplot(APQ_comp, aes(x=Age, y=Z, color = apQordered)) + 
+  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0.2,1) +
+  ylab("Functional Connectivity") + theme(legend.position = "none")
+
+
+pltDW_AP_trio_Age <- ggplot(filter(APQ_trio, cutree.res.hc..k...3. != 3, in.ex == "in", !is.na(DW)), aes(x=Age, y=DW , color = apQordered)) + 
+  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.04) +
+  ylab("Track Density") + theme(legend.position = "none")
+
+pltDW_AP_comp_Age <- ggplot(filter(APQ_comp, QC_clust != 2, exclude == "in", !is.na(DW)), aes(x=Age, y=DW , color = apQordered)) + 
+  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.04) +
+  ylab("Track Density") + theme(legend.position = "none")
+
+fig_AP_Age <- plot_grid(pltZ_AP_trio_Age, pltZ_AP_prisma_Age, pltZ_AP_comp_Age, pltDW_AP_trio_Age, NULL, pltDW_AP_comp_Age, align="hv", ncol = 3)
+fig_AP_Age
+fig_AP_Age.file <- paste(outdir, "AP_Age.png", sep="/")
+ggsave(fig_AP_Age.file, fig_AP_Age, dpi=300, width = 30, height = 18, units = "cm")
 ```
