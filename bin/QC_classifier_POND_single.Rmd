@@ -1,0 +1,238 @@
+---
+title: "QC classifier"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+code_download: yes
+---
+(copied from /scratch/janderson/DWI_QC/POND/Squad_Classifier_POND_Single.Rmd, Aug 6 2019)
+Note: I will need to make this into a function that takes the number of subjects and the number of b-values (and their names)
+
+```{r dependencies}
+#first read in the json library containing the QC metrics
+library(rjson)
+library(reshape2)
+library(plyr)
+library(tidyverse)  # data manipulation
+library(cluster)    # clustering algorithms
+library(factoextra) # clustering algorithms & visualization
+library(reshape2)
+library(ggplot2)
+library(gplots) 
+library(readbulk)
+library(ggthemr)
+library(ggpubr)
+library(doBy)
+library(Rmisc)
+library(dendextend)
+library(dendextendRcpp)
+library(kableExtra)
+library(readr)
+library("NbClust")
+ggthemr("chalk")
+library(MVN)
+library(data.table)
+```
+
+
+```{r extract json}
+result <- fromJSON(file = "/scratch/janderson/DWI_QC/POND/squad_single/group_db.json")
+
+# Convert JSON file to a data frame.
+json_data_frame <- lapply(result, function(x) {
+  x[sapply(x, is.null)] <- NA
+  unlist(x)
+})
+#Also read in a list of the subject IDs in the same order as the JSON library
+sub_ids <- read.delim("/scratch/janderson/DWI_QC/POND/single.txt",header = FALSE,col.names="ID")
+#colnames(sub_ids) <- "ID"
+#Now to extract the relevant information into separate objects
+
+#now to look at motion
+motion <- as.data.frame(json_data_frame$qc_motion)
+colnames(motion) <- "motion"
+mot_type <- as.data.frame(rep(1:2,length(sub_ids$ID)))
+colnames(mot_type) <- "motion_type"
+mot_type$motion_type <- as.factor(mot_type$motion_type)
+mot_type$motion_type <- revalue(mot_type$motion_type, c("1"="abs", "2"="rel"))
+
+temp_id_mot <- as.data.frame(rep(1:(length(sub_ids$ID)),each=2))
+colnames(temp_id_mot)<- "temp_id"
+
+motion <- cbind(temp_id_mot, mot_type, motion)
+motion_wide <- dcast(motion, temp_id ~ motion_type)
+
+#now to look at Noise
+snr_cnr <- as.data.frame(json_data_frame$qc_cnr)
+colnames(snr_cnr) <- "noise"
+noise_type <- as.data.frame(rep(1:2,length(sub_ids$ID)))
+colnames(noise_type) <- "noise_type"
+noise_type$noise_type <- as.factor(noise_type$noise_type)
+noise_type$noise_type <- revalue(noise_type$noise_type, c("1"="snr", "2"="cnr1000"))
+
+temp_id_noise <- as.data.frame(rep(1:length(sub_ids$ID),each=2))
+colnames(temp_id_noise)<- "temp_id"
+
+noise <- cbind(temp_id_noise, noise_type, snr_cnr)
+noise_wide <- dcast(noise, temp_id ~ noise_type)
+
+#now to look at Outliers
+outliers <- as.data.frame(json_data_frame$qc_outliers)
+colnames(outliers) <- "outliers"
+outlier_type <- as.data.frame(rep(1:3,length(sub_ids$ID)))
+colnames(outlier_type) <- "outlier_type"
+outlier_type$outlier_type <- as.factor(outlier_type$outlier_type)
+outlier_type$outlier_type <- revalue(outlier_type$outlier_type, c("1"="total%", "2"="b1000","3"="PE_dir"))
+
+temp_id_outlier <- as.data.frame(rep(1:length(sub_ids$ID),each=3))
+colnames(temp_id_outlier)<- "temp_id"
+
+outlier <- cbind(temp_id_outlier, outlier_type, outliers)
+outlier_wide <- dcast(outlier, temp_id ~ outlier_type)
+
+#now to merge everything
+
+All_data <- Reduce(function(x, y) merge(x, y, all=TRUE), list(outlier_wide, noise_wide, motion_wide))
+
+#now create logicals (if using absolute thresholds)
+# All_data$total_fact <- as.numeric(All_data$`total%` > .2)
+# All_data$snr_fact <- as.numeric(All_data$snr < 20)
+# All_data$cnr_fact <- as.numeric(All_data$cnr < 1.4)
+# All_data$abs_mot_fact <- as.numeric(All_data$abs > 1)
+# All_data$rel_mot_fact <- as.numeric(All_data$rel > .4)
+# All_data$Weighted_Score_Numeric <-  apply(All_data[9:13], 1, sum)
+# All_data$Weighted_Score <- cut(x=All_data$Weighted_Score_Numeric, breaks = c(0,2,3,5),include.lowest =TRUE)
+# levels(All_data$Weighted_Score) <- c('Pass', 'Caution','Fail')
+
+#bind the subject IDs to the metrics
+All_data <- cbind(sub_ids, All_data);
+
+head(All_data)
+```
+
+Load in the residuals from dwidenoise & merge to the dataframe
+
+```{r}
+Noise <- read.delim("/scratch/janderson/DWI_QC/POND/POND_NOISE_RESIDS/single/Noise.txt", header = FALSE, col.names="Noise")
+All_data <- cbind(All_data, Noise)
+
+```
+
+Now to calculate the PC and clustering scores
+
+```{r}
+
+data <- All_data[complete.cases(All_data), ]
+#remove outliers
+#data <- subset(data, ID != "SPN01_CMH_0073_01")
+ID <- data$ID
+data <- subset(data, select=c("total%","snr","cnr1000", "rel","Noise"))
+
+
+
+#outliers?
+# library(MVN)
+# result = mvn(data = data, mvnTest = "hz",
+#              univariateTest = "AD", univariatePlot = "histogram",
+#              multivariatePlot = "qq", multivariateOutlierMethod = "adj",
+#              showOutliers = TRUE, showNewData = TRUE)
+# data2 <- setDT(data, keep.rownames = TRUE)[]
+# data2 <- as.data.frame.matrix(data2)
+# outlier <- result$multivariateOutliers
+# outlier = do.call("cbind",outlier)
+# outlier <- as.data.frame(outlier)
+# names(outlier)<- c("rn","MD","Outlier")
+# data2 <- merge(data2, outlier, by="rn", all.x = TRUE)
+# 
+# data3 <- data2[!complete.cases(data2), ]
+# data3$rn <- NULL
+# data3$MD <- NULL
+# data3$Outlier <- NULL
+
+
+res.pca <- prcomp(data, scale = TRUE)
+PC1 <- as.data.frame(res.pca$x[,1])
+colnames(PC1) <- "PC1"
+
+fviz_eig(res.pca)
+
+
+fviz_pca_var(res.pca,
+             col.var = "contrib", # Color by contributions to the PC
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE     # Avoid text overlapping
+             )
+
+#kmeans solution (using the component scores from above)
+d <- dist(res.pca$x, method = "euclidian") # distance matrix
+#Now to try a K-means solution 
+k2 <- kmeans(d, centers = 2, nstart = 25)
+k3 <- kmeans(d, centers = 3, nstart = 25)
+k4 <- kmeans(d, centers = 4, nstart = 25)
+k5 <- kmeans(d, centers = 5, nstart = 25)
+k10 <- kmeans(d, centers = 10, nstart = 25)
+
+# plots to compare
+p1 <- fviz_cluster(k2, geom = "point", data = d) + ggtitle("k = 2")
+p2 <- fviz_cluster(k3, geom = "point",  data = d) + ggtitle("k = 3")
+p3 <- fviz_cluster(k4, geom = "point",  data = d) + ggtitle("k = 4")
+p4 <- fviz_cluster(k5, geom = "point",  data = d) + ggtitle("k = 5")
+#p10 <- fviz_cluster(k10, geom = "point",  data = d) + ggtitle("k = 10")
+
+library(gridExtra)
+grid.arrange(p1, p2, p3, p4, nrow = 2)
+
+### Distance Matrix
+res.dist <- get_dist(res.pca$x, stand = FALSE, method = "euclidian")
+
+fviz_dist(res.dist, 
+   gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
+
+res.hc <- res.pca$x %>%
+  #scale() %>%                    # Scale the data
+  dist(method = "euclidean") %>% # Compute dissimilarity matrix
+  hclust(method = "ward.D2")     # Compute hierachical clustering
+groups <- as.data.frame(cutree(res.hc, k=3)) # cut tree into 5 clusters
+table(groups)
+
+
+
+# Visualize using factoextra
+# Cut in 4 groups and color by groups
+fviz_dend(res.hc, k = 3, # Cut in 3 groups
+          cex = 0.5, # label size
+          k_colors = c("#2E9FDF", "#00AFBB", "#E7B800"),#, "#FC4E07"),
+          color_labels_by_k = TRUE, # color labels by groups
+          rect = TRUE # Add rectangle around groups
+          )
+
+#Clustering tendency
+
+
+res.nbclust <- res.pca$x %>%
+ # scale() %>%
+  NbClust(distance = "euclidean",
+          min.nc = 2, max.nc = 10, 
+          method = "complete", index ="all") 
+library(factoextra)
+fviz_nbclust(res.nbclust, ggtheme = theme_minimal())
+
+
+
+# Enhanced hierarchical clustering, cut in 2 groups
+res.hc <- res.pca$x %>%
+  #scale() %>%
+  eclust("hclust", k = 2, graph = FALSE)
+
+# Visualize with factoextra
+fviz_dend(res.hc, palette = "jco",
+          rect = TRUE, show_labels = FALSE)
+#inspect silhoutette plot
+fviz_silhouette(res.hc)
+# Silhouette width of observations
+sil <- res.hc$silinfo$widths[, 1:3]
+
+out <- cbind(ID, data, PC1, groups)
+write.csv(out, "/scratch/janderson/DWI_QC/POND/squad_single/Classified.csv")
+```
