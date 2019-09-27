@@ -7,14 +7,14 @@ cd /KIMEL/tigrlab/scratch/nforde/homotopic/bin
 
 
 for subj in $(<multi.txt); do
-	outdir=/KIMEL/tigrlab/projects/nforde/POND/CSD/$subj
+	outdir=/KIMEL/tigrlab/projects/nforde/POND/CSDnew/$subj
 	if [[ ! -d "${outdir}" ]] ; then
 		mkdir $outdir
 	fi
 
-	outfile=/KIMEL/tigrlab/projects/nforde/POND/CSD/$subj/prob_DK.csv
+	outfile=/KIMEL/tigrlab/projects/nforde/POND/CSDnew/$subj/prob_glasser.csv
 	if [[ ! -f "${outfile}" ]] ; then
-		echo bash CSD_multi.sh $subj
+		echo bash CSD_new.sh $subj
 	fi
 done > CSD_qbatch.txt
 

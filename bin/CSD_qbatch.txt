@@ -1,4 +1,5 @@
-bash CSD_multi.sh sub-1050446
-bash CSD_multi.sh sub-1050548
-bash CSD_multi.sh sub-1050607
-bash CSD_multi.sh sub-1050672
+bash CSD_new.sh sub-1050446
+bash CSD_new.sh sub-1050548
+bash CSD_new.sh sub-1050607
+bash CSD_new.sh sub-1050672
+bash CSD_new.sh sub-1130202
