@@ -44,8 +44,7 @@ shapiro.test(TRIO$AB21GCCS)
 kruskal.test(TRIO$dx, TRIO$AB21GCCS)
 
 
-tbl_TRIO_FC <- TRIO %>%
-  group_by(dx) %>%
+tbl_TRIO_FC <- TRIO %>% group_by(dx) %>%
   summarise(n = sum(!is.na(Age)), 
             sexM = sum(sex == "Male"),
             sexF = sum(sex == "Female"),
@@ -61,7 +60,36 @@ tbl_TRIO_FC <- TRIO %>%
 kable(tbl_TRIO_FC, digits = 2)
 
 TRIO_demog_table.file <- file.path(outdir, "TRIO_demog_tbl.csv")
-#write.csv(tbl_TRIO_FC, TRIO_demog_table.file, row.names = F)
+write.csv(tbl_TRIO_FC, TRIO_demog_table.file, row.names = F)
+
+
+
+#######PRISMA
+chisq.test(PRISMA$sex, PRISMA$dx)
+
+#age
+bartlett.test(PRISMA$Age ~PRISMA$dx) 
+shapiro.test(PRISMA$Age)
+kruskal.test(PRISMA$dx, PRISMA$Age)
+
+
+#IQ
+bartlett.test(PRISMA$FSIQ_any ~PRISMA$dx) 
+shapiro.test(PRISMA$FSIQ_any)
+kruskal.test(PRISMA$dx, PRISMA$FSIQ_any)
+
+
+#CBCL
+bartlett.test(PRISMA$CB68TPTS ~PRISMA$dx) 
+shapiro.test(PRISMA$CB68TPTS)
+Anova(lm(PRISMA$CB68TPTS ~PRISMA$dx))
+
+
+#GAF
+bartlett.test(PRISMA$AB21GCCS ~PRISMA$dx) 
+shapiro.test(PRISMA$AB21GCCS)
+Anova(lm(PRISMA$AB21GCCS ~PRISMA$dx))
+
 
 tbl_PRISMA_FC <- PRISMA %>%
   group_by(dx) %>%
@@ -81,6 +109,26 @@ kable(tbl_PRISMA_FC, digits = 2)
 
 PRISMA_demog_table.file <- file.path(outdir, "PRISMA_demog_tbl.csv")
 
+########## COMPULS
+table(COMP[ ,c("dx","sex")])
+chisq.test(COMP$sex, COMP$dx)
+
+#age
+bartlett.test(COMP$Age ~COMP$dx) 
+shapiro.test(COMP$Age)
+kruskal.test(COMP$dx, COMP$Age)
+
+
+#IQ
+bartlett.test(COMP$IQ ~COMP$dx) 
+shapiro.test(COMP$IQ)
+Anova(lm(COMP$IQ ~ COMP$dx))
+
+
+#CBCL
+bartlett.test(COMP$CBCL_total_Tscore ~COMP$dx) 
+shapiro.test(COMP$CBCL_total_Tscore)
+kruskal.test(COMP$dx, COMP$CBCL_total_Tscore)
 
 tbl_COMP_FC <- COMP %>%
   group_by(dx) %>%
@@ -91,13 +139,13 @@ tbl_COMP_FC <- COMP %>%
             sd_age = round(sd(Age, na.rm =T),2),
             mean_IQ = round(mean(IQ, na.rm =T),2),
             sd_IQ = round(sd(IQ, na.rm =T),2),
-            mean_cbcl = round(mean(CBCL_total, na.rm =T),2),
-            sd_cbcl = round(sd(CBCL_total, na.rm =T),2)) 
+            mean_cbcl = round(mean(CBCL_total_Tscore, na.rm =T),2),
+            sd_cbcl = round(sd(CBCL_total_Tscore, na.rm =T),2)) 
 
 kable(tbl_COMP_FC, digits = 2)
 
 COMP_demog_table.file <- file.path(outdir, "COMP_demog_tbl.csv")
-
+write.csv(tbl_COMP_FC, COMP_demog_table.file, row.names = F)
 
 tbl_TRIO_DW <- TRIOdw %>%
   group_by(dx) %>%
@@ -125,8 +173,8 @@ tbl_COMP_DW <- COMPdw %>%
             sd_age = round(sd(Age, na.rm =T),2),
             mean_IQ = round(mean(IQ, na.rm =T),2),
             sd_IQ = round(sd(IQ, na.rm =T),2),
-            mean_cbcl = round(mean(CBCL_total, na.rm =T),2),
-            sd_cbcl = round(sd(CBCL_total, na.rm =T),2)) 
+            mean_cbcl = round(mean(CBCL_total_Tscore, na.rm =T),2),
+            sd_cbcl = round(sd(CBCL_total_Tscore, na.rm =T),2)) 
 
 kable(tbl_COMP_DW, digits = 2)
 
