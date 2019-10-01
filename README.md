@@ -1,4 +1,4 @@
-#homotopic
+# homotopic
 
 Work by edickie and nforde
 
@@ -8,55 +8,52 @@ Stable long-range interhemispheric coordination is supported by direct anatomica
 
 ROIs are classified as intrahemispheric, heterotopic or homotopic 
 
-Atlases: 
+## Atlases: 
 originally used aparc
 now using Glasser's MMP
-potentially Shen at various parcellations
 
-Dataset:
+
+## Dataset:
 POND 
-ABIDE
+COMPULS
 
-################ P1. Functional stuff ##############################
+## P1. Functional stuff 
 Calculates the functional connectivity strength and stability between ROIs
 
 Scripts:
-> extract_rs_time_series.sh - generates resting state times series csv's 
-> temp_stab_glasser.r - calculates FC temporal stability 
-	> qbatch_mk_sub.sh - wrapper to submit temp_stab_glasser.r to the local queue
-> strength_calc_glasser.Rmd - calculates FC strength and does stats
-> temporal_stability_calc_glasser.Rmd - calculates temp stability and does stats (reads in already calculated TS if available [reccommended to do in separte steps using the cluster to generate the TS first])
+- extract_rs_time_series.sh - generates resting state times series csv's 
+- temp_stab_glasser.r - calculates FC temporal stability 
+	- qbatch_mk_sub.sh - wrapper to submit temp_stab_glasser.r to the local queue
+- strength_calc_glasser.Rmd - calculates FC strength and does stats
+- temporal_stability_calc_glasser.Rmd - calculates temp stability and does stats (reads in already calculated TS if available [reccommended to do in separte steps using the cluster to generate the TS first])
 
 
-############# P2. Diffusion stuff ######################################
+## P2. Diffusion stuff 
 Uses MRtrix to do tractography and generate connectivity matrices
 
 Scripts:
-> CSD.sh - basic script to do tractography and generate matrices locally
-> CSD_scc.sh - same as above but adapted for use on the SCC
-	> CSD_qbatch_wrap.sh - wrapper to submit to the SCC
-> CSD_scc_prob.sh - same as above but for probabilistic instead of deterministic tractography
-> diffusion_glasser.Rmd - analyses of diffusion data by type (intrahemispheric, heterotopic, homotopic) and length qunatile
+- CSD.sh - basic script to do tractography and generate matrices locally
+- CSD_scc.sh - same as above but adapted for use on the SCC
+	- CSD_qbatch_wrap.sh - wrapper to submit to the SCC
+- CSD_scc_prob.sh - same as above but for probabilistic instead of deterministic tractography
+- diffusion_glasser.Rmd - analyses of diffusion data by type (intrahemispheric, heterotopic, homotopic) and length qunatile
  
 
-others:
-> gmwmi_voxel_count.sh - extracts the number of voxels along the gm wm interface within each ROI to later correct connectivity matrices by (incorporated into CSD scripts)
-> tck2trk.py - changes streamline file type
-	> tck2trk_loop.sh - wrapper
+Others:
+- gmwmi_voxel_count.sh - extracts the number of voxels along the gm wm interface within each ROI to later correct connectivity matrices by (incorporated into CSD scripts)
+- tck2trk.py - changes streamline file type
+	- tck2trk_loop.sh - wrapper
 
 
-############## P3. Function & Structure ###############################
+## P3. Function & Structure 
 Combines the functional and structural analyses from above
 
 Scripts:
-> func_struct.Rmd - calculates and analyses FC strength, temporal stability and diffusion together (by type, length quantile and diffusion weighted quantile)
+- func_struct.Rmd - calculates and analyses FC strength, temporal stability and diffusion together (by type, length quantile and diffusion weighted quantile)
+- func_struct_tidy.Rmd a refined version of the above
 
-
-############### P4. Graph theory #####################################
-Graph theory.....
+## P4. Anterior - Posterior 
+bins the homotopic ROIs anterior to posterior and analyses the functional connectivity and track density along the gradient
 
 Scripts:
-> graphs.Rmd - extracts matrices for each metric
-> graph_bct.m - calculates network measures from FC and diffusion graphs
-
-
+- anterior_posterior.Rmd
