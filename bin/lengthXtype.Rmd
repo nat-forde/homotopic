@@ -260,32 +260,82 @@ names(comp_demogs)[names(comp_demogs) == 'subject_id'] <- 'subid'
 ```{r define_funcs}
 
 len_by_type <- function(subids, edgedir) {
-  len <- data.frame("subid" = subids, 
-                      "HO" = numeric(length(subids)),
-                      "HE" = numeric(length(subids)),
-                      "I" = numeric(length(subids)))
+  lenZ <- data.frame("subid" = subids,
+                     "L" = numeric(length(subids)),
+                     "M" = numeric(length(subids)),
+                     "S" = numeric(length(subids)),
+                     "na" = numeric(length(subids)),
+                      "HO_L" = numeric(length(subids)),
+                      "HO_M" = numeric(length(subids)),
+                      "HO_S" = numeric(length(subids)),
+                     "HO_na" = numeric(length(subids)),
+                      "HE_L" = numeric(length(subids)),
+                      "HE_M" = numeric(length(subids)),
+                      "HE_S" = numeric(length(subids)),
+                     "HE_na" = numeric(length(subids)),
+                      "I_L" = numeric(length(subids)),
+                      "I_M" = numeric(length(subids)),
+                      "I_S" = numeric(length(subids)),
+                     "I_na" = numeric(length(subids)))
         
-  len[ ,2:ncol(len)] <- numeric(nrow(len)*(ncol(len)-1))
+  lenZ[ ,2:ncol(lenZ)] <- numeric(nrow(lenZ)*(ncol(lenZ)-1))
 
+  lenDW <- lenZ
+  
   for (i in 1:length(subids)) {
-    subid <- len$subid[i]
+    subid <- lenZ$subid[i]
     edge.file <- file.path(edgedir, paste(subid, atlas, "edge_metrics.csv", sep="_")) 
       
     if (file.exists(edge.file)) {
       edges <- read.csv(edge.file, header =TRUE)
       edges_nonzero <- subset(edges, length > 0)
 
-      ### making 1 = quantile 10 etc so 1 is anterior and 10 mostp posterior
-      len$HO[i] <- mean(filter(edges_nonzero, FCtype == "Homotopic")$length, na.rm=TRUE)
-      len$HE[i] <- mean(filter(edges_nonzero, FCtype == "Heterotopic")$length, na.rm=TRUE)
-      len$I[i] <- mean(filter(edges_nonzero, FCtype == "Intrahemispheric")$length, na.rm=TRUE)
+      ##FC Z
+      lenZ$S[i] <- mean(filter(edges_nonzero, length < 40)$theseZ, na.rm=TRUE)
+      lenZ$M[i] <- mean(filter(edges_nonzero, length >= 40, length <80)$theseZ, na.rm=TRUE)
+      lenZ$L[i] <- mean(filter(edges_nonzero, length >= 80)$theseZ, na.rm=TRUE)
+      lenZ$na[i] <- mean(filter(edges, length == 0)$theseZ, na.rm=TRUE)
+ 
+      lenZ$HO_L[i] <- mean(filter(edges_nonzero, FCtype == "Homotopic", length < 40)$theseZ, na.rm=TRUE)
+      lenZ$HO_M[i] <- mean(filter(edges_nonzero, FCtype == "Homotopic", length >= 40, length < 80)$theseZ, na.rm=TRUE)
+      lenZ$HO_S[i] <- mean(filter(edges_nonzero, FCtype == "Homotopic", length >= 80)$theseZ, na.rm=TRUE)
+      lenZ$HO_na[i] <- mean(filter(edges, FCtype == "Homotopic", length == 0)$theseZ, na.rm=TRUE)
+      
+      lenZ$HE_L[i] <- mean(filter(edges_nonzero, FCtype == "Heterotopic", length < 40)$theseZ, na.rm=TRUE)
+      lenZ$HE_M[i] <- mean(filter(edges_nonzero, FCtype == "Heterotopic", length >= 40, length < 80 )$theseZ, na.rm=TRUE)
+      lenZ$HE_S[i] <- mean(filter(edges_nonzero, FCtype == "Heterotopic", length >= 80)$theseZ, na.rm=TRUE)
+      lenZ$HE_na[i] <- mean(filter(edges, FCtype == "Heterotopic", length == 0)$theseZ, na.rm=TRUE)
+      
+      lenZ$I_L[i] <- mean(filter(edges_nonzero, FCtype == "Intrahemispheric", length < 40)$theseZ, na.rm=TRUE)
+      lenZ$I_M[i] <- mean(filter(edges_nonzero, FCtype == "Intrahemispheric", length >= 40 , length < 80)$theseZ, na.rm=TRUE)
+      lenZ$I_S[i] <- mean(filter(edges_nonzero, FCtype == "Intrahemispheric", length >= 80)$theseZ, na.rm=TRUE)
+      lenZ$I_na[i] <- mean(filter(edges, FCtype == "Intrahemispheric", length == 0)$theseZ, na.rm=TRUE)
+      
+      ##DW
+      lenDW$S[i] <- mean(filter(edges_nonzero, length < 40)$raw, na.rm=TRUE)
+      lenDW$M[i] <- mean(filter(edges_nonzero, length >= 40, length <80)$raw, na.rm=TRUE)
+      lenDW$L[i] <- mean(filter(edges_nonzero, length >= 80)$raw, na.rm=TRUE)
+ 
+      lenDW$HO_L[i] <- mean(filter(edges_nonzero, FCtype == "Homotopic", length < 40)$raw, na.rm=TRUE)
+      lenDW$HO_M[i] <- mean(filter(edges_nonzero, FCtype == "Homotopic", length >= 40, length < 80)$raw, na.rm=TRUE)
+      lenDW$HO_S[i] <- mean(filter(edges_nonzero, FCtype == "Homotopic", length >= 80)$raw, na.rm=TRUE)
+      
+      lenDW$HE_L[i] <- mean(filter(edges_nonzero, FCtype == "Heterotopic", length < 40)$raw, na.rm=TRUE)
+      lenDW$HE_M[i] <- mean(filter(edges_nonzero, FCtype == "Heterotopic", length >= 40, length < 80 )$raw, na.rm=TRUE)
+      lenDW$HE_S[i] <- mean(filter(edges_nonzero, FCtype == "Heterotopic", length >= 80)$raw, na.rm=TRUE)
+      
+      lenDW$I_L[i] <- mean(filter(edges_nonzero, FCtype == "Intrahemispheric", length < 40)$raw, na.rm=TRUE)
+      lenDW$I_M[i] <- mean(filter(edges_nonzero, FCtype == "Intrahemispheric", length >= 40 , length < 80)$raw, na.rm=TRUE)
+      lenDW$I_S[i] <- mean(filter(edges_nonzero, FCtype == "Intrahemispheric", length >= 80)$raw, na.rm=TRUE)
+      
       
     } else {
       print(paste(edge.file, "does not exist"))
-      len[i,2:ncol(len)] <- NA
+      lenZ[i,2:ncol(lenZ)] <- NA
+      lenDW[i,2:ncol(lenDW)] <- NA
     }
   }
-  return(len)
+  return(list("lenZ"=lenZ,"lenDW"=lenDW))
 }
       
 ```
@@ -294,7 +344,10 @@ len_by_type <- function(subids, edgedir) {
 
 subids <- demogs %>% filter(fd_mean < 0.4, size_t > 100, in.ex == "in", cutree.res.hc..k...3. != 3) %>% .$subid
 
-len <- len_by_type(subids, edgedir)
+pond_len_mets <- len_by_type(subids, edgedir)
+
+lenZ <- pond_len_mets$lenZ
+lenDW <- pond_len_mets$lenDW
 
 ```
 
@@ -302,197 +355,167 @@ len <- len_by_type(subids, edgedir)
 
 comp_subids <- comp_demogs %>% filter(fd_mean < 0.4, size_t > 200, exclude == "in", QC_clust != 2) %>% .$subid
 
-comp_len <- len_by_type(comp_subids, comp_edgedir)
+comp_len_mets <- len_by_type(comp_subids, comp_edgedir)
+
+comp_lenZ <- comp_len_mets$lenZ
+comp_lenDW <- comp_len_mets$lenDW
 
 ```
 
 ```{r org}
 
-type_len_trio <- len %>%
-   gather(FCtype, avg_len, HO, HE, I) %>% merge(demogs, by="subid") %>% 
+lenZ_trio <- lenZ %>%
+   gather(len, Z, S, M, L, na) 
+
+lenDW_trio <- lenDW %>%
+   gather(len, DW, S, M, L) 
+
+len_trio <- demogs %>%
+  merge(lenZ_trio[c("subid","len","Z")], by="subid") %>%
+  merge(lenDW_trio[c("subid","len","DW")], by=c("subid", "len"), all=TRUE) %>%
   filter(Age >6, !is.na(dx), scanner == "trio", shell == "single")
 
-type_len_comp <- comp_len %>%
-   gather(FCtype, avg_len, HO, HE, I) %>% merge(comp_demogs, by="subid") 
+lenZ_comp <- comp_lenZ %>%
+   gather(len, Z, S, M, L, na) 
+  
+lenDW_comp <- comp_lenDW %>%
+   gather(len, DW, S, M, L) 
+
+len_comp <- comp_demogs %>%
+  merge(lenZ_comp[c("subid","len","Z")], by="subid") %>%
+  merge(lenDW_comp[c("subid","len","DW")], by=c("subid", "len"), all=TRUE) 
+
+type_lenZ_trio <- lenZ %>%
+   gather(typeXlen, Z, HO_S, HO_M, HO_L, HO_na, HE_S, HE_M, HE_L, HE_na, I_S, I_M, I_L, I_na) 
+
+type_lenDW_trio <- lenDW %>%
+   gather(typeXlen, DW, HO_S, HO_M, HO_L, HE_S, HE_M, HE_L, I_S, I_M, I_L) 
+
+type_len_trio <- demogs %>%
+  merge(type_lenZ_trio[c("subid","typeXlen","Z")], by="subid") %>%
+  merge(type_lenDW_trio[c("subid","typeXlen","DW")], by=c("subid", "typeXlen"), all=TRUE) %>%
+  filter(Age >6, !is.na(dx), scanner == "trio", shell == "single") %>% 
+  separate(typeXlen, c("type", "len"), sep="_", remove=FALSE)
+
+type_lenZ_comp <- comp_lenZ %>%
+   gather(typeXlen, Z, HO_S, HO_M, HO_L, HO_na, HE_S, HE_M, HE_L, HE_na, I_S, I_M, I_L, I_na) %>% merge(comp_demogs, by="subid") 
+
+type_lenDW_comp <- comp_lenDW %>%
+   gather(typeXlen, DW, HO_S, HO_M, HO_L, HE_S, HE_M, HE_L, I_S, I_M, I_L) %>% merge(comp_demogs, by="subid") 
+
+type_len_comp <- comp_demogs %>%
+  merge(type_lenZ_comp[c("subid","typeXlen","Z")], by="subid") %>%
+  merge(type_lenDW_comp[c("subid","typeXlen","DW")], by=c("subid", "typeXlen"), all=TRUE) %>% 
+  separate(typeXlen, c("type", "len"), sep="_", remove=FALSE)
 
 ```
 
-```{r, fig.width=12}
-##TRIO
-############ Does length differ by type? ###############
-# type X length
-F2 <- lmer(avg_len ~ FCtype + Age + sex + (1|subid), 
+```{r length by dx}
+############ Does strength differ by length? ###############
+# Z
+
+F2 <- lmer(Z ~ len*dx + Age + sex + (1|subid), 
+               data = len_trio)
+print(Anova(F2))
+summary(glht(F2, linfct=mcp(len ="Tukey")))
+
+F2 <- lmer(Z ~ len*dx + Age + sex + (1|subid), 
+               data = len_comp)
+print(Anova(F2))
+summary(glht(F2, linfct=mcp(len ="Tukey")))
+
+# DW
+F2 <- lmer(DW ~ len*dx + Age + sex + (1|subid), 
+               data = filter(len_trio, len != "na" ))
+print(Anova(F2))
+summary(glht(F2, linfct=mcp(len ="Tukey")))
+
+F2 <- lmer(DW ~ len*dx + Age + sex + (1|subid), 
+               data = filter(len_comp, len != "na"))
+print(Anova(F2))
+summary(glht(F2, linfct=mcp(len ="Tukey")))
+
+# plot len X dx 
+ggplot(len_trio, aes(x=len, y=Z, color = dx)) + 
+  geom_boxplot() 
+
+ggplot(len_comp, aes(x=len, y=Z, color = dx)) + 
+  geom_boxplot() 
+
+ggplot(filter(len_trio, len != "na" ), aes(x=len, y=DW, color = dx)) + 
+  geom_boxplot() 
+
+ggplot(filter(len_comp, len != "na" ), aes(x=len, y=DW, color = dx)) + 
+  geom_boxplot() 
+
+####
+
+# pltTrio_len <- ggplot(len_trio, aes(x=Age, y=Z, color = len)) + 
+#   geom_jitter(width = 0.3, size = 1, alpha=0.5) +  geom_smooth(span = 0.5) + xlim(6,18) +
+#   ylab("Functional Connectivity") + xlab("Age") + theme(legend.position = "none")
+# 
+# pltComp_len <- ggplot(len_comp, aes(x=Age, y=Z, color = len)) + 
+#   geom_jitter(width = 0.3, size = 1, alpha=0.5) +  geom_smooth(span = 0.5) + xlim(8,13) +
+#   ylab("Functional Connectivity") + xlab("Age") + theme(legend.position = "none")
+
+############# plot together
+# fig_len <- plot_grid(pltTrio_len, pltComp_len, align="hv", ncol = 2)
+# fig_len
+# fig_len.file <- paste(outdir, "len.png", sep="/")
+# ggsave(fig_len.file, fig_len, dpi=300, width = 30, height = 8, units = "cm")
+```
+
+```{r typeXlen}
+
+F2 <- lmer(Z ~ type*len + Age + sex + (1|subid), 
                data = type_len_trio)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
+# summary(glht(F2, linfct=mcp(typeXlen ="Tukey")))
 
-
-F2 <- lmer(avg_len ~ FCtype + Age + sex + (1|subid), 
+F2 <- lmer(Z ~ type*len + Age + sex + (1|subid), 
                data = type_len_comp)
 print(Anova(F2))
-summary(glht(F2, linfct=mcp(FCtype ="Tukey")))
+# summary(glht(F2, linfct=mcp(typeXlen ="Tukey")))
 
-
-# plot APQ X dx 
-ggplot(type_len_trio, aes(x=FCtype, y=avg_len, color = FCtype)) + 
-  geom_boxplot() 
-
-ggplot(type_len_comp, aes(x=FCtype, y=avg_len, color = FCtype)) + 
-  geom_boxplot() 
-
-
-
-pltTrio_len <- ggplot(type_len_trio, aes(x=Age, y=avg_len, color = FCtype)) + 
-  geom_jitter(width = 0.3, size = 1, alpha=0.5) +  geom_smooth(span = 0.5) + xlim(6,18) +
-  ylab("Track Length") + xlab("Age") + theme(legend.position = "none")
-
-pltComp_len <- ggplot(type_len_comp, aes(x=Age, y=avg_len, color = FCtype)) + 
-  geom_jitter(width = 0.3, size = 1, alpha=0.5) +  geom_smooth(span = 0.5) + xlim(8,13) +
-  ylab("Track Length") + xlab("Age") + theme(legend.position = "none")
-
-############# plot together
-fig_len <- plot_grid(pltTrio_len, pltComp_len, align="hv", ncol = 2)
-fig_len
-fig_len.file <- paste(outdir, "len.png", sep="/")
-ggsave(fig_len.file, fig_len, dpi=300, width = 30, height = 8, units = "cm")
-```
-
-```{r DWI}
-################### Does anterior-posterior position influence structural weight? ##################################
-##TRIO
-# AP x dx
-print(paste("Anova - Does anterior-posterior position influence strength?"))
-F2 <- lmer(DW ~ apQ + dx + Age + sex + PC1 + (1|subid), 
-               data = filter(APQ_trio, cutree.res.hc..k...3. != 3, in.ex == "in"))
+# DW
+F2 <- lmer(DW ~ type*len + Age + sex + (1|subid), 
+               data = filter(type_len_trio, !is.na(DW)))
 print(Anova(F2))
-#summary(glht(F2, linfct=mcp(dx ="Tukey")))
-summary(glht(F2, linfct=mcp(apQ ="Tukey")))
+# summary(glht(F2, linfct=mcp(typeXlen ="Tukey")))
 
-# plot APQ X dx 
-ggplot(filter(APQ_trio, cutree.res.hc..k...3. != 3, in.ex == "in"), aes(x=apQordered, y=DW, color = dx)) + 
-  geom_boxplot() 
-
-pltDW_AP_trio <- ggplot(filter(APQ_trio, cutree.res.hc..k...3. != 3, in.ex == "in"), aes(x=as.numeric(factor(apQordered)), y=DW , color = dx)) + 
-  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.04) + theme(legend.position = "none") +
-  ylab("Track Density") + xlab(NULL) +
-  scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF")) + scale_x_continuous(limits=c(0.5,10.5), breaks=seq(1,10,1))
-
-pltDW_AP_trio_sex <- ggplot(filter(APQ_trio, cutree.res.hc..k...3. != 3, in.ex == "in"), aes(x=as.numeric(factor(apQordered)), y=DW , color = sex)) + 
-  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.04) + theme(legend.position = "none") +
-  ylab("Track Density") + xlab(NULL) +
-  scale_x_continuous(limits=c(0.5,10.5), breaks=seq(1,10,1))
-
-# # APQ x dx (male only)
-# print(paste("Anova Table for APQ X dx, male only"))
-# F2 <- lmer(DW ~ apQ*dx + Age + PC1 + (1|subid), 
-#                data = filter(APQ_trio, sex == "Male", cutree.res.hc..k...3. != 3, in.ex == "in"))
-# print(Anova(F2))
-# #summary(glht(F2, linfct=mcp(dx ="Tukey")))
-# summary(glht(F2, linfct=mcp(apQ ="Tukey")))
-#          
-# # plot APQ X dx (male only)
-# ggplot(filter(APQ_trio, sex == "Male", cutree.res.hc..k...3. != 3, in.ex == "in"), aes(x=apQordered, y=DW, color = dx)) + 
-#   geom_boxplot() 
-# 
-# ggplot(filter(APQ_trio, sex == "Male", cutree.res.hc..k...3. != 3, in.ex == "in"), aes(x=as.numeric(factor(apQordered)), y=DW , color = dx)) + 
-#   geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.1)
-
-############ PRISMA ###############
-# AP x dx
-print(paste("Anova - Does anterior-posterior position influence strength?"))
-F2 <- lmer(DW ~ apQ + dx + Age + sex + (1|subid), 
-               data = filter(APQ_prisma, in.ex == "in"))
+F2 <- lmer(DW ~ type*len + Age + sex + (1|subid), 
+               data = filter(type_len_comp, !is.na(DW)))
 print(Anova(F2))
-#summary(glht(F2, linfct=mcp(dx ="Tukey")))
-summary(glht(F2, linfct=mcp(apQ ="Tukey")))
+# summary(glht(F2, linfct=mcp(typeXlen ="Tukey")))
 
-# plot APQ X dx 
-ggplot(filter(APQ_prisma, in.ex == "in"), aes(x=apQordered, y=DW, color = dx)) + theme(legend.position = "none") + 
-  geom_boxplot() 
+# plot typeXlen 
+plt_typeXlenZ_trio <- ggplot(type_len_trio, aes(x=type, y=Z, color=len)) + 
+  geom_boxplot(aes(color= factor(len, levels= c("na", "S", "M", "L"), labels = c("na", "short", "medium", "long")))) +
+  ylab("Functional Connectivity") + xlab(NULL) + ylim(0,1) +
+  theme(legend.position = "none") +
+  scale_color_manual(values=c("#FF9933", "#00CC66", "#339900", "#006600"))
 
-pltDW_AP_prisma <- ggplot(filter(APQ_prisma, in.ex == "in"),aes(x=as.numeric(factor(apQordered)), y=DW , color = dx)) + 
-  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.04) +
-  ylab("Track Density") + xlab(NULL) +
-  scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF")) + scale_x_continuous(limits=c(0.5,10.5), breaks=seq(1,10,1))
+plt_typeXlenZ_comp <- ggplot(type_len_comp, aes(x=type, y=Z, color=len)) + 
+   geom_boxplot(aes(color= factor(len, levels= c("na", "S", "M", "L"), labels = c("na", "short", "medium", "long")))) +
+  ylab("Functional Connectivity") + xlab(NULL) + ylim(0,1) +
+  theme(legend.position = "none") +
+  scale_color_manual(values=c("#FF9933", "#00CC66", "#339900", "#006600"))
 
-pltDW_AP_prisma_sex <- ggplot(filter(APQ_prisma, in.ex == "in"),aes(x=as.numeric(factor(apQordered)), y=DW , color = sex)) + 
-  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.04) +
-  ylab("Track Density") + xlab(NULL) +
-  scale_x_continuous(limits=c(0.5,10.5), breaks=seq(1,10,1))
+plt_typeXlenDW_trio <- ggplot(filter(type_len_trio, !is.na(DW)), aes(x=type, y=DW, color=len)) + 
+  geom_boxplot(aes(color= factor(len, levels= c("S", "M", "L"), labels = c("short", "medium", "long")))) +
+  ylab("Track Density") + xlab(NULL) +ylim(0,0.08) +
+  theme(legend.position = "none") +
+  scale_color_manual(values=c("#00CC66", "#339900", "#006600"))
 
-# # APQ x dx (male only)
-# print(paste("Anova Table for APQ X dx, male only"))
-# F2 <- lmer(DW ~ apQ*dx + Age + (1|subid), 
-#                data = filter(APQ_prisma, sex == "Male", in.ex == "in"))
-# print(Anova(F2))
-# #summary(glht(F2, linfct=mcp(dx ="Tukey")))
-# summary(glht(F2, linfct=mcp(apQ ="Tukey")))
-#          
-# # plot APQ X dx (male only)
-# ggplot(filter(APQ_prisma, sex == "Male", in.ex == "in"), aes(x=apQordered, y=DW, color = dx)) + 
-#   geom_boxplot() 
-# 
-# ggplot(filter(APQ_prisma, sex == "Male", in.ex == "in"),aes(x=as.numeric(factor(apQordered)), y=DW , color = dx)) + 
-#   geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.1)
-# 
+plt_typeXlenDW_comp <- ggplot(filter(type_len_comp, !is.na(DW)), aes(x=type, y=DW, color=len)) + 
+  geom_boxplot(aes(color= factor(len, levels= c("S", "M", "L"), labels = c("short", "medium", "long")))) +
+  ylab("Track Density") + xlab(NULL) +ylim(0,0.08) +
+  theme(legend.position = "none") +
+  scale_color_manual(values=c("#00CC66", "#339900", "#006600"))
 
-################# COMPULS ###################################
-# AP x dx
-print(paste("Anova - Does anterior-posterior position influence strength?"))
-F2 <- lmer(DW ~ apQ + dx + Age + sex + Comp.1 + Comp.2 + (1|subid), 
-               data = filter(APQ_comp, QC_clust != 2, exclude == "in", !is.na(DW)))
-print(Anova(F2))
-#summary(glht(F2, linfct=mcp(dx ="Tukey")))
-summary(glht(F2, linfct=mcp(apQ ="Tukey")))
-
-# plot APQ X dx 
-ggplot(filter(APQ_comp, QC_clust != 2, exclude == "in", !is.na(DW)), aes(x=apQordered, y=DW, color = dx)) + 
-  geom_boxplot() 
-
-pltDW_AP_comp <- ggplot(filter(APQ_comp, QC_clust != 2, exclude == "in", !is.na(DW)), aes(x=as.numeric(factor(apQordered)), y=DW , color = dx)) + 
-  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.04) + theme(legend.position = "none")  +
-  ylab("Track Density") + xlab(NULL) +
-  scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF", "#000066")) + scale_x_continuous(limits=c(0.5,10.5), breaks=seq(1,10,1))
-
-pltDW_AP_comp_sex <- ggplot(filter(APQ_comp, QC_clust != 2, exclude == "in", !is.na(DW)), aes(x=as.numeric(factor(apQordered)), y=DW , color = sex)) + 
-  geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.04) + theme(legend.position = "none")  +
-  ylab("Track Density") + xlab(NULL) +
-  scale_x_continuous(limits=c(0.5,10.5), breaks=seq(1,10,1))
-
-
-# # APQ x dx (male only)
-# print(paste("Anova Table for APQ X dx, male only"))
-# F2 <- lmer(DW ~ apQ*dx + Age + Comp.1 + Comp.2 + (1|subid), 
-#                data = filter(APQ_comp, sex == "Male", QC_clust != 2, exclude == "in", !is.na(DW)))
-# print(Anova(F2))
-# #summary(glht(F2, linfct=mcp(dx ="Tukey")))
-# summary(glht(F2, linfct=mcp(apQ ="Tukey")))
-#          
-# # plot APQ X dx (male only)
-# ggplot(filter(APQ_comp, sex == "Male", QC_clust != 2, exclude == "in", !is.na(DW)), aes(x=apQordered, y=DW, color = dx)) + 
-#   geom_boxplot() 
-# 
-# ggplot(filter(APQ_comp, sex == "Male", QC_clust != 2, exclude == "in", !is.na(DW)),aes(x=as.numeric(factor(apQordered)), y=DW , color = dx)) + 
-#   geom_jitter(width = 0.3, size = 1, alpha=0.5) + geom_smooth(span = 0.5) +ylim(0,0.1)
-
-
-############# plot together
-fig_DW_AP <- plot_grid(pltDW_AP_trio, pltDW_AP_prisma, pltDW_AP_comp, align="hv", ncol = 1)
-fig_DW_AP
-fig_DW_AP.file <- paste(outdir, "DW_AP.png", sep="/")
-ggsave(fig_DW_AP.file, fig_DW_AP, dpi=300, width = 30, height = 24, units = "cm")
-
-#plot fc and DW dx
-fig_AP <- plot_grid(pltFC_AP_trio, pltFC_AP_prisma, pltFC_AP_comp, pltDW_AP_trio, NULL, pltDW_AP_comp, align="hv", ncol = 3)
-fig_AP
-fig_AP.file <- paste(outdir, "AP.png", sep="/")
-ggsave(fig_AP.file, fig_AP, dpi=300, width = 30, height = 18, units = "cm")
-
-
-#plot fc and DW sex
-fig_AP_sex <- plot_grid(pltFC_AP_trio_sex, pltFC_AP_prisma_sex, pltFC_AP_comp_sex, pltDW_AP_trio_sex, NULL, pltDW_AP_comp_sex, align="hv", ncol = 3)
-fig_AP_sex
-fig_AP_sex.file <- paste(outdir, "AP_sex.png", sep="/")
-ggsave(fig_AP_sex.file, fig_AP_sex, dpi=300, width = 30, height = 18, units = "cm")
+fig_typeXlen <- plot_grid(plt_typeXlenZ_trio, plt_typeXlenZ_comp, plt_typeXlenDW_trio, plt_typeXlenDW_comp, align="hv", ncol = 2)
+fig_typeXlen
+fig_typeXlen.file <- paste(outdir, "typeXlen.png", sep="/")
+ggsave(fig_typeXlen.file, fig_typeXlen, dpi=300, width = 21, height = 18, units = "cm")
 
 ```
