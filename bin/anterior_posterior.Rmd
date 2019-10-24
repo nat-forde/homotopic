@@ -34,6 +34,7 @@ QCdwi.class <- read.csv("/projects/nforde/POND/dtifit/QC/Classified.csv")
 hand <- read.csv("/projects/nforde/POND/clinical/handedness.csv")
 SCQ <- read.csv("/projects/nforde/POND/clinical/SCQ_Data_23_July_2018.csv")
 WISCV <- read.csv("/projects/nforde/POND/clinical/WISC_5_Data_24_July_2018.csv")
+cluster <- read.csv("/projects/nforde/POND/clinical/clust4group_GraceJacobs.csv") #data driven groups from Graces analysis
 
 edgedir <- "/projects/nforde/POND/edges"
 
@@ -86,7 +87,10 @@ demogs <- demogs %>% group_by(subid) %>%
 QCdwi.class <- QCdwi.class %>% separate(ID, "subid", sep="/") 
 
 demogs <- merge(demogs, QCdwi[c("subject", "shell", "in.ex")], by.x= "subid", by.y = "subject", all.x=TRUE) %>% 
-  merge(QCdwi.class[c("subid", "PC1", "cutree.res.hc..k...3.")], by="subid", all.x=TRUE)
+  merge(QCdwi.class[c("subid", "PC1", "cutree.res.hc..k...3.")], by="subid", all.x=TRUE) %>%
+  merge(cluster[c("V1","groups_2")], by.x="subid", by.y="V1", all = TRUE)
+
+names(demogs)[names(demogs) == 'groups_2'] <- 'cluster_groups'
 
 ```
 ## set all the paths/directories & read in data for COMPULS

@@ -43,6 +43,7 @@ QCdwi.class <- read.csv("/projects/nforde/POND/dtifit/QC/Classified.csv")
 hand <- read.csv("/projects/nforde/POND/clinical/handedness.csv")
 SCQ <- read.csv("/projects/nforde/POND/clinical/SCQ_Data_23_July_2018.csv")
 WISCV <- read.csv("/projects/nforde/POND/clinical/WISC_5_Data_24_July_2018.csv")
+cluster <- read.csv("/projects/nforde/POND/clinical/clust4group_GraceJacobs.csv") #data driven groups from Graces analysis
 
 tsdir <- "/projects/nforde/POND/rsMRI"
 diffdir <- "/projects/nforde/POND/CSDnew"
@@ -50,7 +51,7 @@ edgedir <- "/projects/nforde/POND/edges"
 
 #merge diff sources of demog and QC data
 demogs <- pond_demographics %>% 
-  merge(WISCV[c("Subject","WISC_V_FSIQ")], by.x="SUBJECT", by.y="Subject", all.x=TRUE)
+  merge(WISCV[c("Subject","WISC_V_FSIQ", "WISC_V_PS")], by.x="SUBJECT", by.y="Subject", all.x=TRUE)
 
 #do some organising and renaming
 demogs <- filter(demogs, !is.na(DOB)) %>% filter(!is.na(POND_DATE))
@@ -65,12 +66,15 @@ demogs$dx[demogs$RESEARCH_CONFIRM_DIAG_STD=="15"] <- 'GAD'
 IQ <- data.frame(demogs$WASI_FSIQ_2, demogs$WASI_II_FSIQ_2, demogs$WASI_FSIQ_4, demogs$WASI_II_FSIQ_4, demogs$WISC_IV_FSIQ, demogs$WISC_V_FSIQ)
 demogs$FSIQ_any <- apply(IQ, 1, mean, na.rm=TRUE)
 demogs$FSIQ_any[demogs$FSIQ_any == "NaN"] <- NA
+WISC_PS <- data.frame(demogs$WISC_IV_PS, demogs$WISC_V_PS)
+demogs$WISC_PS <- apply(WISC_PS, 1, mean, na.rm=TRUE)
+demogs$WISC_PS[demogs$WISC_PS == "NaN"] <- NA
 demogs$NDDdx <- NA
 demogs$NDDdx[demogs$dx == "ASD" | demogs$dx == "OCD" | demogs$dx == "ADHD"] <- "NDD"
 demogs$NDDdx[demogs$dx == "HC"] <- "HC"
   
 ### reduce the demographic data and merge if other sources
-demogs <- demogs[c("SUBJECT","dx", "NDDdx", "Age", "sex", "FSIQ_any", "AB21GCCS", "RBSCPT",
+demogs <- demogs[c("SUBJECT","dx", "NDDdx", "Age", "sex", "FSIQ_any", "WISC_PS",  "AB21GCCS", "RBSCPT",
                         "VAB2CP", "OB_SUB", "COM_SUB", "ADHD_I_SUB", "ADHD_HI_SUB", "TPOCS_TOT", "CB68TPTOT", "CB68TPTS")] %>%
   merge(SCQ[c("Subject","SCQTOT")], by.x="SUBJECT", by.y="Subject", all.x=TRUE) %>%
   merge(hand[c("ID","Handed")], by.x="SUBJECT", by.y="ID", all.x=TRUE) %>%
@@ -78,7 +82,6 @@ demogs <- demogs[c("SUBJECT","dx", "NDDdx", "Age", "sex", "FSIQ_any", "AB21GCCS"
 demogs$scanner <-NA
 demogs$scanner[demogs$spacing_tr!="1.5"] <- 'trio'
 demogs$scanner[demogs$spacing_tr=="1.5"] <- 'prisma'
-
 
 #add 0 infront of 88 subjects
 for (i in 1:nrow(demogs)) {
@@ -97,7 +100,10 @@ demogs <- demogs %>% group_by(subid) %>%
 QCdwi.class <- QCdwi.class %>% separate(ID, "subid", sep="/") 
 
 demogs <- merge(demogs, QCdwi[c("subject", "shell", "in.ex")], by.x= "subid", by.y = "subject", all.x=TRUE) %>% 
-  merge(QCdwi.class[c("subid", "PC1", "cutree.res.hc..k...3.")], by="subid", all.x=TRUE)
+  merge(QCdwi.class[c("subid", "PC1", "cutree.res.hc..k...3.")], by="subid", all.x=TRUE) %>%
+  merge(cluster[c("V1","groups_2")], by.x="subid", by.y="V1", all = TRUE)
+
+names(demogs)[names(demogs) == 'groups_2'] <- 'cluster_groups'
 
 ```
 ## set all the paths/directories & read in data for COMPULS
@@ -1186,6 +1192,83 @@ figCompZ_cbcl_all
 figZ_cbcl_all <- plot_grid(pltTrioZ_cbcl, pltPrismaZ_cbcl, pltCompZ_cbcl, align="hv", ncol = 3)
 figZ_cbcl_all
 ```
+```{r FC_IQ}
+print(paste("Anova - Does tract type predict FC strength?- trio - IQ"))
+F2.trio.Ziq <- lmer(Z ~ FCtype*FSIQ_any +sex + Age + fd_mean + (1|subid), 
+               data = type_trio)
+print(Anova(F2.trio.Ziq))
+
+pltTrioZ_iq <- ggplot(type_trio, aes(x=FSIQ_any, y=Z, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0.2,0.8) + xlim(70,140) +
+  ylab("Functional Connectivity") + xlab("IQ") + theme(legend.title = element_blank())
+
+print(paste("Anova - Does tract type predict FC strength?- prisma - IQ"))
+F2.prisma.Ziq <- lmer(Z ~ FCtype*FSIQ_any +sex + Age + fd_mean + (1|subid), 
+               data = type_prisma)
+print(Anova(F2.prisma.Ziq))
+
+pltPrismaZ_iq <- ggplot(type_prisma, aes(x=FSIQ_any, y=Z, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0.2,0.8) + xlim(70,140) +
+  ylab("Functional Connectivity") + xlab("IQ") + theme(legend.title = element_blank())
+
+print(paste("Anova - Does tract type predict FC strength?- comp - IQ"))
+F2.comp.Ziq <- lmer(Z ~ FCtype*IQ +sex + Age + fd_mean + (1|subid), 
+               data = type_comp)
+print(Anova(F2.comp.Ziq))
+
+pltCompZ_iq <- ggplot(type_comp, aes(x=IQ, y=Z, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0.2,0.8) + xlim(70,140) +
+  ylab("Functional Connectivity") + xlab("IQ") + theme(legend.title = element_blank())
+
+figZ_IQ_all <- plot_grid(pltTrioZ_iq, pltPrismaZ_iq, pltCompZ_iq, align="hv", ncol = 3)
+figZ_IQ_all
+```
+```{r FC&DW_PS}
+print(paste("Anova - Does tract type predict FC strength?- trio - IQ"))
+F2.trio.Zps <- lmer(Z ~ FCtype*WISC_PS +sex + Age + fd_mean + (1|subid), 
+               data = type_trio)
+print(Anova(F2.trio.Zps))
+
+pltTrioZ_ps <- ggplot(type_trio, aes(x=WISC_PS, y=Z, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0.2,0.8) + xlim(60,140) +
+  ylab("Functional Connectivity") + xlab("Processing Speed") + theme(legend.title = element_blank())
+
+print(paste("Anova - Does tract type predict FC strength?- prisma - IQ"))
+F2.prisma.Zps <- lmer(Z ~ FCtype*WISC_PS +sex + Age + fd_mean + (1|subid), 
+               data = type_prisma)
+print(Anova(F2.prisma.Zps))
+
+pltPrismaZ_ps <- ggplot(type_prisma, aes(x=WISC_PS, y=Z, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0.2,0.8) + xlim(60,140) +
+  ylab("Functional Connectivity") + xlab("Processing Speed") + theme(legend.title = element_blank())
+
+#DW
+print(paste("Anova - Does tract type predict FC strength?- trio - IQ"))
+F2.trio.DWps <- lmer(DW ~ FCtype*WISC_PS +sex + Age + PC1 + (1|subid), 
+               data = filter(type_trio, cutree.res.hc..k...3. != 3, in.ex == "in"))
+print(Anova(F2.trio.DWps))
+
+pltTrioDW_ps <- ggplot(filter(type_trio, cutree.res.hc..k...3. != 3, in.ex == "in"), aes(x=WISC_PS, y=DW, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,0.05) + xlim(60,140) +
+  ylab("Track Density") + xlab("Processing Speed") + theme(legend.title = element_blank())
+
+
+# print(paste("Anova - Does tract type predict FC strength?- comp - IQ"))
+# F2.comp.Zps <- lmer(Z ~ FCtype*IQ +sex + Age + fd_mean + (1|subid), 
+#                data = type_comp)
+# print(Anova(F2.comp.Ziq))
+# 
+# pltCompZ_ps <- ggplot(type_comp, aes(x=IQ, y=Z, color = FCtype)) + 
+#   geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0.2,0.8) + xlim(70,140) +
+#   ylab("Functional Connectivity") + xlab("IQ") + theme(legend.title = element_blank())
+
+fig_PS_all <- plot_grid(pltTrioZ_ps, pltPrismaZ_ps, pltTrioDW_ps, align="hv", ncol = 2)
+fig_PS_all
+```
+
+
+
+
 
 # Does tract type predict structure?
 ```{r DWI-dx}
@@ -1469,6 +1552,30 @@ figCBCL_sxXtyp.file <- paste(outdir, "CBCL_sxXtyp.png", sep="/")
 ggsave(figCBCL_sxXtyp.file, figCBCL_sxXtyp, dpi=300, width = 21, height = 14, units = "cm")
 
 
+```
+
+```{r DWI_IQ}
+print(paste("Anova - Does tract type predict DW strength?- trio - IQ"))
+F2.trio.DWiq <- lmer(DW ~ FCtype*FSIQ_any +sex + Age + PC1 + (1|subid), 
+               data = filter(type_trio, cutree.res.hc..k...3. != 3, in.ex == "in"))
+print(Anova(F2.trio.DWiq))
+
+pltTrioDW_iq <- ggplot(filter(type_trio, cutree.res.hc..k...3. != 3, in.ex == "in"), aes(x=FSIQ_any, y=DW, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,0.05) + xlim(70,140) +
+  ylab("Track Density") + xlab("IQ") + theme(legend.title = element_blank())
+
+
+print(paste("Anova - Does tract type predict DW strength?- comp - IQ"))
+F2.comp.DWiq <- lmer(DW ~ FCtype*IQ +sex + Age + Comp.1 +Comp.2 + (1|subid), 
+               data = filter(type_comp, QC_clust != 2, exclude == "in"))
+print(Anova(F2.comp.DWiq))
+
+pltCompDW_iq <- ggplot(filter(type_comp, QC_clust != 2, exclude == "in"), aes(x=IQ, y=DW, color = FCtype)) + 
+  geom_jitter(width = 0.3) +  geom_smooth(span = 0.5) +ylim(0,0.05) + xlim(70,140) +
+  ylab("Track Density") + xlab("IQ") + theme(legend.title = element_blank())
+
+figDW_IQ_all <- plot_grid(pltTrioDW_iq, pltCompDW_iq, align="hv", ncol =2)
+figDW_IQ_all
 ```
 
 ```{r plt_AGE}

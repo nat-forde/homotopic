@@ -35,6 +35,7 @@ QCdwi.class <- read.csv("/projects/nforde/POND/dtifit/QC/Classified.csv")
 hand <- read.csv("/projects/nforde/POND/clinical/handedness.csv")
 SCQ <- read.csv("/projects/nforde/POND/clinical/SCQ_Data_23_July_2018.csv")
 WISCV <- read.csv("/projects/nforde/POND/clinical/WISC_5_Data_24_July_2018.csv")
+cluster <- read.csv("/projects/nforde/POND/clinical/clust4group_GraceJacobs.csv") #data driven groups from Graces analysis
 
 edgedir <- "/projects/nforde/POND/edges"
 
@@ -87,7 +88,10 @@ demogs <- demogs %>% group_by(subid) %>%
 QCdwi.class <- QCdwi.class %>% separate(ID, "subid", sep="/") 
 
 demogs <- merge(demogs, QCdwi[c("subject", "shell", "in.ex")], by.x= "subid", by.y = "subject", all.x=TRUE) %>% 
-  merge(QCdwi.class[c("subid", "PC1", "cutree.res.hc..k...3.")], by="subid", all.x=TRUE)
+  merge(QCdwi.class[c("subid", "PC1", "cutree.res.hc..k...3.")], by="subid", all.x=TRUE) %>%
+  merge(cluster[c("V1","groups_2")], by.x="subid", by.y="V1", all = TRUE)
+
+names(demogs)[names(demogs) == 'groups_2'] <- 'cluster_groups'
 
 ```
 ## set all the paths/directories & read in data for COMPULS
@@ -296,19 +300,19 @@ len_by_type <- function(subids, edgedir) {
       lenZ$L[i] <- mean(filter(edges_nonzero, length >= 80)$theseZ, na.rm=TRUE)
       lenZ$na[i] <- mean(filter(edges, length == 0)$theseZ, na.rm=TRUE)
  
-      lenZ$HO_L[i] <- mean(filter(edges_nonzero, FCtype == "Homotopic", length < 40)$theseZ, na.rm=TRUE)
+      lenZ$HO_S[i] <- mean(filter(edges_nonzero, FCtype == "Homotopic", length < 40)$theseZ, na.rm=TRUE)
       lenZ$HO_M[i] <- mean(filter(edges_nonzero, FCtype == "Homotopic", length >= 40, length < 80)$theseZ, na.rm=TRUE)
-      lenZ$HO_S[i] <- mean(filter(edges_nonzero, FCtype == "Homotopic", length >= 80)$theseZ, na.rm=TRUE)
+      lenZ$HO_L[i] <- mean(filter(edges_nonzero, FCtype == "Homotopic", length >= 80)$theseZ, na.rm=TRUE)
       lenZ$HO_na[i] <- mean(filter(edges, FCtype == "Homotopic", length == 0)$theseZ, na.rm=TRUE)
       
-      lenZ$HE_L[i] <- mean(filter(edges_nonzero, FCtype == "Heterotopic", length < 40)$theseZ, na.rm=TRUE)
+      lenZ$HE_S[i] <- mean(filter(edges_nonzero, FCtype == "Heterotopic", length < 40)$theseZ, na.rm=TRUE)
       lenZ$HE_M[i] <- mean(filter(edges_nonzero, FCtype == "Heterotopic", length >= 40, length < 80 )$theseZ, na.rm=TRUE)
-      lenZ$HE_S[i] <- mean(filter(edges_nonzero, FCtype == "Heterotopic", length >= 80)$theseZ, na.rm=TRUE)
+      lenZ$HE_L[i] <- mean(filter(edges_nonzero, FCtype == "Heterotopic", length >= 80)$theseZ, na.rm=TRUE)
       lenZ$HE_na[i] <- mean(filter(edges, FCtype == "Heterotopic", length == 0)$theseZ, na.rm=TRUE)
       
-      lenZ$I_L[i] <- mean(filter(edges_nonzero, FCtype == "Intrahemispheric", length < 40)$theseZ, na.rm=TRUE)
+      lenZ$I_S[i] <- mean(filter(edges_nonzero, FCtype == "Intrahemispheric", length < 40)$theseZ, na.rm=TRUE)
       lenZ$I_M[i] <- mean(filter(edges_nonzero, FCtype == "Intrahemispheric", length >= 40 , length < 80)$theseZ, na.rm=TRUE)
-      lenZ$I_S[i] <- mean(filter(edges_nonzero, FCtype == "Intrahemispheric", length >= 80)$theseZ, na.rm=TRUE)
+      lenZ$I_L[i] <- mean(filter(edges_nonzero, FCtype == "Intrahemispheric", length >= 80)$theseZ, na.rm=TRUE)
       lenZ$I_na[i] <- mean(filter(edges, FCtype == "Intrahemispheric", length == 0)$theseZ, na.rm=TRUE)
       
       ##DW
@@ -316,17 +320,17 @@ len_by_type <- function(subids, edgedir) {
       lenDW$M[i] <- mean(filter(edges_nonzero, length >= 40, length <80)$raw, na.rm=TRUE)
       lenDW$L[i] <- mean(filter(edges_nonzero, length >= 80)$raw, na.rm=TRUE)
  
-      lenDW$HO_L[i] <- mean(filter(edges_nonzero, FCtype == "Homotopic", length < 40)$raw, na.rm=TRUE)
+      lenDW$HO_S[i] <- mean(filter(edges_nonzero, FCtype == "Homotopic", length < 40)$raw, na.rm=TRUE)
       lenDW$HO_M[i] <- mean(filter(edges_nonzero, FCtype == "Homotopic", length >= 40, length < 80)$raw, na.rm=TRUE)
-      lenDW$HO_S[i] <- mean(filter(edges_nonzero, FCtype == "Homotopic", length >= 80)$raw, na.rm=TRUE)
+      lenDW$HO_L[i] <- mean(filter(edges_nonzero, FCtype == "Homotopic", length >= 80)$raw, na.rm=TRUE)
       
-      lenDW$HE_L[i] <- mean(filter(edges_nonzero, FCtype == "Heterotopic", length < 40)$raw, na.rm=TRUE)
+      lenDW$HE_S[i] <- mean(filter(edges_nonzero, FCtype == "Heterotopic", length < 40)$raw, na.rm=TRUE)
       lenDW$HE_M[i] <- mean(filter(edges_nonzero, FCtype == "Heterotopic", length >= 40, length < 80 )$raw, na.rm=TRUE)
-      lenDW$HE_S[i] <- mean(filter(edges_nonzero, FCtype == "Heterotopic", length >= 80)$raw, na.rm=TRUE)
+      lenDW$HE_L[i] <- mean(filter(edges_nonzero, FCtype == "Heterotopic", length >= 80)$raw, na.rm=TRUE)
       
-      lenDW$I_L[i] <- mean(filter(edges_nonzero, FCtype == "Intrahemispheric", length < 40)$raw, na.rm=TRUE)
+      lenDW$I_S[i] <- mean(filter(edges_nonzero, FCtype == "Intrahemispheric", length < 40)$raw, na.rm=TRUE)
       lenDW$I_M[i] <- mean(filter(edges_nonzero, FCtype == "Intrahemispheric", length >= 40 , length < 80)$raw, na.rm=TRUE)
-      lenDW$I_S[i] <- mean(filter(edges_nonzero, FCtype == "Intrahemispheric", length >= 80)$raw, na.rm=TRUE)
+      lenDW$I_L[i] <- mean(filter(edges_nonzero, FCtype == "Intrahemispheric", length >= 80)$raw, na.rm=TRUE)
       
       
     } else {
@@ -467,7 +471,7 @@ ggplot(filter(len_comp, len != "na" ), aes(x=len, y=DW, color = dx)) +
 
 ```{r typeXlen}
 
-F2 <- lmer(Z ~ type*len + Age + sex + (1|subid), 
+F2 <- lmer(Z ~ type*len + Age + sex + (1|subid/type), 
                data = type_len_trio)
 print(Anova(F2))
 # summary(glht(F2, linfct=mcp(typeXlen ="Tukey")))
