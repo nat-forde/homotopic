@@ -20,7 +20,7 @@ library(lubridate)
 library(lme4)
 library(cowplot)
 
-outdir <- "/projects/nforde/POND/stats"
+outdir <- "/scratch/nforde/homotopic/stats"
 atlas <- "glasser"
 ```
 
@@ -29,8 +29,8 @@ atlas <- "glasser"
 #POND
 pond_demographics <- read.csv("/projects/nforde/POND/clinical/POND_06JUN2018_pp.csv")
 QCfunc <- read.csv("/projects/nforde/POND/rsMRI/bold.csv")
-QCdwi <- read.csv("/projects/nforde/POND/dtifit/qc.csv")
-QCdwi.class <- read.csv("/projects/nforde/POND/dtifit/QC/Classified.csv")
+QCdwi <- read.csv("/projects/nforde/POND/clinical/qc.csv")
+QCdwi.class <- read.csv("/projects/nforde/POND/clinical/Classified.csv")
 hand <- read.csv("/projects/nforde/POND/clinical/handedness.csv")
 SCQ <- read.csv("/projects/nforde/POND/clinical/SCQ_Data_23_July_2018.csv")
 WISCV <- read.csv("/projects/nforde/POND/clinical/WISC_5_Data_24_July_2018.csv")
