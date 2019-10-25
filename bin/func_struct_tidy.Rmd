@@ -19,7 +19,7 @@ library(lubridate)
 library(zoo)
 library(forecast)
 
-outdir <- "/projects/nforde/POND/stats"
+outdir <- "/scratch/nforde/homotopic/stats"
 
 #diffusion threshold
 dwi_thresh = 5 #percent threshold value, keeps this percent of connections 
@@ -38,8 +38,8 @@ xyz <- read.csv("/projects/nforde/atlases/xyz.csv")
 #POND
 pond_demographics <- read.csv("/projects/nforde/POND/clinical/POND_06JUN2018_pp.csv")
 QCfunc <- read.csv("/projects/nforde/POND/rsMRI/bold.csv")
-QCdwi <- read.csv("/projects/nforde/POND/dtifit/qc.csv")
-QCdwi.class <- read.csv("/projects/nforde/POND/dtifit/QC/Classified.csv")
+QCdwi <- read.csv("/projects/nforde/POND/clinical/qc.csv")
+QCdwi.class <- read.csv("/projects/nforde/POND/clinical/Classified.csv")
 hand <- read.csv("/projects/nforde/POND/clinical/handedness.csv")
 SCQ <- read.csv("/projects/nforde/POND/clinical/SCQ_Data_23_July_2018.csv")
 WISCV <- read.csv("/projects/nforde/POND/clinical/WISC_5_Data_24_July_2018.csv")
@@ -1609,5 +1609,47 @@ figAGE_sxXtyp
 figAGE_sxXtyp.file <- paste(outdir, "AGE_sxXtyp.png", sep="/")
 ggsave(figAGE_sxXtyp.file, figAGE_sxXtyp, dpi=300, width = 21, height = 14, units = "cm")
 
+
+```
+
+## statistics! POND cluster groups from Grace instead of dx
+```{r FC_dx}
+
+################### Does tract type predict FC strength? #########
+## TRIO
+print(paste("Anova - Does tract type predict FC strength?- trio"))
+F2.trio.Z <- lmer(Z ~ FCtype*as.factor(cluster_groups) + sex + Age + fd_mean + (1|subid), 
+               data = type_trio)
+#summary(F2.trio.Z)
+print(Anova(F2.trio.Z))
+# summary(glht(F2.trio.Z, linfct=mcp(dx ="Tukey")))
+summary(glht(F2.trio.Z, linfct=mcp(FCtype ="Tukey")))
+
+
+# plot type X dx 
+pltTrioZ_clust <- ggplot(type_trio, aes(x=FCtype, y=Z, color =as.factor(cluster_groups))) + 
+  geom_boxplot() +ylim(0.2,0.8) + theme(legend.position = "none") +
+  ylab("Functional Connectivity") + xlab(NULL) #+
+  #scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF"))
+pltTrioZ_clust
+
+print(paste("Anova - Does tract type predict structure? - trio"))
+F2.trio.DW <- lmer(DW ~ FCtype*as.factor(cluster_groups)*sex*Age + PC1 + (1|subid), 
+               data = filter(type_trio, cutree.res.hc..k...3. != 3, in.ex == "in"))
+print(Anova(F2.trio.DW))
+summary(glht(F2.trio.DW, linfct=mcp(FCtype ="Tukey")))
+
+# plot type X dx 
+pltTrioDW_clust <- ggplot(filter(type_trio, cutree.res.hc..k...3. != 3, in.ex == "in"), aes(x=FCtype, y=DW, color = as.factor(cluster_groups))) + 
+  geom_boxplot()+ylim(0,0.05) +
+  ylab("Track Density") + xlab(NULL) + theme(legend.position = "none") #+
+  #scale_color_manual(values=c("#FF3300", "#66CC33", "#0099FF", "#9900FF"))
+pltTrioDW_clust
+
+
+fig_clust <- plot_grid(pltTrioZ_clust, pltTrioDW_clust, align="hv", ncol = 2)
+fig_clust
+fig_clust.file <- paste(outdir, "FC_clust.png", sep="/")
+ggsave(fig_clust.file, figZ, dpi=300, width = 30, height = 8, units = "cm")
 
 ```
